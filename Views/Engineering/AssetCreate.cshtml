@@ -1,0 +1,248 @@
+@model EDInventory.Models.ViewModels.EngAssetViewModel
+@{ ViewData["Title"] = "Nuevo Activo Clinico"; }
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="mb-0"><i class="bi bi-hospital me-2"></i>Nuevo Activo Clinico</h4>
+    <a asp-action="AssetsOnSite" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left me-1"></i>Volver</a>
+</div>
+
+<form asp-action="AssetCreate" method="post">
+    @Html.AntiForgeryToken()
+    <div asp-validation-summary="ModelOnly" class="alert alert-danger small py-2"></div>
+
+    <div class="row g-3">
+        <!-- Informacion General -->
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-dark text-white fw-bold">
+                    <i class="bi bi-info-circle me-1"></i>Informacion General
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-8">
+                            <label asp-for="AssetDesc" class="form-label fw-semibold"></label>
+                            <input asp-for="AssetDesc" class="form-control" placeholder="Ej: Tomografo Computarizado 64 Cortes" />
+                            <span asp-validation-for="AssetDesc" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-4">
+                            <label asp-for="LineCode" class="form-label fw-semibold"></label>
+                            <select asp-for="LineCode" asp-items="Model.Lines" class="form-select">
+                                <option value="">-- Seleccione linea --</option>
+                            </select>
+                            <span asp-validation-for="LineCode" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="ModelCode" class="form-label fw-semibold"></label>
+                            <select asp-for="ModelCode" asp-items="Model.Models" class="form-select">
+                                <option value="">-- Seleccione modelo --</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label asp-for="AssetSN" class="form-label fw-semibold"></label>
+                            <input asp-for="AssetSN" class="form-control" id="snInput" autocomplete="off" />
+                            <div id="snFeedback" class="small mt-1"></div>
+                        </div>
+                        <div class="col-md-3">
+                            <label asp-for="AssetNum" class="form-label fw-semibold"></label>
+                            <input asp-for="AssetNum" class="form-control" />
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="AssetGnum" class="form-label fw-semibold"></label>
+                            <input asp-for="AssetGnum" class="form-control" />
+                        </div>
+                        <div class="col-md-3">
+                            <label asp-for="AssetDjequip" class="form-label fw-semibold"></label>
+                            <input asp-for="AssetDjequip" class="form-control" type="date" />
+                        </div>
+                        <div class="col-md-3 d-flex align-items-end">
+                            <div class="form-check mb-1">
+                                <input asp-for="Active" class="form-check-input" type="checkbox" />
+                                <label asp-for="Active" class="form-check-label fw-semibold">Activo</label>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <label asp-for="AssetAddata" class="form-label fw-semibold"></label>
+                            <textarea asp-for="AssetAddata" class="form-control" rows="2"></textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Ubicacion -->
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-dark text-white fw-bold">
+                    <i class="bi bi-geo-alt me-1"></i>Ubicacion
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Tipo de ubicacion</label>
+                        <div class="d-flex gap-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="locationType" id="locHospital" value="hospital" checked />
+                                <label class="form-check-label" for="locHospital"><i class="bi bi-hospital me-1"></i>Hospital</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="locationType" id="locBodega" value="bodega" />
+                                <label class="form-check-label" for="locBodega"><i class="bi bi-box-seam me-1"></i>Bodega</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="locationType" id="locSede" value="sede" />
+                                <label class="form-check-label" for="locSede"><i class="bi bi-geo-alt me-1"></i>Sede</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="secHospital" class="row g-3">
+                        <div class="col-md-4">
+                            <label asp-for="HospCode" class="form-label fw-semibold"></label>
+                            <select asp-for="HospCode" asp-items="Model.Hospitals" class="form-select" id="hospSelect">
+                                <option value="">-- Seleccione hospital --</option>
+                            </select>
+                            <span asp-validation-for="HospCode" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-4">
+                            <label asp-for="HospDepCode" class="form-label fw-semibold"></label>
+                            <select asp-for="HospDepCode" class="form-select" id="hospDepSelect">
+                                <option value="">-- Primero seleccione hospital --</option>
+                            </select>
+                            <span asp-validation-for="HospDepCode" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-4">
+                            <label asp-for="AssetHospPos" class="form-label fw-semibold"></label>
+                            <input asp-for="AssetHospPos" class="form-control" placeholder="Ej: Sala de Tomografia" />
+                            <span asp-validation-for="AssetHospPos" class="text-danger small"></span>
+                        </div>
+                    </div>
+
+                    <div id="secBodega" class="row g-3 d-none">
+                        <div class="col-md-4">
+                            <label asp-for="WareCode" class="form-label fw-semibold"></label>
+                            <select asp-for="WareCode" asp-items="Model.Warehouses" class="form-select">
+                                <option value="">-- Seleccione bodega --</option>
+                            </select>
+                            <span asp-validation-for="WareCode" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-4">
+                            <label asp-for="WareRack" class="form-label fw-semibold"></label>
+                            <input asp-for="WareRack" class="form-control" placeholder="Ej: R-01" />
+                            <span asp-validation-for="WareRack" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-4">
+                            <label asp-for="WareEstante" class="form-label fw-semibold"></label>
+                            <input asp-for="WareEstante" class="form-control" placeholder="Ej: E-03" />
+                            <span asp-validation-for="WareEstante" class="text-danger small"></span>
+                        </div>
+                    </div>
+
+                    <div id="secSede" class="row g-3 d-none">
+                        <div class="col-md-6">
+                            <label asp-for="SiteCode" class="form-label fw-semibold"></label>
+                            <select asp-for="SiteCode" asp-items="Model.Sites" class="form-select">
+                                <option value="">-- Seleccione sede --</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Licitacion -->
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-dark text-white fw-bold">
+                    <i class="bi bi-file-earmark-text me-1"></i>Licitacion
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label asp-for="LicCode" class="form-label fw-semibold"></label>
+                            <select asp-for="LicCode" asp-items="Model.Licitaciones" class="form-select" id="LicCode">
+                                <option value="">-- Sin licitacion --</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label asp-for="AssetDslic" class="form-label fw-semibold"></label>
+                            <input asp-for="AssetDslic" class="form-control" type="date" id="AssetDslic" />
+                        </div>
+                        <div class="col-md-4">
+                            <label asp-for="AssetDelic" class="form-label fw-semibold"></label>
+                            <input asp-for="AssetDelic" class="form-control" type="date" id="AssetDelic" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Historial -->
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-dark text-white fw-bold">
+                    <i class="bi bi-clock-history me-1"></i>Historial
+                </div>
+                <div class="card-body">
+                    <label asp-for="HistNotes" class="form-label fw-semibold"></label>
+                    <input asp-for="HistNotes" class="form-control" placeholder="Ej: Ingreso inicial — instalacion en Hospital XXXX" />
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="mt-3">
+        <button type="submit" class="btn btn-primary">
+            <i class="bi bi-floppy me-1"></i>Guardar Activo
+        </button>
+    </div>
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        document.querySelectorAll('input[name="locationType"]').forEach(radio => {
+            radio.addEventListener('change', function () {
+                document.getElementById('secHospital').classList.add('d-none');
+                document.getElementById('secBodega').classList.add('d-none');
+                document.getElementById('secSede').classList.add('d-none');
+                ['HospCode','HospDepCode','AssetHospPos','WareCode','WareRack','WareEstante','SiteCode']
+                    .forEach(f => { const el = document.getElementById(f); if (el) el.value = ''; });
+                if (this.value === 'hospital') document.getElementById('secHospital').classList.remove('d-none');
+                if (this.value === 'bodega')   document.getElementById('secBodega').classList.remove('d-none');
+                if (this.value === 'sede')     document.getElementById('secSede').classList.remove('d-none');
+            });
+        });
+
+        document.getElementById('snInput').addEventListener('blur', function () {
+            const sn = this.value.trim();
+            const fb = document.getElementById('snFeedback');
+            if (!sn) { fb.innerHTML = ''; return; }
+            fetch(`/Engineering/CheckAssetSerial?sn=${encodeURIComponent(sn)}`)
+                .then(r => r.json())
+                .then(data => {
+                    fb.innerHTML = data.exists
+                        ? '<span class="text-danger"><i class="bi bi-exclamation-triangle-fill me-1"></i>Este serial ya esta registrado.</span>'
+                        : '<span class="text-success"><i class="bi bi-check-circle-fill me-1"></i>Serial disponible.</span>';
+                });
+        });
+
+        const licDates = @Html.Raw(ViewBag.LicitacionDates ?? "{}");
+        document.getElementById('LicCode').addEventListener('change', function () {
+            const data = licDates[this.value];
+            document.getElementById('AssetDslic').value = data?.start ?? '';
+            document.getElementById('AssetDelic').value = data?.end ?? '';
+        });
+
+        document.getElementById('hospSelect').addEventListener('change', function () {
+            const hospId = this.value;
+            const depSelect = document.getElementById('hospDepSelect');
+            depSelect.innerHTML = '<option value="">-- Cargando... --</option>';
+            if (!hospId) { depSelect.innerHTML = '<option value="">-- Primero seleccione hospital --</option>'; return; }
+            fetch(`/Equipment/GetHospDepartments?hospCode=${hospId}`)
+                .then(r => r.json())
+                .then(data => {
+                    depSelect.innerHTML = '<option value="">-- Seleccione zona --</option>';
+                    data.forEach(d => { depSelect.innerHTML += `<option value="${d.value}">${d.text}</option>`; });
+                });
+        });
+    </script>
+}

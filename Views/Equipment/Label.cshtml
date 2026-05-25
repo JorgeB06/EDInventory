@@ -1,0 +1,288 @@
+@model EDInventory.Models.Entities.ItEquip
+@{
+    ViewData["Title"] = "Etiqueta - " + Model.ItequipDesc;
+    Layout = null;
+
+    var company      = ViewBag.Company as EDInventory.Models.Entities.Company;
+    var lastHospMove = ViewBag.LastHospMove as EDInventory.Models.Entities.ItEquipHistory;
+
+    string ubicacion = Model.HospCode.HasValue
+        ? $"{Model.Hospital?.HospName} — {Model.HospitalDepartment?.HospDepName ?? ""}"
+        : Model.WareCode.HasValue
+            ? $"Bodega: {Model.Warehouse?.WareName}"
+            : Model.Site?.SiteName ?? "Sin ubicacion";
+}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <title>Etiqueta — @Model.ItequipDesc</title>
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        /* ── Pagina de impresion: 4x4 pulgadas, sin margenes ── */
+        @@page {
+            size: 4in 4in;
+            margin: 0;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background: #e8e8e8;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 24px;
+            gap: 16px;
+        }
+
+        /* ── Controles (solo pantalla) ── */
+        .controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            background: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,.18);
+            flex-wrap: wrap;
+        }
+        .controls button {
+            padding: 8px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+        }
+        .btn-print { background: #0d6efd; color: white; }
+        .btn-back  { background: #6c757d; color: white; }
+        .controls span { font-size: 12px; color: #666; }
+
+        /* ── Contenedor de preview ── */
+        .label-preview {
+            background: white;
+            border-radius: 6px;
+            box-shadow: 0 3px 12px rgba(0,0,0,.22);
+            padding: 6px;
+        }
+
+        /* ── Etiqueta 4x4 pulgadas ── */
+        .label {
+            width: 4in;
+            height: 4in;
+            background: white;
+            border: 2px solid #111;
+            display: flex;
+            flex-direction: column;
+            padding: 5mm;
+            overflow: hidden;
+        }
+
+        /* Encabezado: empresa + tag TI */
+        .lbl-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid #111;
+            padding-bottom: 3mm;
+            margin-bottom: 3mm;
+        }
+        .lbl-company {
+            font-size: 13pt;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: .5px;
+            line-height: 1.2;
+        }
+        .lbl-tag {
+            background: #111;
+            color: white;
+            font-size: 8pt;
+            font-weight: bold;
+            padding: 2px 7px;
+            border-radius: 3px;
+            white-space: nowrap;
+        }
+
+        /* Descripcion del equipo */
+        .lbl-desc {
+            font-size: 10pt;
+            font-weight: bold;
+            margin-bottom: 3mm;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* Grid de campos */
+        .lbl-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2.5mm 5mm;
+            flex: 1;
+        }
+        .lbl-field { line-height: 1.5; }
+        .lbl-field.span2 { grid-column: 1 / -1; }
+        .lbl-field .f-lbl {
+            font-size: 7pt;
+            font-weight: 700;
+            color: #444;
+            text-transform: uppercase;
+            letter-spacing: .4px;
+        }
+        .lbl-field .f-val {
+            font-size: 10pt;
+            font-weight: 700;
+            word-break: break-word;
+        }
+        .lbl-field.span2 .f-val { font-size: 9pt; }
+
+        /* Separador antes del barcode */
+        .lbl-divider {
+            border: none;
+            border-top: 2px solid #888;
+            margin: 3mm 0 2mm;
+        }
+
+        /* Codigo de barras */
+        .lbl-barcode {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-top: auto;
+        }
+        .lbl-barcode svg {
+            width: 3.6in;
+            height: auto;
+        }
+        .lbl-barcode .sn {
+            font-family: 'Courier New', monospace;
+            font-size: 9pt;
+            font-weight: 700;
+            letter-spacing: 1.5px;
+            margin-top: 1mm;
+        }
+
+        /* ── Impresion ── */
+        @@media print {
+            body       { background: white; padding: 0; gap: 0; }
+            .controls  { display: none !important; }
+            .label-preview { box-shadow: none; padding: 0; border-radius: 0; }
+            .label     { border: 1.5pt solid #000; width: 4in; height: 4in; }
+            *          { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- Controles -->
+<div class="controls">
+    <button class="btn-print" onclick="window.print()">&#128438;&nbsp; Imprimir etiqueta</button>
+    <button class="btn-back"  onclick="window.close()">&#8592;&nbsp; Cerrar</button>
+    <span>Formato: 4 &times; 4 pulgadas &mdash; Zebra GK420D</span>
+</div>
+
+<!-- Preview de la etiqueta -->
+<div class="label-preview">
+<div class="label">
+
+    <!-- Encabezado -->
+    <div class="lbl-header">
+        <div class="lbl-company">@(company?.CompanyName ?? "Departamento TI")</div>
+        <div class="lbl-tag">TI &nbsp;/&nbsp; Inventario</div>
+    </div>
+
+    <!-- Descripcion del equipo -->
+    <div class="lbl-desc" title="@Model.ItequipDesc">@Model.ItequipDesc</div>
+
+    <!-- Campos en grid -->
+    <div class="lbl-grid">
+
+        <div class="lbl-field">
+            <div class="f-lbl">Tipo de Activo</div>
+            <div class="f-val">@(Model.Model?.Brand?.AssetType?.AssetsDesc ?? "—")</div>
+        </div>
+
+        <div class="lbl-field">
+            <div class="f-lbl">Num. Equipo</div>
+            <div class="f-val">@(Model.ItequipNum ?? "—")</div>
+        </div>
+
+        <div class="lbl-field">
+            <div class="f-lbl">Marca</div>
+            <div class="f-val">@(Model.Model?.Brand?.BrandDesc ?? "—")</div>
+        </div>
+
+        <div class="lbl-field">
+            <div class="f-lbl">Modelo</div>
+            <div class="f-val">@(Model.Model?.ModelDesc ?? "—")</div>
+        </div>
+
+        <div class="lbl-field">
+            <div class="f-lbl">Fecha salida de bodega</div>
+            <div class="f-val">
+                @(lastHospMove != null ? lastHospMove.HistDate.ToString("dd/MM/yyyy") : "—")
+            </div>
+        </div>
+
+        <div class="lbl-field">
+            <div class="f-lbl">Garantia</div>
+            <div class="f-val">@(Model.ItequipGnum ?? "—")</div>
+        </div>
+
+        @if (lastHospMove != null)
+        {
+            <div class="lbl-field span2">
+                <div class="f-lbl">Último movimiento</div>
+                <div class="f-val">
+                    @(lastHospMove.Hospital?.HospName ?? "—")
+                    @if (lastHospMove.HospitalDepartment != null)
+                    {
+                        <span style="font-weight:500"> — @lastHospMove.HospitalDepartment.HospDepName</span>
+                    }
+                    <span style="font-size:8pt; font-weight:400; color:#555"> (@lastHospMove.HistDate.ToString("dd/MM/yyyy"))</span>
+                </div>
+            </div>
+        }
+
+        <div class="lbl-field span2">
+            <div class="f-lbl">Ubicacion actual</div>
+            <div class="f-val">@ubicacion</div>
+        </div>
+
+    </div>
+
+    <!-- Barcode -->
+    <hr class="lbl-divider" />
+    <div class="lbl-barcode">
+        @if (!string.IsNullOrWhiteSpace(Model.ItequipSn))
+        {
+            <svg id="barcode"></svg>
+            <div class="sn">S/N: @Model.ItequipSn</div>
+        }
+        else
+        {
+            <div style="font-size:9pt; color:#888; font-style:italic;">Sin numero de serie registrado</div>
+        }
+    </div>
+
+</div>
+</div>
+
+@if (!string.IsNullOrWhiteSpace(Model.ItequipSn))
+{
+    <script>
+        JsBarcode("#barcode", "@Model.ItequipSn", {
+            format: "CODE128",
+            width: 2.2,
+            height: 55,
+            displayValue: false,
+            margin: 0
+        });
+    </script>
+}
+
+</body>
+</html>

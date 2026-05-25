@@ -1,0 +1,203 @@
+@model IEnumerable<EDInventory.Models.Entities.EngAsset>
+@using Microsoft.AspNetCore.Mvc.Rendering
+@{
+    ViewData["Title"] = "Activos Clinicos en Sitio";
+    bool canWrite = User.IsInRole(AppRoles.Admin) || User.IsInRole(AppRoles.SvcAdmin) || User.IsInRole(AppRoles.SvcTecnico);
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="mb-0"><i class="bi bi-hospital me-2"></i>Activos Clinicos en Sitio</h4>
+    <div class="d-flex gap-2">
+        <a asp-action="ExportAssets"
+           asp-route-search="@ViewBag.Search"
+           asp-route-lineId="@ViewBag.LineId"
+           asp-route-hospId="@ViewBag.HospId"
+           asp-route-wareId="@ViewBag.WareId"
+           asp-route-active="@ViewBag.Active"
+           class="btn btn-success btn-sm">
+            <i class="bi bi-file-earmark-excel me-1"></i>Excel
+        </a>
+        @if (canWrite)
+        {
+            <a asp-action="AssetCreate" class="btn btn-primary btn-sm">
+                <i class="bi bi-plus-lg me-1"></i>Nuevo Activo
+            </a>
+        }
+    </div>
+</div>
+
+<!-- Filtros -->
+<form method="get" class="card shadow-sm mb-3">
+    <div class="card-body py-2">
+        <div class="row g-2 align-items-end">
+            <div class="col-md-3">
+                <input name="search" value="@ViewBag.Search" class="form-control form-control-sm"
+                       placeholder="Descripcion, serie, numero..." />
+            </div>
+            <div class="col-md-2">
+                <select name="lineId" class="form-select form-select-sm">
+                    <option value="">Todas las lineas</option>
+                    @foreach (SelectListItem item in ViewBag.Lines)
+                    {
+                        @if (item.Value == ViewBag.LineId?.ToString())
+                        { <option value="@item.Value" selected>@item.Text</option> }
+                        else
+                        { <option value="@item.Value">@item.Text</option> }
+                    }
+                </select>
+            </div>
+            <div class="col-md-2">
+                <select name="hospId" class="form-select form-select-sm">
+                    <option value="">Todos los hospitales</option>
+                    @foreach (SelectListItem item in ViewBag.Hospitals)
+                    {
+                        @if (item.Value == ViewBag.HospId?.ToString())
+                        { <option value="@item.Value" selected>@item.Text</option> }
+                        else
+                        { <option value="@item.Value">@item.Text</option> }
+                    }
+                </select>
+            </div>
+            <div class="col-md-2">
+                <select name="wareId" class="form-select form-select-sm">
+                    <option value="">Todas las bodegas</option>
+                    @foreach (SelectListItem item in ViewBag.Warehouses)
+                    {
+                        @if (item.Value == ViewBag.WareId?.ToString())
+                        { <option value="@item.Value" selected>@item.Text</option> }
+                        else
+                        { <option value="@item.Value">@item.Text</option> }
+                    }
+                </select>
+            </div>
+            <div class="col-md-2">
+                <select name="active" class="form-select form-select-sm">
+                    <option value="">Todos los estados</option>
+                    @if (ViewBag.Active?.ToString() == "True")
+                    { <option value="true" selected>Activos</option> <option value="false">Inactivos</option> }
+                    else if (ViewBag.Active?.ToString() == "False")
+                    { <option value="true">Activos</option> <option value="false" selected>Inactivos</option> }
+                    else
+                    { <option value="true">Activos</option> <option value="false">Inactivos</option> }
+                </select>
+            </div>
+            <div class="col-md-1 d-flex gap-1">
+                <button type="submit" class="btn btn-primary btn-sm w-100"><i class="bi bi-search"></i></button>
+                <a asp-action="AssetsOnSite" class="btn btn-outline-secondary btn-sm"><i class="bi bi-x"></i></a>
+            </div>
+        </div>
+    </div>
+</form>
+
+<div class="d-flex justify-content-between align-items-center mb-2 small text-muted">
+    <span>@ViewBag.Total activo(s) encontrado(s)</span>
+    @if ((int)ViewBag.TotalPages > 1)
+    {
+        <span>Pag. @ViewBag.Page de @ViewBag.TotalPages</span>
+    }
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-body p-0">
+        <table class="table table-hover mb-0 small">
+            <thead class="table-dark">
+                <tr>
+                    <th>#</th>
+                    <th>Descripcion</th>
+                    <th>Linea</th>
+                    <th>Modelo</th>
+                    <th>Serie / Num.</th>
+                    <th>Ubicacion</th>
+                    <th class="text-center">Estado</th>
+                    <th class="text-center">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var a in Model)
+                {
+                    string ubicacion;
+                    string ubIcon;
+                    if (a.HospCode.HasValue)
+                    {
+                        ubicacion = (a.Hospital?.HospName ?? "Hospital") +
+                                    (a.HospitalDepartment != null ? " / " + a.HospitalDepartment.HospDepName : "");
+                        ubIcon = "bi-hospital text-primary";
+                    }
+                    else if (a.WareCode.HasValue)
+                    {
+                        ubicacion = a.Warehouse?.WareName ?? "Bodega";
+                        ubIcon = "bi-box-seam text-secondary";
+                    }
+                    else if (a.SiteCode.HasValue)
+                    {
+                        ubicacion = a.Site?.SiteName ?? "Sede";
+                        ubIcon = "bi-geo-alt text-info";
+                    }
+                    else { ubicacion = "Sin ubicacion"; ubIcon = "bi-dash"; }
+
+                    <tr>
+                        <td class="text-muted">@a.AssetCode</td>
+                        <td class="fw-semibold">
+                            <a asp-action="AssetDetail" asp-route-id="@a.AssetCode" class="text-decoration-none">
+                                @a.AssetDesc
+                            </a>
+                        </td>
+                        <td><span class="badge bg-warning text-dark">@(a.Line?.LineName ?? "—")</span></td>
+                        <td class="text-muted">@(a.Model != null ? $"{a.Model.ModelDesc}" : "—")</td>
+                        <td class="text-muted">
+                            @(a.AssetSN ?? "—")
+                            @if (!string.IsNullOrWhiteSpace(a.AssetNum))
+                            {
+                                <div class="small text-muted">Num: @a.AssetNum</div>
+                            }
+                        </td>
+                        <td><i class="bi @ubIcon me-1"></i>@ubicacion</td>
+                        <td class="text-center">
+                            <span class="badge @(a.Active ? "bg-success" : "bg-secondary")">
+                                @(a.Active ? "Activo" : "Inactivo")
+                            </span>
+                        </td>
+                        <td class="text-center">
+                            @if (canWrite)
+                            {
+                                <a asp-action="AssetEdit" asp-route-id="@a.AssetCode"
+                                   class="btn btn-outline-primary btn-sm">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                <form asp-action="AssetToggle" asp-route-id="@a.AssetCode"
+                                      method="post" data-confirm="¿Confirma el cambio de estado?" class="d-inline">
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit"
+                                            class="btn btn-sm @(a.Active ? "btn-outline-warning" : "btn-outline-success")">
+                                        <i class="bi @(a.Active ? "bi-toggle-on" : "bi-toggle-off")"></i>
+                                    </button>
+                                </form>
+                            }
+                        </td>
+                    </tr>
+                }
+                @if (!Model.Any())
+                {
+                    <tr><td colspan="8" class="text-center text-muted py-4">No hay activos registrados.</td></tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@if ((int)ViewBag.TotalPages > 1)
+{
+    <nav class="mt-3">
+        <ul class="pagination pagination-sm justify-content-center">
+            @for (int p = 1; p <= (int)ViewBag.TotalPages; p++)
+            {
+                <li class="page-item @(p == (int)ViewBag.Page ? "active" : "")">
+                    <a class="page-link" asp-action="AssetsOnSite"
+                       asp-route-search="@ViewBag.Search" asp-route-lineId="@ViewBag.LineId"
+                       asp-route-hospId="@ViewBag.HospId" asp-route-wareId="@ViewBag.WareId"
+                       asp-route-active="@ViewBag.Active" asp-route-page="@p">@p</a>
+                </li>
+            }
+        </ul>
+    </nav>
+}

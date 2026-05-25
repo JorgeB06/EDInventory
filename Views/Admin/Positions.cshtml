@@ -1,0 +1,62 @@
+﻿@model IEnumerable<EDInventory.Models.Entities.Role>
+@{ ViewData["Title"] = "Puestos"; }
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="mb-0"><i class="bi bi-person-badge me-2"></i>Puestos</h4>
+    <div class="d-flex gap-2">
+        <a asp-action="Departments" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-diagram-3 me-1"></i>Departamentos
+        </a>
+        <a asp-action="PositionCreate" class="btn btn-primary btn-sm">
+            <i class="bi bi-plus-lg me-1"></i>Nuevo Puesto
+        </a>
+    </div>
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-body p-0">
+        <table class="table table-hover mb-0">
+            <thead class="table-dark">
+                <tr>
+                    <th>#</th>
+                    <th>Puesto / Rol</th>
+                    <th>Departamento</th>
+                    <th>Sede</th>
+                    <th class="text-center">Estado</th>
+                    <th class="text-center">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var pos in Model)
+                {
+                    <tr>
+                        <td>@pos.RoleCode</td>
+                        <td class="fw-semibold">@pos.RoleName</td>
+                        <td>@(pos.Department?.DepName ?? "—")</td>
+                        <td>@(pos.Department?.Site?.SiteName ?? "—")</td>
+                        <td class="text-center">
+                            <span class="badge @(pos.Active ? "bg-success" : "bg-secondary")">
+                                @(pos.Active ? "Activo" : "Inactivo")
+                            </span>
+                        </td>
+                        <td class="text-center">
+                            <a asp-action="PositionEdit" asp-route-id="@pos.RoleCode" class="btn btn-outline-primary btn-sm">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                            <form asp-action="PositionToggle" asp-route-id="@pos.RoleCode" method="post" data-confirm="¿Confirma el cambio de estado?" class="d-inline">
+                                @Html.AntiForgeryToken()
+                                <button type="submit" class="btn btn-sm @(pos.Active ? "btn-outline-warning" : "btn-outline-success")">
+                                    <i class="bi @(pos.Active ? "bi-toggle-on" : "bi-toggle-off")"></i>
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                }
+                @if (!Model.Any())
+                {
+                    <tr><td colspan="6" class="text-center text-muted py-4">No hay puestos registrados.</td></tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

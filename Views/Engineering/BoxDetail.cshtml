@@ -1,0 +1,260 @@
+@model EDInventory.Models.Entities.EngBox
+@using EDInventory.Models.Entities
+@{
+    ViewData["Title"] = $"Caja {Model.BoxNumber} — {Model.Line?.LineName}";
+    var movements = ViewBag.Movements as List<EngPartMovement> ?? new List<EngPartMovement>();
+    bool canWrite  = User.IsInRole(AppRoles.Admin) || User.IsInRole(AppRoles.SvcAdmin) || User.IsInRole(AppRoles.SvcTecnico);
+    bool canManage = User.IsInRole(AppRoles.Admin) || User.IsInRole(AppRoles.SvcAdmin);
+}
+
+<div class="d-flex justify-content-between align-items-start mb-3 flex-wrap gap-2">
+    <div>
+        <a asp-action="LineDetail" asp-route-id="@Model.LineCode" class="btn btn-outline-secondary btn-sm me-2">
+            <i class="bi bi-arrow-left"></i>
+        </a>
+        <span class="h4 mb-0">
+            <i class="bi bi-box me-2 text-primary"></i>Caja @Model.BoxNumber
+        </span>
+        <span class="text-muted ms-2">— @Model.Line?.LineName</span>
+        @if (!string.IsNullOrWhiteSpace(Model.Line?.LineGroup))
+        {
+            <small class="text-muted ms-1">(@Model.Line.LineGroup)</small>
+        }
+    </div>
+    <div class="d-flex gap-2">
+        <a asp-action="BoxLabel" asp-route-id="@Model.BoxCode" target="_blank" class="btn btn-outline-dark btn-sm">
+            <i class="bi bi-tag me-1"></i>Imprimir Etiqueta
+        </a>
+        @if (canManage)
+        {
+            <a asp-action="BoxEdit" asp-route-id="@Model.BoxCode" class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-pencil me-1"></i>Editar
+            </a>
+        }
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+
+    <div class="col-md-4">
+        <div class="card h-100 shadow-sm">
+            <div class="card-body">
+                <h6 class="card-subtitle text-muted mb-3"><i class="bi bi-info-circle me-1"></i>Información de la caja</h6>
+                <dl class="row mb-0 small">
+                    <dt class="col-5 text-muted">Línea</dt>
+                    <dd class="col-7 fw-semibold">@Model.Line?.LineName</dd>
+
+                    <dt class="col-5 text-muted">Número</dt>
+                    <dd class="col-7 fw-semibold">@Model.BoxNumber</dd>
+
+                    @if (!string.IsNullOrWhiteSpace(Model.BoxDesc))
+                    {
+                        <dt class="col-5 text-muted">Descripción</dt>
+                        <dd class="col-7">@Model.BoxDesc</dd>
+                    }
+
+                    <dt class="col-5 text-muted">Estado</dt>
+                    <dd class="col-7">
+                        @if (Model.Active)
+                        {
+                            <span class="badge bg-success">Activa</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-secondary">Inactiva</span>
+                        }
+                    </dd>
+
+                    <dt class="col-5 text-muted">Código escáner</dt>
+                    <dd class="col-7 font-monospace text-primary fw-semibold">ENG@(Model.BoxCode.ToString("D6"))</dd>
+                </dl>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card h-100 shadow-sm">
+            <div class="card-body">
+                <h6 class="card-subtitle text-muted mb-3"><i class="bi bi-geo-alt me-1"></i>Ubicación en bodega</h6>
+                @if (Model.Warehouse != null)
+                {
+                    <dl class="row mb-0 small">
+                        <dt class="col-5 text-muted">Bodega</dt>
+                        <dd class="col-7 fw-semibold">@Model.Warehouse.WareName</dd>
+
+                        @if (!string.IsNullOrWhiteSpace(Model.WareRack))
+                        {
+                            <dt class="col-5 text-muted">Rack</dt>
+                            <dd class="col-7">@Model.WareRack</dd>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(Model.WareEstante))
+                        {
+                            <dt class="col-5 text-muted">Estante</dt>
+                            <dd class="col-7">@Model.WareEstante</dd>
+                        }
+                    </dl>
+                }
+                else
+                {
+                    <p class="text-muted small mb-0"><i class="bi bi-dash-circle me-1"></i>Sin bodega asignada</p>
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card h-100 shadow-sm">
+            <div class="card-body">
+                <h6 class="card-subtitle text-muted mb-3"><i class="bi bi-graph-up me-1"></i>Resumen de stock</h6>
+                <div class="d-flex gap-3">
+                    <div class="text-center">
+                        <div class="fs-3 fw-bold text-primary">@Model.Parts.Count</div>
+                        <div class="small text-muted">ítems</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="fs-3 fw-bold text-success">@Model.Parts.Sum(p => p.PartQty)</div>
+                        <div class="small text-muted">unidades</div>
+                    </div>
+                    @{
+                        var sinStock = Model.Parts.Count(p => p.PartQty == 0);
+                    }
+                    @if (sinStock > 0)
+                    {
+                        <div class="text-center">
+                            <div class="fs-3 fw-bold text-danger">@sinStock</div>
+                            <div class="small text-muted">sin stock</div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<div class="card shadow-sm mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h6 class="mb-0"><i class="bi bi-list-ul me-1"></i>Repuestos en esta caja</h6>
+        @if (canWrite)
+        {
+            <a asp-action="PartCreate" asp-route-boxCode="@Model.BoxCode" class="btn btn-outline-success btn-sm">
+                <i class="bi bi-plus me-1"></i>Agregar repuesto
+            </a>
+        }
+    </div>
+    @if (!Model.Parts.Any())
+    {
+        <div class="card-body text-muted">Sin repuestos registrados.</div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-sm table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Cód. Interno</th>
+                        <th>Parte Fab.</th>
+                        <th>Repuesto</th>
+                        <th class="text-center">Cant.</th>
+                        <th>Notas</th>
+                        @if (canWrite)
+                        {
+                            <th style="width:100px"></th>
+                        }
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var part in Model.Parts.OrderBy(p => p.PartRef ?? p.PartName))
+                    {
+                        <tr>
+                            <td class="font-monospace small">@part.PartRef</td>
+                            <td class="font-monospace small text-primary">@part.PartMfrRef</td>
+                            <td>
+                                <a asp-action="PartHistory" asp-route-id="@part.PartCode"
+                                   class="text-decoration-none text-dark">@part.PartName</a>
+                            </td>
+                            <td class="text-center">
+                                <span class="badge @(part.PartQty == 0 ? "bg-danger" : part.PartQty <= 2 ? "bg-warning text-dark" : "bg-success")">
+                                    @part.PartQty
+                                </span>
+                            </td>
+                            <td class="text-muted small">@part.PartNotes</td>
+                            @if (canWrite)
+                            {
+                                <td class="text-end">
+                                    <a asp-action="PartWithdraw" asp-route-id="@part.PartCode"
+                                       class="btn btn-outline-warning btn-sm py-0 px-1 me-1" title="Retirar / Devolver">
+                                        <i class="bi bi-box-arrow-right"></i>
+                                    </a>
+                                    <a asp-action="PartEdit" asp-route-id="@part.PartCode"
+                                       class="btn btn-outline-primary btn-sm py-0 px-1" title="Editar">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                </td>
+                            }
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
+@if (movements.Any())
+{
+    <div class="card shadow-sm">
+        <div class="card-header">
+            <h6 class="mb-0"><i class="bi bi-clock-history me-1"></i>Historial de movimientos</h6>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-sm table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Fecha</th>
+                        <th>Tipo</th>
+                        <th>Repuesto</th>
+                        <th class="text-center">Cant.</th>
+                        <th class="text-center">Stock tras</th>
+                        <th>Hospital</th>
+                        <th>Usuario</th>
+                        <th>Notas</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var m in movements)
+                    {
+                        <tr>
+                            <td class="small text-muted">@m.MovDate.ToString("dd/MM/yy HH:mm")</td>
+                            <td>
+                                @if (m.MovType == "RETIRO")
+                                {
+                                    <span class="badge bg-warning text-dark"><i class="bi bi-box-arrow-right me-1"></i>Retiro</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-success"><i class="bi bi-box-arrow-in-left me-1"></i>Devolución</span>
+                                }
+                            </td>
+                            <td class="small">@m.Part?.PartName</td>
+                            <td class="text-center fw-semibold @(m.MovQty < 0 ? "text-danger" : "text-success")">
+                                @(m.MovQty > 0 ? "+" : "")@m.MovQty
+                            </td>
+                            <td class="text-center">
+                                <span class="badge @(m.PartQtyAfter == 0 ? "bg-danger" : m.PartQtyAfter <= 2 ? "bg-warning text-dark" : "bg-secondary")">
+                                    @m.PartQtyAfter
+                                </span>
+                            </td>
+                            <td class="small">@(m.Hospital?.HospName ?? "—")</td>
+                            <td class="small">
+                                @(m.User?.Employee != null
+                                    ? $"{m.User.Employee.EmpName} {m.User.Employee.EmpSurname}"
+                                    : m.User?.UserLogin ?? "—")
+                            </td>
+                            <td class="small text-muted">@(m.MovNotes ?? "—")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}

@@ -1,0 +1,110 @@
+@model IEnumerable<EDInventory.Models.Entities.Licitacion>
+@{
+    ViewData["Title"] = "Licitaciones";
+    bool canWrite = User.IsInRole(AppRoles.Admin) || User.IsInRole(AppRoles.TiAdmin) || User.IsInRole(AppRoles.SvcAdmin);
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="mb-0"><i class="bi bi-file-earmark-text me-2"></i>Licitaciones</h4>
+    <div class="d-flex gap-2">
+        <a asp-controller="Gestion" asp-action="ExportLicitaciones" class="btn btn-outline-success btn-sm">
+            <i class="bi bi-file-earmark-excel me-1"></i>Excel
+        </a>
+        @if (canWrite)
+        {
+            <a asp-controller="Gestion" asp-action="LicitacionCreate" class="btn btn-primary btn-sm">
+                <i class="bi bi-plus-lg me-1"></i>Nueva Licitacion
+            </a>
+        }
+    </div>
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-body p-0">
+        <table class="table table-hover mb-0">
+            @{
+                var hoy = DateOnly.FromDateTime(DateTime.Today);
+            }
+            <thead class="table-dark">
+                <tr>
+                    <th>#</th>
+                    <th>Numero de Licitacion</th>
+                    <th>Descripcion</th>
+                    <th>Inicio</th>
+                    <th>Vencimiento</th>
+                    <th class="text-center">Equipos</th>
+                    <th class="text-center">Estado Vigencia</th>
+                    <th class="text-center">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var lic in Model)
+                {
+                    var vencida   = lic.LicEnd.HasValue && lic.LicEnd < hoy;
+                    var aplazada  = vencida && lic.LicPostponed;
+                    var porVencer = lic.LicEnd.HasValue && !vencida &&
+                                   lic.LicEnd <= DateOnly.FromDateTime(DateTime.Today.AddDays(lic.LicWarnDays));
+                    <tr class="@(aplazada ? "table-warning" : vencida ? "table-danger" : porVencer ? "table-warning" : "")">
+                        <td>@lic.LicCode</td>
+                        <td class="fw-semibold">@lic.LicNum</td>
+                        <td>
+                            @lic.LicDesc
+                            @if (aplazada && !string.IsNullOrWhiteSpace(lic.LicPostponedNote))
+                            {
+                                <br /><small class="text-muted"><i class="bi bi-info-circle me-1"></i>@lic.LicPostponedNote</small>
+                            }
+                        </td>
+                        <td>@(lic.LicStart?.ToString("dd/MM/yyyy") ?? "—")</td>
+                        <td>@(lic.LicEnd?.ToString("dd/MM/yyyy") ?? "—")</td>
+                        <td class="text-center">
+                            <span class="badge bg-primary bg-opacity-75">@lic.ItEquips.Count(e => e.Active)</span>
+                        </td>
+                        <td class="text-center">
+                            @if (!lic.LicEnd.HasValue)
+                            {
+                                <span class="badge bg-secondary">Sin fecha</span>
+                            }
+                            else if (aplazada)
+                            {
+                                <span class="badge bg-warning text-dark"><i class="bi bi-pause-circle me-1"></i>Aplazada</span>
+                            }
+                            else if (vencida)
+                            {
+                                <span class="badge bg-danger">Vencida</span>
+                            }
+                            else if (porVencer)
+                            {
+                                <span class="badge bg-warning text-dark">Por vencer</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-success">Vigente</span>
+                            }
+                        </td>
+                        <td class="text-center">
+                            @if (canWrite)
+                            {
+                                <a asp-controller="Gestion" asp-action="LicitacionEdit" asp-route-id="@lic.LicCode"
+                                   class="btn btn-outline-primary btn-sm">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                <form asp-controller="Gestion" asp-action="LicitacionToggle" asp-route-id="@lic.LicCode"
+                                      method="post" data-confirm="¿Confirma el cambio de estado?" class="d-inline">
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit"
+                                            class="btn btn-sm @(lic.Active ? "btn-outline-warning" : "btn-outline-success")">
+                                        <i class="bi @(lic.Active ? "bi-toggle-on" : "bi-toggle-off")"></i>
+                                    </button>
+                                </form>
+                            }
+                        </td>
+                    </tr>
+                }
+                @if (!Model.Any())
+                {
+                    <tr><td colspan="8" class="text-center text-muted py-4">No hay licitaciones registradas.</td></tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

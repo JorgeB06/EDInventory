@@ -1,0 +1,320 @@
+﻿@model IEnumerable<EDInventory.Models.Entities.ItEquip>
+@{
+    ViewData["Title"] = "Inventario de Equipos IT";
+    bool canWrite  = User.IsInRole(AppRoles.Admin) || User.IsInRole(AppRoles.TiAdmin) || User.IsInRole(AppRoles.TiTecnico);
+    bool canManage = User.IsInRole(AppRoles.Admin) || User.IsInRole(AppRoles.TiAdmin);
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="mb-0"><i class="bi bi-laptop me-2"></i>Inventario de Equipos IT</h4>
+    <div class="d-flex gap-2">
+        @if (canWrite)
+        {
+            <a asp-action="MovementStation" class="btn btn-outline-success btn-sm">
+                <i class="bi bi-upc-scan me-1"></i>Estacion de Movimiento
+            </a>
+        }
+        <a asp-action="Warehouses" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-box-seam me-1"></i>Bodegas
+        </a>
+        <a asp-action="Licitaciones" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-file-earmark-text me-1"></i>Licitaciones
+        </a>
+        <a asp-action="ExportExcel"
+           asp-route-search="@ViewBag.Search"
+           asp-route-siteId="@ViewBag.SiteId"
+           asp-route-hospId="@ViewBag.HospId"
+           asp-route-wareId="@ViewBag.WareId"
+           asp-route-active="@ViewBag.Active"
+           asp-route-sinLicitacion="@ViewBag.SinLicitacion"
+           class="btn btn-outline-success btn-sm">
+            <i class="bi bi-file-earmark-excel me-1"></i>Excel
+        </a>
+        @if (canWrite)
+        {
+            <button type="button" class="btn btn-outline-info btn-sm" data-bs-toggle="modal" data-bs-target="#modalImport">
+                <i class="bi bi-file-earmark-arrow-up me-1"></i>Importar
+            </button>
+            <a asp-action="Create" class="btn btn-primary btn-sm">
+                <i class="bi bi-plus-lg me-1"></i>Nuevo Equipo
+            </a>
+        }
+    </div>
+</div>
+
+<div class="card shadow-sm mb-3">
+    <div class="card-body py-2">
+        <form method="get" class="row g-2 align-items-end">
+            <div class="col-md-3">
+                <input type="text" name="search" value="@ViewBag.Search" class="form-control form-control-sm"
+                       placeholder="Descripcion, serie o numero..." />
+            </div>
+            <div class="col-md-2">
+                <select name="hospId" class="form-select form-select-sm" asp-items="ViewBag.Hospitals">
+                    <option value="">-- Hospital --</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <select name="wareId" class="form-select form-select-sm" asp-items="ViewBag.Warehouses">
+                    <option value="">-- Bodega --</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <select name="siteId" class="form-select form-select-sm" asp-items="ViewBag.Sites">
+                    <option value="">-- Sede --</option>
+                </select>
+            </div>
+            <div class="col-md-1">
+                <select name="active" class="form-select form-select-sm">
+                    <option value="">Todos</option>
+                    <option value="true" selected="@(ViewBag.Active == true)">Activos</option>
+                    <option value="false" selected="@(ViewBag.Active == false)">Inactivos</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <select name="sinLicitacion" class="form-select form-select-sm">
+                    <option value="">-- Licitacion --</option>
+                    <option value="true" selected="@(ViewBag.SinLicitacion == true)">Sin licitacion</option>
+                </select>
+            </div>
+            <div class="col-md-2 d-flex gap-1">
+                <button type="submit" class="btn btn-primary btn-sm">
+                    <i class="bi bi-search"></i>
+                </button>
+                <a asp-action="Index" class="btn btn-outline-secondary btn-sm">
+                    <i class="bi bi-x-lg"></i>
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-body p-0">
+        <table class="table table-hover mb-0 small">
+            <thead class="table-dark">
+                <tr>
+                    <th>#</th>
+                    <th>Descripcion</th>
+                    <th>Tipo / Marca / Modelo</th>
+                    <th>Serie</th>
+                    <th>Num. Equipo</th>
+                    <th>Ubicacion</th>
+                    <th>Fin Licitacion</th>
+                    <th class="text-center">Estado</th>
+                    <th class="text-center">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var eq in Model)
+                {
+                    var licHoy = DateOnly.FromDateTime(DateTime.Today);
+                    var licExpired    = eq.Licitacion?.LicEnd.HasValue == true && eq.Licitacion.LicEnd < licHoy;
+                    var licPostponed  = licExpired && eq.Licitacion?.LicPostponed == true;
+                    var licSoon = eq.Licitacion?.LicEnd.HasValue == true && !licExpired &&
+                                  eq.Licitacion.LicEnd <= DateOnly.FromDateTime(DateTime.Today.AddDays(eq.Licitacion.LicWarnDays));
+                    <tr class="@(licPostponed ? "table-warning" : licExpired ? "table-danger" : licSoon ? "table-warning" : "")">
+                        <td>@eq.ItequipCode</td>
+                        <td class="fw-semibold">@eq.ItequipDesc</td>
+                        <td>
+                            <span class="text-muted">@eq.Model?.Brand?.AssetType?.AssetsDesc</span><br />
+                            @eq.Model?.Brand?.BrandDesc — @eq.Model?.ModelDesc
+                        </td>
+                        <td>@eq.ItequipSn</td>
+                        <td>@eq.ItequipNum</td>
+                        <td>
+                            @if (eq.WareCode.HasValue)
+                            {
+                                <span><i class="bi bi-box-seam me-1 text-muted"></i>@eq.Warehouse?.WareName</span>
+                                @if (!string.IsNullOrWhiteSpace(eq.WareRack))
+                                {
+                                    <br /><small class="text-muted">Rack: @eq.WareRack / Est: @eq.WareEstante @(!string.IsNullOrWhiteSpace(eq.WareCaja) ? $"/ Caja: {eq.WareCaja}" : "")</small>
+                                }
+                            }
+                            else if (eq.HospCode.HasValue)
+                            {
+                                <span><i class="bi bi-hospital me-1 text-muted"></i>@eq.Hospital?.HospName</span>
+                                @if (eq.HospitalDepartment != null)
+                                {
+                                    <br /><small class="text-muted">@eq.HospitalDepartment.HospDepName @(!string.IsNullOrWhiteSpace(eq.ItequipHospPos) ? $"— {eq.ItequipHospPos}" : "")</small>
+                                }
+                            }
+                            else if (eq.SiteCode.HasValue)
+                            {
+                                <span><i class="bi bi-geo-alt me-1 text-muted"></i>@eq.Site?.SiteName</span>
+                            }
+                            else
+                            {
+                                <span class="text-muted">Sin ubicacion</span>
+                            }
+                        </td>
+                        <td>
+                            @if (eq.ItequipDelic.HasValue)
+                            {
+                                <span class="@(licPostponed ? "text-warning fw-bold" : licExpired ? "text-danger fw-bold" : licSoon ? "text-warning fw-bold" : "")">
+                                    @eq.ItequipDelic?.ToString("dd/MM/yyyy")
+                                    @if (licPostponed) { <i class="bi bi-pause-circle-fill ms-1"></i> }
+                                    else if (licExpired) { <i class="bi bi-exclamation-triangle-fill ms-1"></i> }
+                                    else if (licSoon) { <i class="bi bi-clock-history ms-1"></i> }
+                                </span>
+                            }
+                        </td>
+                        <td class="text-center">
+                            <span class="badge @(eq.Active ? "bg-success" : "bg-secondary")">
+                                @(eq.Active ? "Activo" : "Inactivo")
+                            </span>
+                        </td>
+                        <td class="text-center">
+                            <a asp-action="Detail" asp-route-id="@eq.ItequipCode"
+                               class="btn btn-outline-info btn-sm" title="Detalle">
+                                <i class="bi bi-eye"></i>
+                            </a>
+                            @if (canWrite)
+                            {
+                                <a asp-action="Edit" asp-route-id="@eq.ItequipCode"
+                                   class="btn btn-outline-primary btn-sm" title="Editar">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                            }
+                            @if (canManage)
+                            {
+                                <form asp-action="Toggle" asp-route-id="@eq.ItequipCode" method="post" data-confirm="¿Confirma el cambio de estado?" class="d-inline">
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit"
+                                            class="btn btn-sm @(eq.Active ? "btn-outline-warning" : "btn-outline-success")"
+                                            title="@(eq.Active ? "Desactivar" : "Activar")">
+                                        <i class="bi @(eq.Active ? "bi-toggle-on" : "bi-toggle-off")"></i>
+                                    </button>
+                                </form>
+                            }
+                        </td>
+                    </tr>
+                }
+                @if (!Model.Any())
+                {
+                    <tr>
+                        <td colspan="9" class="text-center text-muted py-4">
+                            No hay equipos registrados con los filtros actuales.
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@{
+    int page       = ViewBag.Page ?? 1;
+    int totalPages = ViewBag.TotalPages ?? 1;
+    int total      = ViewBag.Total ?? 0;
+
+    string QS(int p) {
+        var q = new System.Text.StringBuilder();
+        q.Append("?page=").Append(p);
+        if (!string.IsNullOrWhiteSpace(ViewBag.Search as string))  q.Append("&search=").Append(Uri.EscapeDataString(ViewBag.Search));
+        if (ViewBag.HospId  != null) q.Append("&hospId=").Append(ViewBag.HospId);
+        if (ViewBag.WareId  != null) q.Append("&wareId=").Append(ViewBag.WareId);
+        if (ViewBag.SiteId  != null) q.Append("&siteId=").Append(ViewBag.SiteId);
+        if (ViewBag.Active  != null) q.Append("&active=").Append(ViewBag.Active);
+        return q.ToString();
+    }
+}
+
+<div class="d-flex justify-content-between align-items-center mt-2 flex-wrap gap-2">
+    <div class="text-muted small">
+        <span class="badge bg-danger me-1">&nbsp;</span>Vencida &nbsp;
+        <span class="badge bg-warning text-dark me-1">&nbsp;</span>Aplazada / Por vencer
+        &nbsp;|&nbsp; <strong>@total</strong> equipos encontrados
+    </div>
+
+    @if (totalPages > 1)
+    {
+        <nav>
+            <ul class="pagination pagination-sm mb-0">
+                <li class="page-item @(page <= 1 ? "disabled" : "")">
+                    <a class="page-link" href="@QS(page - 1)"><i class="bi bi-chevron-left"></i></a>
+                </li>
+                @for (int i = Math.Max(1, page - 2); i <= Math.Min(totalPages, page + 2); i++)
+                {
+                    <li class="page-item @(i == page ? "active" : "")">
+                        <a class="page-link" href="@QS(i)">@i</a>
+                    </li>
+                }
+                <li class="page-item @(page >= totalPages ? "disabled" : "")">
+                    <a class="page-link" href="@QS(page + 1)"><i class="bi bi-chevron-right"></i></a>
+                </li>
+            </ul>
+        </nav>
+    }
+</div>
+
+@if (canWrite)
+{
+    <!-- Modal Importar Excel -->
+    <div class="modal fade" id="modalImport" tabindex="-1" aria-labelledby="modalImportLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalImportLabel">
+                        <i class="bi bi-file-earmark-arrow-up me-2"></i>Importar Equipos desde Excel
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form asp-action="ImportExcel" method="post" enctype="multipart/form-data">
+                    @Html.AntiForgeryToken()
+                    <div class="modal-body">
+                        <p class="text-muted small mb-3">
+                            Cargue un archivo <strong>.xlsx</strong> con el formato de la plantilla.
+                            Los campos <strong>Descripcion</strong>, <strong>Marca</strong> y <strong>Modelo</strong>
+                            son obligatorios. Marca y Modelo deben existir previamente en el sistema.
+                        </p>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Archivo Excel (.xlsx)</label>
+                            <input type="file" name="archivo" class="form-control" accept=".xlsx" required />
+                        </div>
+                        <a asp-action="DownloadImportTemplate" class="btn btn-outline-secondary btn-sm">
+                            <i class="bi bi-download me-1"></i>Descargar plantilla de ejemplo
+                        </a>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-info text-white">
+                            <i class="bi bi-upload me-1"></i>Importar
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    @if (TempData["ImportErrors"] != null)
+    {
+        var errList = TempData["ImportErrors"]!.ToString()!.Split('|');
+        <div class="modal fade" id="modalImportErrors" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header bg-warning">
+                        <h5 class="modal-title"><i class="bi bi-exclamation-triangle me-2"></i>Advertencias de importacion</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <ul class="mb-0 small">
+                            @foreach (var err in errList)
+                            {
+                                <li>@err</li>
+                            }
+                        </ul>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                new bootstrap.Modal(document.getElementById('modalImportErrors')).show();
+            });
+        </script>
+    }
+}

@@ -1,0 +1,72 @@
+@{
+    ViewData["Title"] = "Escanear Caja";
+    var scanError = TempData["ScanError"] as string;
+}
+
+<div class="row justify-content-center">
+    <div class="col-md-5 col-lg-4">
+
+        <div class="text-center mb-4 mt-3">
+            <div style="width:72px;height:72px;border-radius:50%;background:#e8f4fd;display:inline-flex;align-items:center;justify-content:center;margin-bottom:1rem;">
+                <i class="bi bi-upc-scan" style="font-size:2rem;color:#0d6efd;"></i>
+            </div>
+            <h4 class="fw-bold mb-1">Buscar caja por escaneo</h4>
+            <p class="text-muted small">Apunte el lector al código de barras de la etiqueta.<br />El sistema abrirá la caja directamente.</p>
+        </div>
+
+        @if (!string.IsNullOrWhiteSpace(scanError))
+        {
+            <div class="alert alert-danger small py-2 mb-3" role="alert">
+                <i class="bi bi-exclamation-circle me-1"></i>@scanError
+            </div>
+        }
+
+        <div class="card shadow-sm">
+            <div class="card-body p-4">
+                <form asp-action="BoxByScan" method="get">
+                    <label class="form-label fw-semibold text-muted small text-uppercase letter-spacing-1">
+                        Código de caja
+                    </label>
+                    <div class="input-group mb-3">
+                        <span class="input-group-text"><i class="bi bi-upc"></i></span>
+                        <input type="text" name="code" id="scanInput"
+                               class="form-control form-control-lg font-monospace"
+                               placeholder="ENG-3-12"
+                               autocomplete="off"
+                               autofocus />
+                    </div>
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="bi bi-search me-2"></i>Buscar
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <p class="text-center text-muted small mt-3">
+            Formato del código: <span class="font-monospace fw-semibold">ENG000014</span>
+        </p>
+
+        <div class="text-center mt-2">
+            <a asp-action="Index" class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-arrow-left me-1"></i>Volver a Repuestos
+            </a>
+        </div>
+
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Re-enfocar después de un error para que el usuario pueda escanear de nuevo sin hacer clic
+        document.getElementById('scanInput')?.focus();
+
+        // Limpiar el input al presionar Enter para que el lector pueda escanear de nuevo inmediatamente
+        document.getElementById('scanInput')?.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter') {
+                setTimeout(() => { this.select(); }, 100);
+            }
+        });
+    </script>
+}

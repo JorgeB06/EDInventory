@@ -1,0 +1,329 @@
+@model EDInventory.Models.Entities.EngAsset
+@using EDInventory.Models.Entities
+@{
+    ViewData["Title"] = "Ficha de Activo Clinico";
+    var maintenances   = ViewBag.Maintenances   as List<EngMaintenance>   ?? new List<EngMaintenance>();
+    var assetMovements = ViewBag.AssetMovements as List<EngAssetMovement> ?? new List<EngAssetMovement>();
+    var today = DateOnly.FromDateTime(DateTime.Today);
+    bool canWrite = User.IsInRole(AppRoles.Admin) || User.IsInRole(AppRoles.SvcAdmin) || User.IsInRole(AppRoles.SvcTecnico);
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="mb-0"><i class="bi bi-hospital me-2"></i>@Model.AssetDesc</h4>
+    <div class="d-flex gap-2">
+        @if (canWrite)
+        {
+            <a asp-action="AssetWithdraw" asp-route-id="@Model.AssetCode" class="btn btn-outline-warning btn-sm">
+                <i class="bi bi-box-arrow-right me-1"></i>Retiro / Devolución
+            </a>
+            <a asp-action="AssetEdit" asp-route-id="@Model.AssetCode" class="btn btn-outline-primary btn-sm">
+                <i class="bi bi-pencil me-1"></i>Editar
+            </a>
+        }
+        <a asp-action="AssetsOnSite" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-arrow-left me-1"></i>Volver
+        </a>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <!-- Identificacion -->
+    <div class="col-md-6">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-dark text-white fw-bold">
+                <i class="bi bi-info-circle me-1"></i>Identificacion
+            </div>
+            <div class="card-body">
+                <dl class="row mb-0 small">
+                    <dt class="col-sm-5 text-muted">Linea de Servicio</dt>
+                    <dd class="col-sm-7">
+                        <span class="badge bg-warning text-dark">@(Model.Line?.LineName ?? "—")</span>
+                    </dd>
+                    <dt class="col-sm-5 text-muted">Tipo / Marca / Modelo</dt>
+                    <dd class="col-sm-7">
+                        @if (Model.Model != null)
+                        {
+                            <span>@Model.Model.Brand?.AssetType?.AssetsDesc</span>
+                            <div class="text-muted">@Model.Model.Brand?.BrandDesc — @Model.Model.ModelDesc</div>
+                        }
+                        else { <span class="text-muted">—</span> }
+                    </dd>
+                    <dt class="col-sm-5 text-muted">Numero de Serie</dt>
+                    <dd class="col-sm-7 fw-semibold">@(Model.AssetSN ?? "—")</dd>
+                    <dt class="col-sm-5 text-muted">Numero de Activo</dt>
+                    <dd class="col-sm-7">@(Model.AssetNum ?? "—")</dd>
+                    <dt class="col-sm-5 text-muted">Garantia</dt>
+                    <dd class="col-sm-7">@(Model.AssetGnum ?? "—")</dd>
+                    <dt class="col-sm-5 text-muted">Fecha Baja</dt>
+                    <dd class="col-sm-7">@(Model.AssetDjequip?.ToString("dd/MM/yyyy") ?? "—")</dd>
+                    <dt class="col-sm-5 text-muted">Estado</dt>
+                    <dd class="col-sm-7">
+                        <span class="badge @(Model.Active ? "bg-success" : "bg-secondary")">
+                            @(Model.Active ? "Activo" : "Inactivo")
+                        </span>
+                    </dd>
+                    @if (!string.IsNullOrWhiteSpace(Model.AssetAddata))
+                    {
+                        <dt class="col-sm-5 text-muted">Datos Adicionales</dt>
+                        <dd class="col-sm-7">@Model.AssetAddata</dd>
+                    }
+                    <dt class="col-sm-5 text-muted">Registro / Modificacion</dt>
+                    <dd class="col-sm-7 text-muted">
+                        @(Model.AssetDnew?.ToString("dd/MM/yyyy") ?? "—") /
+                        @(Model.AssetDmod?.ToString("dd/MM/yyyy") ?? "—")
+                    </dd>
+                </dl>
+            </div>
+        </div>
+    </div>
+
+    <!-- Ubicacion actual + Licitacion -->
+    <div class="col-md-6">
+        <div class="card shadow-sm mb-3">
+            <div class="card-header bg-dark text-white fw-bold">
+                <i class="bi bi-geo-alt me-1"></i>Ubicacion Actual
+            </div>
+            <div class="card-body small">
+                @if (Model.HospCode.HasValue)
+                {
+                    <p class="mb-1"><i class="bi bi-hospital text-primary me-1"></i><strong>Hospital:</strong> @Model.Hospital?.HospName</p>
+                    <p class="mb-1"><strong>Zona:</strong> @(Model.HospitalDepartment?.HospDepName ?? "—")</p>
+                    <p class="mb-0"><strong>Posicion:</strong> @(Model.AssetHospPos ?? "—")</p>
+                }
+                else if (Model.WareCode.HasValue)
+                {
+                    <p class="mb-1"><i class="bi bi-box-seam text-secondary me-1"></i><strong>Bodega:</strong> @Model.Warehouse?.WareName</p>
+                    <p class="mb-1"><strong>Rack:</strong> @(Model.WareRack ?? "—")</p>
+                    <p class="mb-0"><strong>Estante:</strong> @(Model.WareEstante ?? "—")</p>
+                }
+                else if (Model.SiteCode.HasValue)
+                {
+                    <p class="mb-0"><i class="bi bi-geo-alt text-info me-1"></i><strong>Sede:</strong> @Model.Site?.SiteName</p>
+                }
+                else
+                {
+                    <p class="text-muted mb-0">Sin ubicacion asignada.</p>
+                }
+            </div>
+        </div>
+
+        <div class="card shadow-sm">
+            <div class="card-header bg-dark text-white fw-bold">
+                <i class="bi bi-file-earmark-text me-1"></i>Licitacion
+            </div>
+            <div class="card-body small">
+                @if (Model.Licitacion != null)
+                {
+                    <p class="mb-1"><strong>@Model.Licitacion.LicNum</strong> — @Model.Licitacion.LicDesc</p>
+                    <p class="mb-0 text-muted">
+                        @(Model.AssetDslic?.ToString("dd/MM/yyyy") ?? "—") →
+                        @(Model.AssetDelic?.ToString("dd/MM/yyyy") ?? "—")
+                    </p>
+                }
+                else
+                {
+                    <p class="text-muted mb-0">Sin licitacion asignada.</p>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Movimientos temporales -->
+@if (assetMovements.Any())
+{
+    <div class="card shadow-sm mb-3">
+        <div class="card-header fw-bold bg-dark text-white">
+            <i class="bi bi-arrow-left-right me-1"></i>Retiros y Devoluciones
+        </div>
+        <div class="table-responsive">
+            <table class="table table-sm table-hover mb-0 small">
+                <thead class="table-light">
+                    <tr>
+                        <th>Fecha</th>
+                        <th>Tipo</th>
+                        <th>Destino / Procedencia</th>
+                        <th>Hospital</th>
+                        <th>Usuario</th>
+                        <th>Notas</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var m in assetMovements)
+                    {
+                        <tr>
+                            <td class="text-muted">@m.MovDate.ToString("dd/MM/yyyy HH:mm")</td>
+                            <td>
+                                @if (m.MovType == "RETIRO")
+                                {
+                                    <span class="badge bg-warning text-dark"><i class="bi bi-box-arrow-right me-1"></i>Retiro</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-success"><i class="bi bi-box-arrow-in-left me-1"></i>Devolución</span>
+                                }
+                            </td>
+                            <td>@(m.MovDest ?? "—")</td>
+                            <td>@(m.Hospital?.HospName ?? "—")</td>
+                            <td>
+                                @(m.User?.Employee != null
+                                    ? $"{m.User.Employee.EmpName} {m.User.Employee.EmpSurname}"
+                                    : m.User?.UserLogin ?? "—")
+                            </td>
+                            <td class="text-muted">@(m.MovNotes ?? "—")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}
+
+<!-- Mantenimientos -->
+<div class="card shadow-sm mb-3">
+    <div class="card-header fw-bold bg-dark text-white d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-wrench-adjustable me-1"></i>Mantenimientos</span>
+        @if (canWrite)
+        {
+            <a asp-action="MaintCreate" asp-route-assetCode="@Model.AssetCode"
+               class="btn btn-outline-light btn-sm">
+                <i class="bi bi-plus me-1"></i>Programar
+            </a>
+        }
+    </div>
+    @if (!maintenances.Any())
+    {
+        <div class="card-body text-muted small">Sin mantenimientos registrados.</div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-sm table-hover mb-0 small">
+                <thead class="table-light">
+                    <tr>
+                        <th>Tipo</th>
+                        <th>Estado</th>
+                        <th>Programado</th>
+                        <th>Completado</th>
+                        <th>Técnico</th>
+                        <th>Notas / Resultado</th>
+                        @if (canWrite)
+                        {
+                            <th style="width:80px"></th>
+                        }
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var m in maintenances)
+                    {
+                        var dias = m.MaintScheduled.DayNumber - today.DayNumber;
+                        string rowBg = m.MaintStatus == "COMPLETADO" ? "" :
+                                       m.MaintStatus == "CANCELADO"  ? "table-secondary" :
+                                       dias < 0 ? "table-danger" : dias <= 7 ? "table-warning" : "";
+                        <tr class="@rowBg">
+                            <td>
+                                <span class="badge @(m.MaintType == "PREVENTIVO" ? "bg-primary" : m.MaintType == "CALIBRACION" ? "bg-info text-dark" : "bg-danger")">
+                                    @m.MaintType
+                                </span>
+                            </td>
+                            <td>
+                                <span class="badge @(m.MaintStatus == "COMPLETADO" ? "bg-success" : m.MaintStatus == "CANCELADO" ? "bg-secondary" : "bg-warning text-dark")">
+                                    @m.MaintStatus
+                                </span>
+                            </td>
+                            <td>@m.MaintScheduled.ToString("dd/MM/yyyy")</td>
+                            <td>@(m.MaintCompleted?.ToString("dd/MM/yyyy") ?? "—")</td>
+                            <td>
+                                @(m.User?.Employee != null
+                                    ? $"{m.User.Employee.EmpName} {m.User.Employee.EmpSurname}"
+                                    : m.User?.UserLogin ?? "—")
+                            </td>
+                            <td class="text-muted">
+                                @(m.MaintStatus == "COMPLETADO" ? m.MaintResult : m.MaintNotes)
+                            </td>
+                            @if (canWrite)
+                            {
+                                <td class="text-end">
+                                    @if (m.MaintStatus == "PENDIENTE")
+                                    {
+                                        <a asp-action="MaintComplete" asp-route-id="@m.MaintCode"
+                                           class="btn btn-outline-success btn-sm py-0 px-1 me-1" title="Completar">
+                                            <i class="bi bi-check-lg"></i>
+                                        </a>
+                                        <form asp-action="MaintCancel" asp-route-id="@m.MaintCode" method="post" class="d-inline">
+                                            @Html.AntiForgeryToken()
+                                            <button type="submit" class="btn btn-outline-secondary btn-sm py-0 px-1" title="Cancelar">
+                                                <i class="bi bi-x-lg"></i>
+                                            </button>
+                                        </form>
+                                    }
+                                </td>
+                            }
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
+<!-- Historial de movimientos -->
+<div class="card shadow-sm">
+    <div class="card-header fw-bold bg-dark text-white d-flex justify-content-between align-items-center"
+         style="cursor:pointer;" data-bs-toggle="collapse" data-bs-target="#collapseHist">
+        <span><i class="bi bi-clock-history me-1"></i>Historial de Movimientos (@Model.History.Count)</span>
+        <i class="bi bi-chevron-down small"></i>
+    </div>
+    <div class="collapse show" id="collapseHist">
+        <div class="card-body p-0">
+            <table class="table table-sm table-hover mb-0 small">
+                <thead class="table-light">
+                    <tr>
+                        <th>Fecha</th>
+                        <th>Destino</th>
+                        <th>Usuario</th>
+                        <th>Notas</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var h in Model.History)
+                    {
+                        string destino;
+                        string iconClass;
+                        if (h.HospCode.HasValue)
+                        {
+                            destino = (h.Hospital?.HospName ?? "Hospital")
+                                    + (h.HospitalDepartment != null ? " / " + h.HospitalDepartment.HospDepName : "")
+                                    + (h.AssetHospPos != null ? " — " + h.AssetHospPos : "");
+                            iconClass = "bi-hospital text-primary";
+                        }
+                        else if (h.WareCode.HasValue)
+                        {
+                            destino = (h.Warehouse?.WareName ?? "Bodega")
+                                    + (h.WareRack != null ? $" / {h.WareRack}" : "")
+                                    + (h.WareEstante != null ? $" / {h.WareEstante}" : "");
+                            iconClass = "bi-box-seam text-secondary";
+                        }
+                        else if (h.SiteCode.HasValue)
+                        {
+                            destino = h.Site?.SiteName ?? "Sede";
+                            iconClass = "bi-geo-alt text-info";
+                        }
+                        else { destino = "Sin ubicacion"; iconClass = "bi-dash"; }
+
+                        <tr>
+                            <td class="text-nowrap text-muted">@h.HistDate.ToString("dd/MM/yyyy HH:mm")</td>
+                            <td><i class="bi @iconClass me-1"></i>@destino</td>
+                            <td class="text-muted">@(h.User?.UserLogin ?? "—")</td>
+                            <td class="text-muted">@(h.HistNotes ?? "—")</td>
+                        </tr>
+                    }
+                    @if (!Model.History.Any())
+                    {
+                        <tr><td colspan="4" class="text-center text-muted py-3">Sin movimientos registrados.</td></tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

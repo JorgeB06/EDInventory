@@ -1,0 +1,59 @@
+﻿@model IEnumerable<EDInventory.Models.Entities.Site>
+@{
+    ViewData["Title"] = "Sedes";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="mb-0"><i class="bi bi-geo-alt me-2"></i>Sedes</h4>
+    <a asp-action="SiteCreate" class="btn btn-primary btn-sm">
+        <i class="bi bi-plus-lg me-1"></i>Nueva Sede
+    </a>
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-body p-0">
+        <table class="table table-hover mb-0">
+            <thead class="table-dark">
+                <tr>
+                    <th>#</th>
+                    <th>Nombre</th>
+                    <th>Empresa</th>
+                    <th>Direccion</th>
+                    <th class="text-center">Estado</th>
+                    <th class="text-center">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in Model)
+                {
+                    <tr>
+                        <td>@item.SiteCode</td>
+                        <td>@item.SiteName</td>
+                        <td>@item.Company?.CompanyName</td>
+                        <td>@item.SiteAddress</td>
+                        <td class="text-center">
+                            <span class="badge @(item.Active ? "bg-success" : "bg-secondary")">
+                                @(item.Active ? "Activo" : "Inactivo")
+                            </span>
+                        </td>
+                        <td class="text-center">
+                            <a asp-action="SiteEdit" asp-route-id="@item.SiteCode" class="btn btn-outline-primary btn-sm">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                            <form asp-action="SiteToggle" asp-route-id="@item.SiteCode" method="post" data-confirm="¿Confirma el cambio de estado?" class="d-inline">
+                                @Html.AntiForgeryToken()
+                                <button type="submit" class="btn btn-sm @(item.Active ? "btn-outline-warning" : "btn-outline-success")">
+                                    <i class="bi @(item.Active ? "bi-toggle-on" : "bi-toggle-off")"></i>
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                }
+                @if (!Model.Any())
+                {
+                    <tr><td colspan="6" class="text-center text-muted py-4">No hay sedes registradas.</td></tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

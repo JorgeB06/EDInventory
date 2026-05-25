@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - AssetCore</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+</head>
+<body class="d-flex flex-column min-vh-100">
+    @if (User.Identity?.IsAuthenticated == true)
+    {
+        <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+            <div class="container-fluid">
+                <a class="navbar-brand d-flex align-items-center" asp-controller="Dashboard" asp-action="Index">
+                    <img src="~/images/logo-diagnostika.png" alt="Diagnostika" style="height: 32px; object-fit: contain;" />
+                </a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navMenu">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="collapse navbar-collapse" id="navMenu">
+                    @{
+                        bool isAdmin    = User.IsInRole("Administrador");
+                        bool isTiAny    = isAdmin || User.IsInRole("TI.Administrador") || User.IsInRole("TI.Tecnico") || User.IsInRole("TI.Consulta");
+                        bool isTiWrite  = isAdmin || User.IsInRole("TI.Administrador") || User.IsInRole("TI.Tecnico");
+                        bool isSvcAny   = isAdmin || User.IsInRole("Servicio.Administrador") || User.IsInRole("Servicio.Tecnico") || User.IsInRole("Servicio.Consulta");
+                        bool isSvcWrite = isAdmin || User.IsInRole("Servicio.Administrador") || User.IsInRole("Servicio.Tecnico");
+                        // Visibilidad cruzada: TI.Admin ve Servicio como consulta y viceversa
+                        bool canSeeSvc  = isSvcAny || User.IsInRole("TI.Administrador");
+                        bool canSeeTI   = isTiAny  || User.IsInRole("Servicio.Administrador");
+                        // Gestión compartida: ambos admins de división + Admin global
+                        bool canSeeGestion = isAdmin || User.IsInRole("TI.Administrador") || User.IsInRole("Servicio.Administrador")
+                                             || User.IsInRole("TI.Tecnico") || User.IsInRole("TI.Consulta")
+                                             || User.IsInRole("Servicio.Tecnico") || User.IsInRole("Servicio.Consulta");
+                        bool isAdmManage   = isAdmin || User.IsInRole("TI.Administrador") || User.IsInRole("Servicio.Administrador");
+                    }
+                    <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                        <li class="nav-item">
+                            <a class="nav-link" asp-controller="Dashboard" asp-action="Index">
+                                <i class="bi bi-speedometer2 me-1"></i>Dashboard
+                            </a>
+                        </li>
+
+                        @* ── MÓDULO TI ─────────────────────────────── *@
+                        @if (canSeeTI)
+                        {
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
+                                    <i class="bi bi-laptop me-1"></i>TI
+                                </a>
+                                <ul class="dropdown-menu">
+                                    <li><a class="dropdown-item" asp-controller="Equipment" asp-action="Index"><i class="bi bi-list-ul me-1"></i>Inventario</a></li>
+                                    <li><a class="dropdown-item" asp-controller="Equipment" asp-action="MaintenanceDue"><i class="bi bi-wrench-adjustable me-1"></i>Mantenimientos</a></li>
+                                    @if (isTiWrite)
+                                    {
+                                        <li><a class="dropdown-item" asp-controller="Equipment" asp-action="MovementStation"><i class="bi bi-upc-scan me-1"></i>Estación de Movimiento</a></li>
+                                        <li><a class="dropdown-item" asp-controller="Equipment" asp-action="Create"><i class="bi bi-plus-circle me-1"></i>Nuevo Equipo</a></li>
+                                    }
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li><a class="dropdown-item" asp-controller="Dashboard" asp-action="Report"><i class="bi bi-printer me-1"></i>Reporte Completo</a></li>
+                                </ul>
+                            </li>
+                        }
+
+                        @* ── MÓDULO SERVICIO ───────────────────────── *@
+                        @if (canSeeSvc)
+                        {
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
+                                    <i class="bi bi-tools me-1"></i>Servicio
+                                </a>
+                                <ul class="dropdown-menu">
+                                    <li><a class="dropdown-item" asp-controller="Engineering" asp-action="Index"><i class="bi bi-box-seam me-1"></i>Repuestos</a></li>
+                                    <li><a class="dropdown-item" asp-controller="Engineering" asp-action="ScanBox"><i class="bi bi-upc-scan me-1"></i>Escanear Caja</a></li>
+                                    <li><a class="dropdown-item" asp-controller="Engineering" asp-action="Search"><i class="bi bi-search me-1"></i>Buscar Repuesto</a></li>
+                                    <li><a class="dropdown-item" asp-controller="Engineering" asp-action="AssetsOnSite"><i class="bi bi-hospital me-1"></i>Activos en Sitio</a></li>
+                                    <li><a class="dropdown-item" asp-controller="Engineering" asp-action="MaintenanceDue"><i class="bi bi-wrench-adjustable me-1"></i>Mantenimientos</a></li>
+                                    @if (isSvcWrite)
+                                    {
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li><a class="dropdown-item" asp-controller="Engineering" asp-action="LineCreate"><i class="bi bi-plus-circle me-1"></i>Nueva Línea</a></li>
+                                    }
+                                </ul>
+                            </li>
+                        }
+
+                        @* ── GESTIÓN COMPARTIDA ────────────────────── *@
+                        @if (canSeeGestion)
+                        {
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
+                                    <i class="bi bi-building me-1"></i>Gestión
+                                </a>
+                                <ul class="dropdown-menu">
+                                    <li><a class="dropdown-item" asp-controller="Hospital" asp-action="Index"><i class="bi bi-hospital me-1"></i>Hospitales</a></li>
+                                    <li><a class="dropdown-item" asp-controller="Gestion" asp-action="Licitaciones"><i class="bi bi-file-earmark-text me-1"></i>Licitaciones</a></li>
+                                    <li><a class="dropdown-item" asp-controller="Gestion" asp-action="Warehouses"><i class="bi bi-box-seam me-1"></i>Bodegas</a></li>
+                                </ul>
+                            </li>
+                        }
+
+                        @* ── ADMINISTRACIÓN (global admin) ──────────── *@
+                        @if (isAdmin)
+                        {
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
+                                    <i class="bi bi-gear me-1"></i>Administracion
+                                </a>
+                                <ul class="dropdown-menu">
+                                    <li><a class="dropdown-item" asp-controller="Catalog" asp-action="DocumentTypes">Tipos de Documento</a></li>
+                                    <li><a class="dropdown-item" asp-controller="Catalog" asp-action="Companies">Empresas</a></li>
+                                    <li><a class="dropdown-item" asp-controller="Catalog" asp-action="Sites">Sedes</a></li>
+                                    <li><a class="dropdown-item" asp-controller="Catalog" asp-action="Brands">Marcas y Modelos</a></li>
+                                    <li><a class="dropdown-item" asp-controller="Catalog" asp-action="AssetTypes">Tipos de Activo</a></li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li><a class="dropdown-item" asp-controller="Admin" asp-action="Departments"><i class="bi bi-diagram-3 me-1"></i>Departamentos</a></li>
+                                    <li><a class="dropdown-item" asp-controller="Admin" asp-action="Positions"><i class="bi bi-person-badge me-1"></i>Puestos</a></li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li><a class="dropdown-item" asp-controller="Admin" asp-action="Users"><i class="bi bi-people me-1"></i>Usuarios</a></li>
+                                    <li><a class="dropdown-item" asp-controller="Admin" asp-action="Employees"><i class="bi bi-person-lines-fill me-1"></i>Empleados</a></li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li><a class="dropdown-item" asp-controller="Admin" asp-action="SystemRoles"><i class="bi bi-shield-lock me-1"></i>Roles de Sistema</a></li>
+                                </ul>
+                            </li>
+                        }
+                    </ul>
+                    <ul class="navbar-nav align-items-center">
+                        <li class="nav-item me-1">
+                            <button type="button" class="nav-link btn btn-link px-2 py-1"
+                                    data-bs-toggle="modal" data-bs-target="#helpModal"
+                                    title="Ayuda de esta página"
+                                    style="opacity:.8; line-height:1;">
+                                <i class="bi bi-question-circle-fill" style="font-size:1.15rem;"></i>
+                            </button>
+                        </li>
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
+                                <i class="bi bi-person-circle me-1"></i>@User.Identity.Name
+                            </a>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                <li>
+                                    <a class="dropdown-item" asp-controller="Auth" asp-action="ChangePassword">
+                                        <i class="bi bi-key me-1"></i>Cambiar contraseña
+                                    </a>
+                                </li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    <form asp-controller="Auth" asp-action="Logout" method="post">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="dropdown-item text-danger">
+                                            <i class="bi bi-box-arrow-right me-1"></i>Cerrar sesion
+                                        </button>
+                                    </form>
+                                </li>
+                            </ul>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </nav>
+
+        <!-- ── Modal de Ayuda Contextual ─────────────────────────────── -->
+        <div class="modal fade" id="helpModal" tabindex="-1" aria-labelledby="helpModalLabel" aria-hidden="true">
+          <div class="modal-dialog modal-lg modal-dialog-scrollable">
+            <div class="modal-content">
+              <div class="modal-header bg-dark text-white py-2">
+                <h5 class="modal-title d-flex align-items-center gap-2" id="helpModalLabel">
+                  <i class="bi bi-question-circle fs-5"></i>
+                  <span id="helpModalTitle">Ayuda</span>
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+              </div>
+              <div class="modal-body py-3" id="helpModalBody">
+                <p class="text-muted">Cargando...</p>
+              </div>
+              <div class="modal-footer py-2">
+                <small class="text-muted me-auto">
+                  <i class="bi bi-info-circle me-1"></i>EDInventory — Ayuda contextual v1.1
+                </small>
+                <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">
+                  <i class="bi bi-x-lg me-1"></i>Cerrar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="container-fluid mt-3 flex-grow-1">
+            @if (TempData["Success"] != null)
+            {
+                <div class="alert alert-success alert-dismissible fade show">
+                    @TempData["Success"]
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            }
+            @if (TempData["Error"] != null)
+            {
+                <div class="alert alert-danger alert-dismissible fade show">
+                    @TempData["Error"]
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            }
+            @RenderBody()
+        </div>
+
+        <footer class="bg-dark text-white-50 text-center small py-2 mt-4">
+            Departamento de Ingenieria &mdash; Diagnostika S.A. &copy; @DateTime.Now.Year
+        </footer>
+    }
+    else
+    {
+        @RenderBody()
+    }
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Rol del usuario actual (evaluado en servidor)
+        const isTecnico = @Json.Serialize(User.IsInRole("TI.Tecnico") || User.IsInRole("Servicio.Tecnico"));
+
+        document.addEventListener('DOMContentLoaded', function () {
+            // Confirmacion en formularios marcados con data-confirm (borrados, toggles)
+            document.querySelectorAll('form[data-confirm]').forEach(function (form) {
+                form.addEventListener('submit', function (e) {
+                    if (!confirm(form.dataset.confirm)) e.preventDefault();
+                });
+            });
+
+            // Confirmacion de edicion para Tecnicos (formularios marcados con class "tecnico-confirm")
+            if (isTecnico) {
+                document.querySelectorAll('form.tecnico-confirm').forEach(function (form) {
+                    form.addEventListener('submit', function (e) {
+                        if (!confirm('Atencion: esta modificando un registro existente. ¿Confirma guardar los cambios?')) {
+                            e.preventDefault();
+                        }
+                    });
+                });
+            }
+        });
+    </script>
+    @await RenderSectionAsync("Scripts", required: false)
+
+    <script>
+    // ── Ayuda contextual: contenido por controlador/acción ────────────
+    (function () {
+        var page = '@(ViewContext.RouteData.Values["controller"]?.ToString()?.ToLower() ?? "")' +
+                   '/' +
+                   '@(ViewContext.RouteData.Values["action"]?.ToString()?.ToLower() ?? "")';
+
+        var helpData = {
+            'dashboard/index': {
+                title: 'Dashboard — Panel de Control',
+                body: '<p class="text-muted mb-3">Vista general con métricas en tiempo real del sistema.</p>' +
+                      '<ul class="list-unstyled">' +
+                      '<li class="mb-2"><i class="bi bi-bar-chart-fill text-primary me-2"></i><b>KPIs:</b> equipos activos TI, en bodega, en hospital, repuestos sin stock.</li>' +
+                      '<li class="mb-2"><i class="bi bi-exclamation-triangle-fill text-warning me-2"></i><b>Alertas:</b> mantenimientos vencidos y licitaciones próximas a vencer.</li>' +
+                      '<li class="mb-2"><i class="bi bi-clock-history text-info me-2"></i><b>Movimientos recientes:</b> últimas 15 asignaciones de equipos TI.</li>' +
+                      '<li class="mb-2"><i class="bi bi-eye text-secondary me-2"></i>Las secciones visibles dependen de su rol (TI o Servicio).</li>' +
+                      '</ul>' +
+                      '<div class="alert alert-info py-2 mb-0 small"><i class="bi bi-lightbulb me-1"></i>Use el botón <b>Reporte General</b> (menú TI) para una lista completa exportable.</div>'
+            },
+            'dashboard/report': {
+                title: 'Reporte General de Inventario',
+                body: '<p class="text-muted mb-3">Lista completa de equipos TI y activos clínicos activos.</p>' +
+                      '<ul class="list-unstyled">' +
+                      '<li class="mb-2"><i class="bi bi-printer text-primary me-2"></i>Use <b>Ctrl+P</b> para imprimir o guardar como PDF.</li>' +
+                      '<li class="mb-2"><i class="bi bi-geo-alt-fill text-success me-2"></i>Incluye ubicación actual (hospital, bodega o sede) de cada activo.</li>' +
+                      '<li class="mb-2"><i class="bi bi-shield-lock text-secondary me-2"></i>Solo muestra las divisiones según su rol de acceso.</li>' +
+                      '</ul>'
+            },
+            'equipment/index': {
+                title: 'Inventario TI — Equipos',
+                body: '<p class="text-muted mb-3">Lista paginada de todos los equipos de tecnología registrados.</p>' +
+                      '<ul class="list-unstyled">' +
+                      '<li class="mb-2"><i class="bi bi-funnel-fill text-primary me-2"></i>Filtre por <b>tipo, hospital, bodega o estado</b> usando los controles superiores.</li>' +
+                      '<li class="mb-2"><i class="bi bi-cursor-fill text-success me-2"></i>Haga clic en el nombre del equipo para ver su <b>detalle completo</b>.</li>' +
+                      '<li class="mb-2"><i class="bi bi-file-earmark-excel-fill text-success me-2"></i><b>Exportar Excel</b> descarga la lista con los filtros actuales aplicados.</li>' +
+                      '<li class="mb-2"><i class="bi bi-upload text-info me-2"></i><b>Importar Excel</b> carga un lote de equipos desde la plantilla descargable.</li>' +
+                      '</ul>'
+            },
+            'equipment/detail': {
+                title: 'Detalle de Equipo TI',
+                body: '<p class="text-muted mb-3">Información completa de un equipo y gestión de su ubicación.</p>' +
+                      '<ul class="list-unstyled">' +
+                      '<li class="mb-2"><i class="bi bi-geo-alt-fill text-primary me-2"></i>Asigne a <b>Hospital</b> (con departamento + posición), <b>Bodega</b> o <b>Sede</b>. Solo una a la vez.</li>' +
+                      '<li class="mb-2"><i class="bi bi-clock-history text-info me-2"></i>El <b>historial de movimientos</b> se registra automáticamente al guardar cambios de ubicación.</li>' +
+                      '<li class="mb-2"><i class="bi bi-box-arrow-right text-warning me-2"></i>Use <b>Retiro</b> para registrar la salida temporal del equipo.</li>' +
+                      '<li class="mb-2"><i class="bi bi-wrench-adjustable text-secondary me-2"></i>Vea y cree mantenimientos desde esta misma vista.</li>' +
+                      '</ul>' +
+                      '<div class="alert alert-warning py-2 mb-0 small"><i class="bi bi-exclamation-triangle me-1"></i>Los técnicos deben confirmar al guardar cambios en equipos existentes.</div>'
+            },
+            'equipment/create': {
+                title: 'Nuevo Equipo TI',
+                body: '<p class="text-muted mb-3">Registro de un nuevo equipo de tecnología en el inventario.</p>' +
+                      '<ul class="list-unstyled">' +
+                      '<li class="mb-2"><i class="bi bi-list-check text-primary me-2"></i>Campos requeridos: <b>tipo de activo, marca, modelo</b> y número de serie.</li>' +
+                      '<li class="mb-2"><i class="bi bi-geo-alt text-success me-2"></i>La ubicación es opcional al crear; asígnela después desde el detalle.</li>' +
+                      '<li class="mb-2"><i class="bi bi-file-earmark-text text-info me-2"></i>Vincule el equipo a una <b>licitación/contrato</b> si corresponde.</li>' +
+                      '</ul>'
+            },
+            'equipment/edit': {
+                title: 'Editar Equipo TI',
+                body: '<p class="text-muted mb-3">Modifique los datos generales de un equipo TI.</p>' +
+                      '<ul class="list-unstyled">' +
+                      '<li class="mb-2"><i class="bi bi-pencil-fill text-primary me-2"></i>Edite descripción, número de serie, licitación asociada, etc.</li>' +
+                      '<li class="mb-2"><i class="bi bi-geo-alt text-warning me-2"></i>Para cambios de <b>ubicación</b>, use el formulario de detalle del equipo.</li>' +
+                      '<li class="mb-2"><i class="bi bi-shield-lock text-danger me-2"></i>Requiere rol <b>TI.Técnico</b> o superior.</li>' +
+                      '</ul>'
+            },
+            'equipment/maintenancedue': {
+                title: 'Mantenimientos TI Pendientes',
+                body: '<p class="text-muted mb-3">Mantenimientos de equipos TI con estado PENDIENTE.</p>' +
+                      '<ul class="list-unstyled">' +
+                      '<li class="mb-2"><i class="bi bi-exclamation-circle-fill text-danger me-2"></i>Filas en <b>rojo</b>: mantenimientos cuya fecha programada ya venció.</li>' +
+                      '<li class="mb-2"><i class="bi bi-check2-circle text-success me-2"></i>Use <b>Completar</b> para registrar la ejecución y cambiar a COMPLETADO.</li>' +
+                      '<li class="mb-2"><i class="bi bi-x-circle text-warning me-2"></i>Use <b>Cancelar</b> si el mantenimiento no se realizará.</li>' +
+                      '<li class="mb-2"><i class="bi bi-plus-circle text-primary me-2"></i><b>Nuevo</b> programa un mantenimiento para cualquier equipo del inventario.</li>' +
+                      '</ul>'
+            },
+            'equipment/movementstation': {
+                title: 'Estación de Movimiento TI',
+                body: '<p class="text-muted mb-3">Herramienta para mover equipos rápidamente escaneando el código QR.</p>' +
+                      '<ul class="list-unstyled">' +
+                      '<li class="mb-2"><i class="bi bi-upc-scan text-primary me-2"></i>Escanee o ingrese manualmente el <b>código QR</b> del equipo.</li>' +
+                      '<li class="mb-2"><i class="bi bi-arrow-left-right text-success me-2"></i>Seleccione el nuevo destino: Hospital (con departamento), Bodega o Sede.</li>' +
+                      '<li class="mb-2"><i class="bi bi-lightning-charge-fill text-warning me-2"></i>El movimiento se registra al instante sin abrir el detalle del equipo.</li>' +
+                      '</ul>' +
+                      '<div class="alert alert-info py-2 mb-0 small"><i class="bi bi-lightbulb me-1"></i>Ideal para operaciones masivas de traslado en campo o almacén.</div>'
+            },
+            'engineering/index': {
+                title: 'Repuestos — Líneas de Servicio',
+                body: '<p class="text-muted mb-3">Inventario de repuestos organizado por línea de servicio y caja.</p>' +
+                      '<ul class="list-unstyled">' +
+                      '<li class="mb-2"><i class="bi bi-diagram-3-fill text-primary me-2"></i>Jerarquía: <b>Línea &rarr; Caja &rarr; Repuestos</b>. Expanda una línea para ver sus cajas.</li>' +
+                      '<li class="mb-2"><i class="bi bi-box-seam text-info me-2"></i>Haga clic en una caja para ver su <b>detalle de stock</b>.</li>' +
+                      '<li class="mb-2"><i class="bi bi-exclamation-triangle-fill text-danger me-2"></i>Cajas con repuestos en <b>stock cero</b> se destacan en rojo.</li>' +
+                      '<li class="mb-2"><i class="bi bi-arrow-repeat text-success me-2"></i>El stock se actualiza automáticamente con retiros y devoluciones.</li>' +
+                      '</ul>'
+            },
+            'engineering/linedetail': {
+                title: 'Detalle de Línea de Servicio',
+                body: '<p class="text-muted mb-3">Todas las cajas de repuestos de una línea de servicio.</p>' +
+                      '<ul class="list-unstyled">' +
+                      '<li class="mb-2"><i class="bi bi-box-seam text-primary me-2"></i>Vea cada caja con su ubicación en bodega (rack, estante).</li>' +
+                      '<li class="mb-2"><i class="bi bi-cursor-fill text-success me-2"></i>Haga clic en una caja para ver sus repuestos y stock actual.</li>' +
+                      '<li class="mb-2"><i class="bi bi-qr-code text-info me-2"></i>Imprima la <b>etiqueta QR</b> de cualquier caja desde aquí.</li>' +
+                      '</ul>'
+            },
+            'engineering/boxdetail': {
+                title: 'Detalle de Caja de Repuestos',
+                body: '<p class="text-muted mb-3">Stock y movimientos de los repuestos dentro de una caja.</p>' +
+                      '<ul class="list-unstyled">' +
+                      '<li class="mb-2"><i class="bi bi-list-ul text-primary me-2"></i>Lista de repuestos con nombre, referencia y <b>cantidad en stock</b>.</li>' +
+                      '<li class="mb-2"><i class="bi bi-box-arrow-right text-warning me-2"></i><b>Retirar</b>: descuenta unidades y registra quién y cuándo.</li>' +
+                      '<li class="mb-2"><i class="bi bi-box-arrow-in-left text-success me-2"></i><b>Devolver</b>: incrementa el stock con un motivo de devolución.</li>' +
+                      '<li class="mb-2"><i class="bi bi-clock-history text-info me-2"></i>El historial muestra el <b>stock resultante</b> después de cada operación.</li>' +
+                      '</ul>'
+            },
+            'engineering/assetdetail': {
+                title: 'Detalle de Activo Clínico',
+                body: '<p class="text-muted mb-3">Información completa de un activo clínico (equipo médico).</p>' +
+                      '<ul class="list-unstyled">' +
+                      '<li class="mb-2"><i class="bi bi-geo-alt-fill text-primary me-2"></i>Vea y cambie la <b>ubicación</b>: hospital + departamento, bodega o sede.</li>' +
+                      '<li class="mb-2"><i class="bi bi-clock-history text-info me-2"></i>Historial de movimientos generado automáticamente al cambiar ubicación.</li>' +
+                      '<li class="mb-2"><i class="bi bi-wrench-adjustable text-warning me-2"></i>Mantenimientos programados y ejecutados del activo.</li>' +
+                      '</ul>'
+            },
+            'engineering/search': {
+                title: 'Buscar Repuesto',
+                body: '<p class="text-muted mb-3">Búsqueda rápida de repuestos en todo el inventario de ingeniería.</p>' +
+                      '<ul class="list-unstyled">' +
+                      '<li class="mb-2"><i class="bi bi-search text-primary me-2"></i>Busque por <b>nombre, referencia interna</b> o <b>referencia de fabricante</b>.</li>' +
+                      '<li class="mb-2"><i class="bi bi-box-seam text-success me-2"></i>Los resultados muestran línea, caja y <b>stock actual</b>.</li>' +
+                      '<li class="mb-2"><i class="bi bi-cursor-fill text-info me-2"></i>Haga clic en un resultado para ir al detalle de la caja.</li>' +
+                      '</ul>'
+            },
+            'engineering/assetsonsite': {
+                title: 'Activos Clínicos en Sitio',
+                body: '<p class="text-muted mb-3">Inventario de equipos médicos instalados en hospitales o sedes.</p>' +
+                      '<ul class="list-unstyled">' +
+                      '<li class="mb-2"><i class="bi bi-hospital-fill text-primary me-2"></i>Muestra activos clínicos asignados a hospitales o sedes.</li>' +
+                      '<li class="mb-2"><i class="bi bi-funnel-fill text-info me-2"></i>Filtre por hospital o línea de servicio.</li>' +
+                      '<li class="mb-2"><i class="bi bi-cursor-fill text-success me-2"></i>Haga clic en un activo para ver su <b>detalle y mantenimientos</b>.</li>' +
+                      '</ul>'
+            },
+            'engineering/maintenancedue': {
+                title: 'Mantenimientos Servicio Pendientes',
+                body: '<p class="text-muted mb-3">Mantenimientos de activos clínicos con estado PENDIENTE.</p>' +
+                      '<ul class="list-unstyled">' +
+                      '<li class="mb-2"><i class="bi bi-exclamation-circle-fill text-danger me-2"></i>Filas en <b>rojo</b>: mantenimientos cuya fecha programada ya venció.</li>' +
+                      '<li class="mb-2"><i class="bi bi-check2-circle text-success me-2"></i>Use <b>Completar</b> para registrar la ejecución.</li>' +
+                      '<li class="mb-2"><i class="bi bi-plus-circle text-primary me-2"></i><b>Nuevo</b> programa un mantenimiento para cualquier activo clínico.</li>' +
+                      '</ul>'
+            },
+            'engineering/stockreport': {
+                title: 'Reporte de Stock de Repuestos',
+                body: '<p class="text-muted mb-3">Resumen del inventario de repuestos agrupado por línea de servicio.</p>' +
+                      '<ul class="list-unstyled">' +
+                      '<li class="mb-2"><i class="bi bi-exclamation-triangle-fill text-danger me-2"></i><b>Rojo</b>: stock cero — reposición urgente.</li>' +
+                      '<li class="mb-2"><i class="bi bi-exclamation-diamond-fill text-warning me-2"></i><b>Amarillo</b>: stock bajo (&le; 3 unidades).</li>' +
+                      '<li class="mb-2"><i class="bi bi-file-earmark-excel-fill text-success me-2"></i><b>Exportar Excel</b> descarga el reporte completo de todas las líneas.</li>' +
+                      '</ul>'
+            },
+            'engineering/scanbox': {
+                title: 'Escanear Caja',
+                body: '<p class="text-muted mb-3">Acceso rápido a una caja de repuestos mediante su código QR.</p>' +
+                      '<ul class="list-unstyled">' +
+                      '<li class="mb-2"><i class="bi bi-upc-scan text-primary me-2"></i>Escanee o ingrese el <b>código QR</b> de la etiqueta de la caja.</li>' +
+                      '<li class="mb-2"><i class="bi bi-box-seam text-success me-2"></i>Se abre directamente el detalle de la caja con su stock actual.</li>' +
+                      '</ul>'
+            },
+            'hospital/index': {
+                title: 'Directorio de Hospitales',
+                body: '<p class="text-muted mb-3">Lista de hospitales y clínicas clientes del sistema.</p>' +
+                      '<ul class="list-unstyled">' +
+                      '<li class="mb-2"><i class="bi bi-search text-primary me-2"></i>Use la búsqueda para localizar un hospital por nombre.</li>' +
+                      '<li class="mb-2"><i class="bi bi-cursor-fill text-success me-2"></i>Haga clic en el nombre para ver la <b>jerarquía completa</b>.</li>' +
+                      '<li class="mb-2"><i class="bi bi-diagram-3-fill text-info me-2"></i>Cada hospital tiene: Unidades de Proceso &rarr; Departamentos &rarr; Cargos y Contactos.</li>' +
+                      '</ul>'
+            },
+            'hospital/detail': {
+                title: 'Detalle de Hospital',
+                body: '<p class="text-muted mb-3">Estructura organizacional completa de un hospital.</p>' +
+                      '<ul class="list-unstyled">' +
+                      '<li class="mb-2"><i class="bi bi-diagram-3-fill text-primary me-2"></i>Jerarquía: <b>Unidades de Procesamiento &rarr; Departamentos</b>.</li>' +
+                      '<li class="mb-2"><i class="bi bi-person-badge-fill text-info me-2"></i>Cargos clínicos y contactos asignados al hospital.</li>' +
+                      '<li class="mb-2"><i class="bi bi-laptop text-success me-2"></i>Equipos TI y activos clínicos instalados en este hospital.</li>' +
+                      '</ul>'
+            },
+            'gestion/licitaciones': {
+                title: 'Licitaciones y Contratos',
+                body: '<p class="text-muted mb-3">Contratos de licitación con alertas automáticas de vencimiento.</p>' +
+                      '<ul class="list-unstyled">' +
+                      '<li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i><b>Vigente:</b> contrato activo dentro del plazo.</li>' +
+                      '<li class="mb-2"><i class="bi bi-exclamation-triangle-fill text-warning me-2"></i><b>Por vencer:</b> dentro de los días de aviso configurados.</li>' +
+                      '<li class="mb-2"><i class="bi bi-x-circle-fill text-danger me-2"></i><b>Vencida:</b> contrato expirado.</li>' +
+                      '<li class="mb-2"><i class="bi bi-pause-circle-fill text-secondary me-2"></i><b>Aplazada:</b> vencida pero marcada como postergada.</li>' +
+                      '<li class="mb-2"><i class="bi bi-file-earmark-excel-fill text-success me-2"></i><b>Exportar Excel</b> incluye colores de estado en el archivo.</li>' +
+                      '</ul>'
+            },
+            'gestion/warehouses': {
+                title: 'Bodegas de Almacenamiento',
+                body: '<p class="text-muted mb-3">Bodegas físicas compartidas entre las divisiones TI y Servicio.</p>' +
+                      '<ul class="list-unstyled">' +
+                      '<li class="mb-2"><i class="bi bi-box-seam-fill text-primary me-2"></i>Cada bodega puede contener <b>equipos TI</b> y <b>cajas de repuestos</b> simultáneamente.</li>' +
+                      '<li class="mb-2"><i class="bi bi-laptop text-info me-2"></i>El conteo de equipos y cajas se muestra en el listado.</li>' +
+                      '<li class="mb-2"><i class="bi bi-pencil-fill text-warning me-2"></i>Edite nombre y descripción con el ícono de edición.</li>' +
+                      '</ul>'
+            },
+            'admin/users': {
+                title: 'Gestión de Usuarios',
+                body: '<p class="text-muted mb-3">Administración de cuentas de acceso al sistema.</p>' +
+                      '<ul class="list-unstyled">' +
+                      '<li class="mb-2"><i class="bi bi-person-plus-fill text-primary me-2"></i><b>Crear usuario:</b> requiere vincularlo a un empleado existente.</li>' +
+                      '<li class="mb-2"><i class="bi bi-shield-lock-fill text-info me-2"></i>Asigne uno o más roles del sistema a cada usuario.</li>' +
+                      '<li class="mb-2"><i class="bi bi-toggle-on text-success me-2"></i>Active o desactive cuentas sin eliminarlas del sistema.</li>' +
+                      '<li class="mb-2"><i class="bi bi-key-fill text-warning me-2"></i>Puede cambiar la contraseña desde el formulario de edición.</li>' +
+                      '</ul>' +
+                      '<div class="alert alert-warning py-2 mb-0 small"><i class="bi bi-shield-exclamation me-1"></i>Solo el <b>Administrador global</b> puede crear o modificar usuarios.</div>'
+            },
+            'admin/employees': {
+                title: 'Gestión de Empleados',
+                body: '<p class="text-muted mb-3">Registro del personal de la organización.</p>' +
+                      '<ul class="list-unstyled">' +
+                      '<li class="mb-2"><i class="bi bi-person-lines-fill text-primary me-2"></i>Los empleados son la base para crear <b>usuarios del sistema</b>.</li>' +
+                      '<li class="mb-2"><i class="bi bi-card-text text-info me-2"></i>Datos: nombre, documento de identidad, puesto y departamento.</li>' +
+                      '<li class="mb-2"><i class="bi bi-toggle-on text-success me-2"></i>Desactive empleados que ya no estén activos en la organización.</li>' +
+                      '</ul>'
+            },
+            'admin/systemroles': {
+                title: 'Roles del Sistema',
+                body: '<p class="text-muted mb-3">Roles disponibles para asignar a los usuarios (vista de referencia).</p>' +
+                      '<ul class="list-unstyled">' +
+                      '<li class="mb-2"><i class="bi bi-shield-fill-exclamation text-danger me-2"></i><b>Administrador:</b> acceso total al sistema.</li>' +
+                      '<li class="mb-2"><i class="bi bi-laptop text-primary me-2"></i><b>TI.Administrador / Técnico / Consulta:</b> módulo TI con niveles de permiso.</li>' +
+                      '<li class="mb-2"><i class="bi bi-tools text-success me-2"></i><b>Servicio.Administrador / Técnico / Consulta:</b> módulo Servicio con niveles.</li>' +
+                      '</ul>' +
+                      '<div class="alert alert-info py-2 mb-0 small"><i class="bi bi-info-circle me-1"></i>Los roles se asignan en la sección <b>Usuarios</b>, no desde aquí.</div>'
+            },
+            'admin/departments': {
+                title: 'Departamentos Internos',
+                body: '<p class="text-muted mb-3">Departamentos de la organización para clasificar al personal.</p>' +
+                      '<ul class="list-unstyled">' +
+                      '<li class="mb-2"><i class="bi bi-diagram-3-fill text-primary me-2"></i>Use estos departamentos para organizar al <b>personal interno</b> de la empresa.</li>' +
+                      '<li class="mb-2"><i class="bi bi-hospital text-warning me-2"></i>No confundir con los departamentos <b>hospitalarios</b> (gestionados en Hospitales).</li>' +
+                      '</ul>'
+            },
+            'admin/positions': {
+                title: 'Puestos de Trabajo',
+                body: '<p class="text-muted mb-3">Cargos o puestos para clasificar a los empleados de la organización.</p>' +
+                      '<ul class="list-unstyled">' +
+                      '<li class="mb-2"><i class="bi bi-person-badge-fill text-primary me-2"></i>Asigne un puesto a cada empleado al crearlo o editarlo.</li>' +
+                      '</ul>'
+            },
+            'catalog/companies': {
+                title: 'Empresas del Grupo',
+                body: '<p class="text-muted mb-3">Empresas del grupo registradas en el sistema.</p>' +
+                      '<ul class="list-unstyled">' +
+                      '<li class="mb-2"><i class="bi bi-building-fill text-primary me-2"></i>Cada empresa puede tener múltiples <b>sedes</b> asociadas.</li>' +
+                      '<li class="mb-2"><i class="bi bi-link-45deg text-info me-2"></i>Las sedes se vinculan a los equipos como ubicaciones posibles.</li>' +
+                      '</ul>'
+            },
+            'catalog/sites': {
+                title: 'Sedes',
+                body: '<p class="text-muted mb-3">Sedes físicas de la organización donde se pueden almacenar equipos.</p>' +
+                      '<ul class="list-unstyled">' +
+                      '<li class="mb-2"><i class="bi bi-geo-alt-fill text-primary me-2"></i>Las sedes son una de las tres <b>ubicaciones posibles</b> de un equipo (junto a Hospital y Bodega).</li>' +
+                      '<li class="mb-2"><i class="bi bi-building text-info me-2"></i>Cada sede pertenece a una empresa del grupo.</li>' +
+                      '</ul>'
+            },
+            'catalog/brands': {
+                title: 'Marcas y Modelos',
+                body: '<p class="text-muted mb-3">Catálogo de marcas y modelos de equipos IT y activos clínicos.</p>' +
+                      '<ul class="list-unstyled">' +
+                      '<li class="mb-2"><i class="bi bi-diagram-3-fill text-primary me-2"></i>Jerarquía: <b>Tipo de Activo &rarr; Marca &rarr; Modelo</b>.</li>' +
+                      '<li class="mb-2"><i class="bi bi-plus-circle-fill text-success me-2"></i>Cree la <b>Marca</b> primero, luego agregue Modelos desde el detalle de la marca.</li>' +
+                      '<li class="mb-2"><i class="bi bi-laptop text-info me-2"></i>Los equipos se vinculan a un <b>Modelo</b> específico al registrarlos.</li>' +
+                      '</ul>'
+            },
+            'catalog/assettypes': {
+                title: 'Tipos de Activo',
+                body: '<p class="text-muted mb-3">Clasificación jerárquica de los tipos de equipos en el sistema.</p>' +
+                      '<ul class="list-unstyled">' +
+                      '<li class="mb-2"><i class="bi bi-diagram-3-fill text-primary me-2"></i>Jerarquía: <b>Tipo General &rarr; Tipo de Activo</b> (ej. Cómputo &rarr; Computadora de Escritorio).</li>' +
+                      '<li class="mb-2"><i class="bi bi-bar-chart-fill text-info me-2"></i>Los tipos determinan cómo se agrupan los equipos en los reportes del Dashboard.</li>' +
+                      '</ul>'
+            },
+            'catalog/documenttypes': {
+                title: 'Tipos de Documento',
+                body: '<p class="text-muted mb-3">Tipos de identificación personal usados para empleados y contactos.</p>' +
+                      '<ul class="list-unstyled">' +
+                      '<li class="mb-2"><i class="bi bi-card-text text-primary me-2"></i>Ejemplos: Cédula, Pasaporte, DIMEX, etc.</li>' +
+                      '</ul>'
+            },
+            '_default': {
+                title: 'Ayuda del Sistema',
+                body: '<p class="text-muted mb-3">Bienvenido a <strong>EDInventory</strong> — Sistema de Inventario de Equipos IT y Activos Clínicos.</p>' +
+                      '<ul class="list-unstyled">' +
+                      '<li class="mb-2"><i class="bi bi-speedometer2 text-primary me-2"></i><b>Dashboard:</b> métricas y alertas en tiempo real.</li>' +
+                      '<li class="mb-2"><i class="bi bi-laptop text-info me-2"></i><b>Módulo TI:</b> inventario, mantenimientos y estación de movimiento.</li>' +
+                      '<li class="mb-2"><i class="bi bi-tools text-success me-2"></i><b>Módulo Servicio:</b> repuestos, activos clínicos y mantenimientos.</li>' +
+                      '<li class="mb-2"><i class="bi bi-building text-secondary me-2"></i><b>Gestión:</b> hospitales, licitaciones y bodegas compartidas.</li>' +
+                      '</ul>' +
+                      '<div class="alert alert-info py-2 mb-0 small"><i class="bi bi-lightbulb me-1"></i>Haga clic en el ícono <b>?</b> en cualquier página para ver ayuda específica de esa sección.</div>'
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', function () {
+            var modal = document.getElementById('helpModal');
+            if (!modal) return;
+            var entry = helpData[page] || helpData['_default'];
+            var titleEl = document.getElementById('helpModalTitle');
+            var bodyEl  = document.getElementById('helpModalBody');
+            if (titleEl) titleEl.textContent = entry.title;
+            if (bodyEl)  bodyEl.innerHTML    = entry.body;
+        });
+    }());
+    </script>
+</body>
+</html>

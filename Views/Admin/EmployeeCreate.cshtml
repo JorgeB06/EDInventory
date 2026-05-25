@@ -1,0 +1,71 @@
+@model EDInventory.Models.ViewModels.EmployeeViewModel
+@{ ViewData["Title"] = "Nuevo Empleado"; }
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="mb-0"><i class="bi bi-person-plus me-2"></i>Nuevo Empleado</h4>
+    <a asp-action="Employees" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left me-1"></i>Volver</a>
+</div>
+
+<div class="card shadow-sm" style="max-width:620px;">
+    <div class="card-body">
+        <form asp-action="EmployeeCreate" method="post">
+            @Html.AntiForgeryToken()
+            <div asp-validation-summary="ModelOnly" class="alert alert-danger small py-2"></div>
+
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label asp-for="EmpName" class="form-label fw-semibold"></label>
+                    <input asp-for="EmpName" class="form-control" />
+                    <span asp-validation-for="EmpName" class="text-danger small"></span>
+                </div>
+                <div class="col-md-6">
+                    <label asp-for="EmpSurname" class="form-label fw-semibold"></label>
+                    <input asp-for="EmpSurname" class="form-control" />
+                    <span asp-validation-for="EmpSurname" class="text-danger small"></span>
+                </div>
+                <div class="col-md-4">
+                    <label asp-for="DoctypeCodeEmp" class="form-label fw-semibold"></label>
+                    <select asp-for="DoctypeCodeEmp" asp-items="Model.DocumentTypes" class="form-select">
+                        <option value="">-- Tipo --</option>
+                    </select>
+                </div>
+                <div class="col-md-8">
+                    <label asp-for="EmpDocnum" class="form-label fw-semibold"></label>
+                    <input asp-for="EmpDocnum" class="form-control" placeholder="Ej: 123456789" />
+                </div>
+                <div class="col-12">
+                    <label asp-for="EmpEmail" class="form-label fw-semibold"></label>
+                    <input asp-for="EmpEmail" class="form-control" type="email" />
+                    <span asp-validation-for="EmpEmail" class="text-danger small"></span>
+                </div>
+                <div class="col-12">
+                    <label asp-for="RoleCode" class="form-label fw-semibold"></label>
+                    <select asp-for="RoleCode" asp-items="Model.Roles" class="form-select">
+                        <option value="">-- Seleccione puesto --</option>
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <label asp-for="EmpHighDate" class="form-label fw-semibold"></label>
+                    <input asp-for="EmpHighDate" class="form-control" type="date" />
+                </div>
+                <div class="col-md-6">
+                    <label asp-for="EmpLeaveDate" class="form-label fw-semibold"></label>
+                    <input asp-for="EmpLeaveDate" class="form-control" type="date" />
+                </div>
+                <div class="col-12">
+                    <label asp-for="EmpAddata" class="form-label fw-semibold"></label>
+                    <textarea asp-for="EmpAddata" class="form-control" rows="2"></textarea>
+                </div>
+                <div class="col-12 form-check ms-2">
+                    <input asp-for="Active" class="form-check-input" type="checkbox" />
+                    <label asp-for="Active" class="form-check-label">Activo</label>
+                </div>
+            </div>
+
+            <div class="mt-4">
+                <button type="submit" class="btn btn-primary"><i class="bi bi-floppy me-1"></i>Guardar</button>
+            </div>
+        </form>
+    </div>
+</div>
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

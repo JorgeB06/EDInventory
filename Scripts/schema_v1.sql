@@ -1,0 +1,350 @@
+-- ============================================================
+-- EDInventory — Schema completo (produccion)
+-- Generado: 2026-04-13
+-- Motor: MySQL 8.0+
+-- Charset: utf8mb4 / COLLATE utf8mb4_unicode_ci
+-- ============================================================
+
+SET FOREIGN_KEY_CHECKS = 0;
+SET NAMES utf8mb4;
+
+-- ============================================================
+-- CATALOGOS BASE
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS `TB_DOCUMENT_TYPE_COM` (
+    `DOCTYPE_CODE`  INT           NOT NULL AUTO_INCREMENT,
+    `DOCTYPE_DESC`  VARCHAR(25)   NULL,
+    `ACTIVE`        TINYINT(1)    NOT NULL DEFAULT 1,
+    PRIMARY KEY (`DOCTYPE_CODE`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `TB_DOCMENT_TYPE_EMP` (
+    `DOCTYPE_CODE_EMP`  INT          NOT NULL AUTO_INCREMENT,
+    `DOCTYPE_DES_EMP`   VARCHAR(9)   NULL,
+    `ACTIVE`            TINYINT(1)   NOT NULL DEFAULT 1,
+    PRIMARY KEY (`DOCTYPE_CODE_EMP`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `TB_GEN_ASSETS_TYPE` (
+    `GEN_ASSETS_TYPE_CODE`  INT           NOT NULL AUTO_INCREMENT,
+    `GEN_ASSETS_DESC`       VARCHAR(100)  NULL,
+    `ACTIVE`                TINYINT(1)    NOT NULL DEFAULT 1,
+    PRIMARY KEY (`GEN_ASSETS_TYPE_CODE`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `TB_DETAILS_GAT` (
+    `ID`                    INT          NOT NULL AUTO_INCREMENT,
+    `GEN_ASSETS_TYPE_CODE`  INT          NOT NULL,
+    `DETAILS`               VARCHAR(50)  NULL,
+    `ACTIVE`                TINYINT(1)   NOT NULL DEFAULT 1,
+    PRIMARY KEY (`ID`),
+    CONSTRAINT `FK_DETGAT_GAT` FOREIGN KEY (`GEN_ASSETS_TYPE_CODE`)
+        REFERENCES `TB_GEN_ASSETS_TYPE` (`GEN_ASSETS_TYPE_CODE`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `TB_ASSETS_TYPE` (
+    `ASSETS_TYPE_CODE`      INT           NOT NULL AUTO_INCREMENT,
+    `ASSETS_DESC`           VARCHAR(100)  NULL,
+    `GEN_ASSTES_TYPE_CODE`  INT           NULL,
+    `ACTIVE`                TINYINT(1)    NOT NULL DEFAULT 1,
+    PRIMARY KEY (`ASSETS_TYPE_CODE`),
+    CONSTRAINT `FK_ASSTYPE_GAT` FOREIGN KEY (`GEN_ASSTES_TYPE_CODE`)
+        REFERENCES `TB_GEN_ASSETS_TYPE` (`GEN_ASSETS_TYPE_CODE`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `TB_BRAND` (
+    `BRAND_CODE`        INT          NOT NULL AUTO_INCREMENT,
+    `BRAND_DESC`        VARCHAR(40)  NULL,
+    `ASSTES_TYPE_CODE`  INT          NULL,
+    `ACTIVE`            TINYINT(1)   NOT NULL DEFAULT 1,
+    PRIMARY KEY (`BRAND_CODE`),
+    CONSTRAINT `FK_BRAND_ASSTYPE` FOREIGN KEY (`ASSTES_TYPE_CODE`)
+        REFERENCES `TB_ASSETS_TYPE` (`ASSETS_TYPE_CODE`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `TB_MODEL` (
+    `MODEL_CODE`   INT          NOT NULL AUTO_INCREMENT,
+    `MODEL_DESC`   VARCHAR(45)  NULL,
+    `BRAND_CODE`   INT          NULL,
+    `ACTIVE`       TINYINT(1)   NOT NULL DEFAULT 1,
+    PRIMARY KEY (`MODEL_CODE`),
+    CONSTRAINT `FK_MODEL_BRAND` FOREIGN KEY (`BRAND_CODE`)
+        REFERENCES `TB_BRAND` (`BRAND_CODE`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ============================================================
+-- EMPRESA / SEDES / DEPARTAMENTOS / PUESTOS
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS `TB_COMPANY` (
+    `COMPANY_CODE`   INT           NOT NULL AUTO_INCREMENT,
+    `COMPANY_NAME`   VARCHAR(100)  NULL,
+    `DOCTYPE_CODE`   INT           NULL,
+    `DOCUMENT_TYPE`  VARCHAR(45)   NULL,
+    `ACTIVE`         TINYINT(1)    NOT NULL DEFAULT 1,
+    PRIMARY KEY (`COMPANY_CODE`),
+    CONSTRAINT `FK_COMPANY_DOCTYPE` FOREIGN KEY (`DOCTYPE_CODE`)
+        REFERENCES `TB_DOCUMENT_TYPE_COM` (`DOCTYPE_CODE`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `TB_SITE` (
+    `SITE_CODE`     INT           NOT NULL AUTO_INCREMENT,
+    `SITE_NAME`     VARCHAR(45)   NULL,
+    `SITE_ADDRESS`  VARCHAR(100)  NULL,
+    `ACTIVE`        TINYINT(1)    NOT NULL DEFAULT 1,
+    `COMPANY_CODE`  INT           NULL,
+    PRIMARY KEY (`SITE_CODE`),
+    CONSTRAINT `FK_SITE_COMPANY` FOREIGN KEY (`COMPANY_CODE`)
+        REFERENCES `TB_COMPANY` (`COMPANY_CODE`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `TB_DEP` (
+    `DEP_CODE`   INT           NOT NULL AUTO_INCREMENT,
+    `DEP_NAME`   VARCHAR(100)  NULL,
+    `SITE_CODE`  INT           NULL,
+    `ACTIVE`     TINYINT(1)    NOT NULL DEFAULT 1,
+    PRIMARY KEY (`DEP_CODE`),
+    CONSTRAINT `FK_DEP_SITE` FOREIGN KEY (`SITE_CODE`)
+        REFERENCES `TB_SITE` (`SITE_CODE`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `TB_ROLES` (
+    `ROLE_CODE`  INT           NOT NULL AUTO_INCREMENT,
+    `ROLE_NAME`  VARCHAR(100)  NULL,
+    `DEP_CODE`   INT           NULL,
+    `ACTIVE`     TINYINT(1)    NOT NULL DEFAULT 1,
+    PRIMARY KEY (`ROLE_CODE`),
+    CONSTRAINT `FK_ROLES_DEP` FOREIGN KEY (`DEP_CODE`)
+        REFERENCES `TB_DEP` (`DEP_CODE`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ============================================================
+-- EMPLEADOS Y USUARIOS
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS `TB_EMPLOYEES` (
+    `EMP_CODE`          INT          NOT NULL AUTO_INCREMENT,
+    `EMP_NAME`          VARCHAR(45)  NULL,
+    `EMP_SURNAME`       VARCHAR(45)  NULL,
+    `DOCTYPE_CODE_EMP`  INT          NULL,
+    `EMP_DOCNUM`        VARCHAR(9)   NULL,
+    `EMP_EMAIL`         VARCHAR(60)  NULL,
+    `ROLE_CODE`         INT          NULL,
+    `EMP_ADDATA`        VARCHAR(100) NULL,
+    `EMP_HIGH_DATE`     DATE         NULL,
+    `EMP_LEAVE_DATE`    DATE         NULL,
+    `ACTIVE`            TINYINT(1)   NOT NULL DEFAULT 1,
+    PRIMARY KEY (`EMP_CODE`),
+    CONSTRAINT `FK_EMP_DOCTYPE`  FOREIGN KEY (`DOCTYPE_CODE_EMP`)
+        REFERENCES `TB_DOCMENT_TYPE_EMP` (`DOCTYPE_CODE_EMP`),
+    CONSTRAINT `FK_EMP_ROLE`     FOREIGN KEY (`ROLE_CODE`)
+        REFERENCES `TB_ROLES` (`ROLE_CODE`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `TB_UROLES` (
+    `UROLE_CODE`  INT          NOT NULL AUTO_INCREMENT,
+    `UROLE_DESC`  VARCHAR(45)  NULL,
+    `ACTIVE`      TINYINT(1)   NOT NULL DEFAULT 1,
+    PRIMARY KEY (`UROLE_CODE`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Datos de roles de usuario del sistema
+INSERT IGNORE INTO `TB_UROLES` (`UROLE_CODE`, `UROLE_DESC`, `ACTIVE`) VALUES
+(1, 'Administrador', 1),
+(2, 'Tecnico',       1),
+(3, 'Consulta',      1);
+
+CREATE TABLE IF NOT EXISTS `TB_USERS` (
+    `USER_CODE`      INT          NOT NULL AUTO_INCREMENT,
+    `USER_LOGIN`     VARCHAR(15)  NULL,
+    `USER_PASSWORD`  VARCHAR(72)  NULL,   -- BCrypt hash
+    `EMP_CODE`       INT          NULL,
+    `UROLE_CODE`     INT          NULL,
+    `ACTIVE`         TINYINT(1)   NOT NULL DEFAULT 1,
+    PRIMARY KEY (`USER_CODE`),
+    UNIQUE KEY `UQ_USERS_LOGIN` (`USER_LOGIN`),
+    CONSTRAINT `FK_USERS_EMP`    FOREIGN KEY (`EMP_CODE`)
+        REFERENCES `TB_EMPLOYEES` (`EMP_CODE`),
+    CONSTRAINT `FK_USERS_UROLE`  FOREIGN KEY (`UROLE_CODE`)
+        REFERENCES `TB_UROLES` (`UROLE_CODE`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ============================================================
+-- HOSPITALES
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS `TB_PU` (
+    `PU_CODE`   INT          NOT NULL AUTO_INCREMENT,
+    `PU_DESC`   VARCHAR(45)  NULL,
+    `ACTIVE`    TINYINT(1)   NOT NULL DEFAULT 1,
+    PRIMARY KEY (`PU_CODE`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `TB_HOSP` (
+    `HOSP_CODE`    INT           NOT NULL AUTO_INCREMENT,
+    `HOSP_NAME`    VARCHAR(50)   NULL,
+    `HOSP_ADRESS`  VARCHAR(100)  NULL,
+    `ACTIVE`       TINYINT(1)    NOT NULL DEFAULT 1,
+    `PU_CODE`      INT           NULL,
+    PRIMARY KEY (`HOSP_CODE`),
+    CONSTRAINT `FK_HOSP_PU` FOREIGN KEY (`PU_CODE`)
+        REFERENCES `TB_PU` (`PU_CODE`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `TB_HOSP_DEP` (
+    `HOSP_DEP_CODE`  INT          NOT NULL AUTO_INCREMENT,
+    `HOSP_DEP_NAME`  VARCHAR(45)  NULL,
+    `HOSP_CODE`      INT          NULL,
+    `ACTIVE`         TINYINT(1)   NOT NULL DEFAULT 1,
+    PRIMARY KEY (`HOSP_DEP_CODE`),
+    CONSTRAINT `FK_HOSPDEP_HOSP` FOREIGN KEY (`HOSP_CODE`)
+        REFERENCES `TB_HOSP` (`HOSP_CODE`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `TB_HOSP_ROLE` (
+    `HOSP_ROLE_CODE`  INT          NOT NULL AUTO_INCREMENT,
+    `HOSP_ROLE_NAME`  VARCHAR(45)  NULL,
+    `HOSP_DEP_CODE`   INT          NULL,
+    `ACTIVE`          TINYINT(1)   NOT NULL DEFAULT 1,
+    PRIMARY KEY (`HOSP_ROLE_CODE`),
+    CONSTRAINT `FK_HOSPROLE_DEP` FOREIGN KEY (`HOSP_DEP_CODE`)
+        REFERENCES `TB_HOSP_DEP` (`HOSP_DEP_CODE`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `TB_HOSP_DOC` (
+    `HOSP_DOC_CODE`     INT           NOT NULL AUTO_INCREMENT,
+    `HOSP_DOC_NAME`     VARCHAR(45)   NULL,
+    `HOSP_DOC_SURNAME`  VARCHAR(45)   NULL,
+    `HOSP_DOC_MAIL`     VARCHAR(60)   NULL,
+    `HOSP_ROLE_CODE`    INT           NULL,
+    `HOSP_DOC_ADDATA`   VARCHAR(100)  NULL,
+    `ACTIVE`            TINYINT(1)    NOT NULL DEFAULT 1,
+    PRIMARY KEY (`HOSP_DOC_CODE`),
+    CONSTRAINT `FK_HOSPDOC_ROLE` FOREIGN KEY (`HOSP_ROLE_CODE`)
+        REFERENCES `TB_HOSP_ROLE` (`HOSP_ROLE_CODE`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ============================================================
+-- LICITACIONES
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS `TB_LIC` (
+    `LIC_CODE`           INT           NOT NULL AUTO_INCREMENT,
+    `LIC_NUM`            VARCHAR(45)   NULL,
+    `LIC_DESC`           VARCHAR(60)   NULL,
+    `LIC_START`          DATE          NULL,
+    `LIC_END`            DATE          NULL,
+    `LIC_WARN_DAYS`      INT           NOT NULL DEFAULT 180,
+    `LIC_POSTPONED`      TINYINT(1)    NOT NULL DEFAULT 0,
+    `LIC_POSTPONED_NOTE` VARCHAR(150)  NULL,
+    `ACTIVE`             TINYINT(1)    NOT NULL DEFAULT 1,
+    PRIMARY KEY (`LIC_CODE`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ============================================================
+-- BODEGAS
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS `TB_WARE` (
+    `WARE_CODE`  INT           NOT NULL AUTO_INCREMENT,
+    `WARE_NAME`  VARCHAR(80)   NULL,
+    `WARE_DESC`  VARCHAR(150)  NULL,
+    `ACTIVE`     TINYINT(1)    NOT NULL DEFAULT 1,
+    PRIMARY KEY (`WARE_CODE`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ============================================================
+-- INVENTARIO DE EQUIPOS IT
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS `TB_ITEQUIP` (
+    `ITEQUIP_CODE`      INT           NOT NULL AUTO_INCREMENT,
+    `ITEQUIP_DESC`      VARCHAR(100)  NULL,
+    -- Ubicacion
+    `SITE_CODE`         INT           NULL,
+    `HOSP_CODE`         INT           NULL,
+    `HOSP_DEP_CODE`     INT           NULL,
+    `ITEQUIP_HOSP_POS`  VARCHAR(60)   NULL,
+    `WARE_CODE`         INT           NULL,
+    `WARE_RACK`         VARCHAR(30)   NULL,
+    `WARE_ESTANTE`      VARCHAR(30)   NULL,
+    `WARE_CAJA`         VARCHAR(30)   NULL,
+    -- Identificacion
+    `MODEL_CODE`        INT           NULL,
+    `ITEQUIP_SN`        VARCHAR(40)   NULL,
+    `LIC_CODE`          INT           NULL,
+    `ITEQUIP_NUM`       VARCHAR(25)   NULL,
+    `ITEQUIP_DSLIC`     DATE          NULL,
+    `ITEQUIP_DELIC`     DATE          NULL,
+    `ITEQUIP_GNUM`      VARCHAR(40)   NULL,
+    `ITEQUIP_DJEQUIP`   DATE          NULL,
+    `ITEQUIP_ADDATA`    VARCHAR(200)  NULL,
+    `ITEQUIP_DNEW`      DATE          NULL,
+    `ITEQUIP_DMOD`      DATE          NULL,
+    `ACTIVE`            TINYINT(1)    NOT NULL DEFAULT 1,
+    PRIMARY KEY (`ITEQUIP_CODE`),
+    CONSTRAINT `FK_ITEQUIP_SITE`    FOREIGN KEY (`SITE_CODE`)     REFERENCES `TB_SITE`     (`SITE_CODE`),
+    CONSTRAINT `FK_ITEQUIP_HOSP`    FOREIGN KEY (`HOSP_CODE`)     REFERENCES `TB_HOSP`     (`HOSP_CODE`),
+    CONSTRAINT `FK_ITEQUIP_HOSPDEP` FOREIGN KEY (`HOSP_DEP_CODE`) REFERENCES `TB_HOSP_DEP` (`HOSP_DEP_CODE`),
+    CONSTRAINT `FK_ITEQUIP_WARE`    FOREIGN KEY (`WARE_CODE`)     REFERENCES `TB_WARE`     (`WARE_CODE`),
+    CONSTRAINT `FK_ITEQUIP_MODEL`   FOREIGN KEY (`MODEL_CODE`)    REFERENCES `TB_MODEL`    (`MODEL_CODE`),
+    CONSTRAINT `FK_ITEQUIP_LIC`     FOREIGN KEY (`LIC_CODE`)      REFERENCES `TB_LIC`      (`LIC_CODE`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `TB_ITEQUIP_DETAIL` (
+    `ITEQUIP_DETAIL_CODE`  INT          NOT NULL AUTO_INCREMENT,
+    `ITEQUIP_DETAIL_ID`    INT          NULL,
+    `ITEQUIP_DETAIL`       VARCHAR(45)  NULL,
+    PRIMARY KEY (`ITEQUIP_DETAIL_CODE`),
+    CONSTRAINT `FK_DETAIL_ITEQUIP` FOREIGN KEY (`ITEQUIP_DETAIL_ID`)
+        REFERENCES `TB_ITEQUIP` (`ITEQUIP_CODE`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `TB_ITEQUIP_HIST` (
+    `HIST_CODE`         INT           NOT NULL AUTO_INCREMENT,
+    `ITEQUIP_CODE`      INT           NOT NULL,
+    `HIST_DATE`         DATETIME      NOT NULL,
+    `USER_CODE`         INT           NULL,
+    `EMP_CODE`          INT           NULL,
+    -- Tipo de destino: BODEGA | HOSPITAL | SEDE
+    `LOC_TYPE`          VARCHAR(10)   NULL,
+    -- Bodega
+    `WARE_CODE`         INT           NULL,
+    `WARE_RACK`         VARCHAR(30)   NULL,
+    `WARE_ESTANTE`      VARCHAR(30)   NULL,
+    `WARE_CAJA`         VARCHAR(30)   NULL,
+    -- Hospital
+    `HOSP_CODE`         INT           NULL,
+    `HOSP_DEP_CODE`     INT           NULL,
+    `ITEQUIP_HOSP_POS`  VARCHAR(60)   NULL,
+    -- Sede
+    `SITE_CODE`         INT           NULL,
+    -- Notas
+    `HIST_NOTES`        VARCHAR(200)  NULL,
+    PRIMARY KEY (`HIST_CODE`),
+    CONSTRAINT `FK_HIST_ITEQUIP`  FOREIGN KEY (`ITEQUIP_CODE`)  REFERENCES `TB_ITEQUIP`  (`ITEQUIP_CODE`),
+    CONSTRAINT `FK_HIST_USER`     FOREIGN KEY (`USER_CODE`)     REFERENCES `TB_USERS`    (`USER_CODE`),
+    CONSTRAINT `FK_HIST_EMP`      FOREIGN KEY (`EMP_CODE`)      REFERENCES `TB_EMPLOYEES`(`EMP_CODE`),
+    CONSTRAINT `FK_HIST_WARE`     FOREIGN KEY (`WARE_CODE`)     REFERENCES `TB_WARE`     (`WARE_CODE`),
+    CONSTRAINT `FK_HIST_HOSP`     FOREIGN KEY (`HOSP_CODE`)     REFERENCES `TB_HOSP`     (`HOSP_CODE`),
+    CONSTRAINT `FK_HIST_HOSPDEP`  FOREIGN KEY (`HOSP_DEP_CODE`) REFERENCES `TB_HOSP_DEP` (`HOSP_DEP_CODE`),
+    CONSTRAINT `FK_HIST_SITE`     FOREIGN KEY (`SITE_CODE`)     REFERENCES `TB_SITE`     (`SITE_CODE`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+SET FOREIGN_KEY_CHECKS = 1;
+
+-- ============================================================
+-- DATOS INICIALES — Roles del sistema (TB_UROLES)
+-- (ya insertados arriba junto a la tabla)
+-- 1 = Administrador  |  2 = Tecnico  |  3 = Consulta
+-- ============================================================
+-- Para crear el primer usuario Administrador, ejecutar:
+--
+-- INSERT INTO TB_EMPLOYEES (EMP_NAME, EMP_SURNAME, ACTIVE) VALUES ('Admin','Sistema',1);
+-- SET @emp = LAST_INSERT_ID();
+-- INSERT INTO TB_USERS (USER_LOGIN, USER_PASSWORD, EMP_CODE, UROLE_CODE, ACTIVE)
+--     VALUES ('admin', '<BCRYPT_HASH>', @emp, 1, 1);
+--
+-- Generar el hash con: BCrypt.Net.BCrypt.HashPassword("contraseña")
+-- ============================================================

@@ -1,0 +1,532 @@
+@using EDInventory.Models.Entities
+@{
+    ViewData["Title"] = "Dashboard";
+    bool canSeeTI  = (bool)(ViewBag.CanSeeTI  ?? false);
+    bool canSeeSvc = (bool)(ViewBag.CanSeeSvc ?? false);
+    int equiposEnHospital         = canSeeTI  ? (int)(ViewBag.EquiposEnHospital          ?? 0) : 0;
+    int activosClinicosEnHospital = canSeeSvc ? (int)(ViewBag.ActivosClinicosEnHospital  ?? 0) : 0;
+    int partsSinStock   = canSeeSvc ? (int)ViewBag.PartsSinStock  : 0;
+    int partsBajoStock  = canSeeSvc ? (int)ViewBag.PartsBajoStock : 0;
+    // TI — mantenimientos y licitaciones
+    int mantsTIPendientes = canSeeTI ? (int)(ViewBag.MantsTIPendientes ?? 0) : 0;
+    int mantsTIVencidos   = canSeeTI ? (int)(ViewBag.MantsTIVencidos   ?? 0) : 0;
+    int licVencidas       = canSeeTI ? (int)(ViewBag.LicVencidas       ?? 0) : 0;
+    int licPorVencer      = canSeeTI ? (int)(ViewBag.LicPorVencer      ?? 0) : 0;
+    // Servicio — mantenimientos
+    int mantsSvcPendientes = canSeeSvc ? (int)(ViewBag.MantsSvcPendientes ?? 0) : 0;
+    int mantsSvcVencidos   = canSeeSvc ? (int)(ViewBag.MantsSvcVencidos   ?? 0) : 0;
+}
+
+<!-- Banner principal -->
+<div class="d-flex align-items-center px-3 py-2 rounded-3 shadow-sm mb-4"
+     style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 60%, #0f3460 100%); min-height: 72px;">
+    <div class="d-flex align-items-center gap-3">
+        <img src="~/images/assetcore2.jpeg" alt="AssetCore"
+             style="height: 52px; width: auto; object-fit: contain; border-radius: 8px;" />
+        <div>
+            <p class="text-white-50 small mb-0">Departamento de Ingenieria &mdash; Diagnostika S.A.</p>
+        </div>
+    </div>
+</div>
+
+@* ══════════════════════════════════════════════════════════
+   SECCIÓN TI
+   ══════════════════════════════════════════════════════════ *@
+@if (canSeeTI)
+{
+<!-- Header División TI -->
+<div class="rounded-3 px-4 py-3 mb-4 d-flex justify-content-between align-items-center"
+     style="background:linear-gradient(135deg,#0d1b4b 0%,#1a3a8f 100%); border-left:5px solid #4d8fff;">
+    <div class="d-flex align-items-center gap-3">
+        <i class="bi bi-laptop text-white fs-3"></i>
+        <div>
+            <div class="text-white fw-bold fs-5 mb-0">División TI</div>
+            <div class="text-white-50 small">Inventario de activos tecnológicos</div>
+        </div>
+    </div>
+    <a asp-action="Report" class="btn btn-sm btn-outline-light">
+        <i class="bi bi-printer me-1"></i>Reporte TI
+    </a>
+</div>
+
+<!-- Tarjetas TI -->
+<div class="row g-3 mb-4">
+    <div class="col-sm-6 col-xl-3">
+        <div class="card border-0 shadow-sm" style="border-left:4px solid #6c757d !important;">
+            <div class="card-body d-flex align-items-center gap-3">
+                <div class="bg-secondary bg-opacity-10 rounded p-3">
+                    <i class="bi bi-box-seam text-secondary fs-3"></i>
+                </div>
+                <div>
+                    <div class="fs-3 fw-bold">@ViewBag.EquiposEnBodega</div>
+                    <div class="text-muted small">Equipos en Bodega</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="card border-0 shadow-sm" style="border-left:4px solid #198754 !important;">
+            <div class="card-body d-flex align-items-center gap-3">
+                <div class="bg-success bg-opacity-10 rounded p-3">
+                    <i class="bi bi-hospital text-success fs-3"></i>
+                </div>
+                <div>
+                    <div class="fs-3 fw-bold">@equiposEnHospital</div>
+                    <div class="text-muted small">Equipos en Hospitales</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@* Alertas TI *@
+@if (mantsTIPendientes > 0 || licVencidas > 0 || licPorVencer > 0)
+{
+    <div class="row g-2 mb-4">
+        @if (mantsTIVencidos > 0)
+        {
+            <div class="col-md-4">
+                <div class="alert alert-danger d-flex align-items-center gap-2 mb-0 py-2">
+                    <i class="bi bi-wrench-adjustable-circle-fill fs-5"></i>
+                    <div class="small">
+                        <strong>@mantsTIVencidos mantenimiento(s) TI vencido(s).</strong><br/>
+                        <a asp-controller="Equipment" asp-action="MaintenanceDue" class="alert-link">Ver pendientes</a>
+                    </div>
+                </div>
+            </div>
+        }
+        else if (mantsTIPendientes > 0)
+        {
+            <div class="col-md-4">
+                <div class="alert alert-warning d-flex align-items-center gap-2 mb-0 py-2">
+                    <i class="bi bi-wrench-adjustable fs-5"></i>
+                    <div class="small">
+                        <strong>@mantsTIPendientes mantenimiento(s) TI pendiente(s).</strong><br/>
+                        <a asp-controller="Equipment" asp-action="MaintenanceDue" class="alert-link">Ver pendientes</a>
+                    </div>
+                </div>
+            </div>
+        }
+        @if (licVencidas > 0)
+        {
+            <div class="col-md-4">
+                <div class="alert alert-danger d-flex align-items-center gap-2 mb-0 py-2">
+                    <i class="bi bi-file-earmark-x-fill fs-5"></i>
+                    <div class="small">
+                        <strong>@licVencidas licitacion(es) vencida(s).</strong><br/>
+                        <a asp-controller="Gestion" asp-action="Licitaciones" class="alert-link">Ver licitaciones</a>
+                    </div>
+                </div>
+            </div>
+        }
+        @if (licPorVencer > 0)
+        {
+            <div class="col-md-4">
+                <div class="alert alert-warning d-flex align-items-center gap-2 mb-0 py-2">
+                    <i class="bi bi-file-earmark-exclamation-fill fs-5"></i>
+                    <div class="small">
+                        <strong>@licPorVencer licitacion(es) próxima(s) a vencer.</strong><br/>
+                        <a asp-controller="Gestion" asp-action="Licitaciones" class="alert-link">Ver licitaciones</a>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+<div class="row g-3">
+    <!-- Equipos por tipo -->
+    <div class="col-md-5">
+        <div class="card shadow-sm h-100">
+            <div class="card-header fw-bold bg-dark text-white">
+                <i class="bi bi-pie-chart me-1"></i>Equipos por Tipo
+            </div>
+            <div class="card-body p-0">
+                <table class="table table-sm mb-0">
+                    <thead class="table-light">
+                        <tr><th>Tipo</th><th class="text-end">Total</th><th></th></tr>
+                    </thead>
+                    <tbody>
+                        @{
+                            var tipos = ViewBag.EquiposPorTipo as IEnumerable<dynamic> ?? [];
+                            var totalEq = (int)ViewBag.TotalEquipos;
+                        }
+                        @foreach (var t in tipos)
+                        {
+                            var pct = totalEq > 0 ? (int)((t.Total / (double)totalEq) * 100) : 0;
+                            <tr>
+                                <td>@t.Tipo</td>
+                                <td class="text-end fw-bold">@t.Total</td>
+                                <td style="width:120px;">
+                                    <div class="progress" style="height:8px;">
+                                        <div class="progress-bar bg-primary" style="width:@pct%"></div>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                        @if (!tipos.Any())
+                        {
+                            <tr><td colspan="3" class="text-center text-muted py-3">Sin datos.</td></tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Equipos por hospital -->
+    <div class="col-md-7">
+        <div class="card shadow-sm h-100">
+            <div class="card-header fw-bold bg-dark text-white">
+                <i class="bi bi-bar-chart me-1"></i>Equipos por Hospital (Top 3)
+            </div>
+            <div class="card-body p-0">
+                <table class="table table-sm mb-0">
+                    <thead class="table-light">
+                        <tr><th>Hospital</th><th class="text-end">Equipos</th><th></th></tr>
+                    </thead>
+                    <tbody>
+                        @{
+                            var hospitales = ViewBag.EquiposPorHospital as IEnumerable<dynamic> ?? [];
+                            var maxHosp = hospitales.Any() ? (int)hospitales.Max(h => h.Total) : 1;
+                        }
+                        @foreach (var h in hospitales)
+                        {
+                            var pct = maxHosp > 0 ? (int)((h.Total / (double)maxHosp) * 100) : 0;
+                            <tr>
+                                <td>@h.Hospital</td>
+                                <td class="text-end fw-bold">@h.Total</td>
+                                <td style="width:140px;">
+                                    <div class="progress" style="height:8px;">
+                                        <div class="progress-bar bg-success" style="width:@pct%"></div>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                        @if (!hospitales.Any())
+                        {
+                            <tr><td colspan="3" class="text-center text-muted py-3">Sin datos.</td></tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Historial reciente de movimientos (colapsable) -->
+    <div class="col-12">
+        <div class="card shadow-sm">
+            <div class="card-header fw-bold bg-dark text-white d-flex justify-content-between align-items-center"
+                 style="cursor:pointer;" data-bs-toggle="collapse" data-bs-target="#collapseMovimientos">
+                <span><i class="bi bi-clock-history me-1"></i>Movimientos Recientes</span>
+                <div class="d-flex align-items-center gap-2">
+                    <a asp-controller="Equipment" asp-action="Index" class="btn btn-outline-light btn-sm"
+                       onclick="event.stopPropagation()">
+                        <i class="bi bi-box-arrow-up-right me-1"></i>Inventario
+                    </a>
+                    <i class="bi bi-chevron-down small"></i>
+                </div>
+            </div>
+            <div class="collapse show" id="collapseMovimientos">
+            <div class="card-body p-0">
+                <table class="table table-sm table-hover mb-0 small">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Fecha</th>
+                            <th>Equipo</th>
+                            <th>Destino</th>
+                            <th>Usuario</th>
+                            <th>Notas</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @{
+                            var movimientos = ViewBag.RecentMovements as IEnumerable<EDInventory.Models.Entities.ItEquipHistory> ?? [];
+                        }
+                        @foreach (var mv in movimientos)
+                        {
+                            string destino;
+                            string iconClass;
+                            if (mv.WareCode.HasValue)
+                            {
+                                destino   = mv.Warehouse?.WareName ?? "Bodega";
+                                iconClass = "bi-box-seam text-secondary";
+                            }
+                            else if (mv.HospCode.HasValue)
+                            {
+                                destino   = mv.Hospital?.HospName ?? "Hospital";
+                                if (mv.HospitalDepartment != null)
+                                    destino += " / " + mv.HospitalDepartment.HospDepName;
+                                iconClass = "bi-hospital text-primary";
+                            }
+                            else if (mv.SiteCode.HasValue)
+                            {
+                                destino   = mv.Site?.SiteName ?? "Sede";
+                                iconClass = "bi-geo-alt text-info";
+                            }
+                            else
+                            {
+                                destino   = "—";
+                                iconClass = "bi-dash";
+                            }
+                            <tr>
+                                <td class="text-nowrap text-muted">@mv.HistDate.ToString("dd/MM/yyyy HH:mm")</td>
+                                <td>
+                                    <a asp-controller="Equipment" asp-action="Detail"
+                                       asp-route-id="@mv.ItequipCode">
+                                        @mv.ItEquip?.ItequipDesc
+                                    </a>
+                                </td>
+                                <td><i class="bi @iconClass me-1"></i>@destino</td>
+                                <td class="text-muted">@(mv.User?.UserLogin ?? "—")</td>
+                                <td class="text-muted">@(mv.HistNotes ?? "—")</td>
+                            </tr>
+                        }
+                        @if (!movimientos.Any())
+                        {
+                            <tr><td colspan="5" class="text-center text-muted py-3">Sin movimientos registrados.</td></tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+            </div> @* fin collapse movimientos *@
+        </div>
+    </div>
+</div>
+} @* fin canSeeTI *@
+
+@* ══════════════════════════════════════════════════════════
+   SECCIÓN SERVICIO
+   ══════════════════════════════════════════════════════════ *@
+@if (canSeeSvc)
+{
+<!-- Header División Servicio -->
+<div class="rounded-3 px-4 py-3 @(canSeeTI ? "mt-5" : "") mb-4 d-flex justify-content-between align-items-center"
+     style="background:linear-gradient(135deg,#3d2000 0%,#8a4800 100%); border-left:5px solid #ffc107;">
+    <div class="d-flex align-items-center gap-3">
+        <i class="bi bi-tools text-warning fs-3"></i>
+        <div>
+            <div class="text-white fw-bold fs-5 mb-0">División Servicio</div>
+            <div class="text-white-50 small">Inventario de repuestos e ingeniería</div>
+        </div>
+    </div>
+</div>
+
+<!-- Tarjetas Servicio -->
+<div class="row g-3 mb-4">
+    <div class="col-sm-6 col-xl-3">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body d-flex align-items-center gap-3">
+                <div class="bg-warning bg-opacity-10 rounded p-3">
+                    <i class="bi bi-diagram-3 text-warning fs-3"></i>
+                </div>
+                <div>
+                    <div class="fs-3 fw-bold">@ViewBag.TotalLineas</div>
+                    <div class="text-muted small">Lineas activas</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body d-flex align-items-center gap-3">
+                <div class="bg-secondary bg-opacity-10 rounded p-3">
+                    <i class="bi bi-inbox text-secondary fs-3"></i>
+                </div>
+                <div>
+                    <div class="fs-3 fw-bold">@ViewBag.TotalCajas</div>
+                    <div class="text-muted small">Cajas</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body d-flex align-items-center gap-3">
+                <div class="bg-info bg-opacity-10 rounded p-3">
+                    <i class="bi bi-puzzle text-info fs-3"></i>
+                </div>
+                <div>
+                    <div class="fs-3 fw-bold">@ViewBag.TotalPartes</div>
+                    <div class="text-muted small">Repuestos</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="card border-0 shadow-sm @(partsSinStock > 0 ? "border-danger border-2" : "")">
+            <div class="card-body d-flex align-items-center gap-3">
+                <div class="bg-danger bg-opacity-10 rounded p-3">
+                    <i class="bi bi-exclamation-triangle @(partsSinStock > 0 ? "text-danger" : "text-muted") fs-3"></i>
+                </div>
+                <div>
+                    <div class="fs-3 fw-bold @(partsSinStock > 0 ? "text-danger" : "")">@partsSinStock</div>
+                    <div class="text-muted small">Sin stock</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="card border-0 shadow-sm" style="border-left:4px solid #198754 !important;">
+            <div class="card-body d-flex align-items-center gap-3">
+                <div class="bg-success bg-opacity-10 rounded p-3">
+                    <i class="bi bi-hospital text-success fs-3"></i>
+                </div>
+                <div>
+                    <div class="fs-3 fw-bold">@activosClinicosEnHospital</div>
+                    <div class="text-muted small">Activos en Hospitales</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Alertas Servicio -->
+@if (mantsSvcPendientes > 0 || partsSinStock > 0 || partsBajoStock > 0)
+{
+    <div class="row g-3 mb-4">
+        @if (mantsSvcVencidos > 0)
+        {
+            <div class="col-md-4">
+                <div class="alert alert-danger d-flex align-items-center gap-2 mb-0 py-2">
+                    <i class="bi bi-wrench-adjustable-circle-fill fs-5"></i>
+                    <div class="small">
+                        <strong>@mantsSvcVencidos mantenimiento(s) Servicio vencido(s).</strong><br/>
+                        <a asp-controller="Engineering" asp-action="MaintenanceDue" class="alert-link">Ver pendientes</a>
+                    </div>
+                </div>
+            </div>
+        }
+        else if (mantsSvcPendientes > 0)
+        {
+            <div class="col-md-4">
+                <div class="alert alert-warning d-flex align-items-center gap-2 mb-0 py-2">
+                    <i class="bi bi-wrench-adjustable fs-5"></i>
+                    <div class="small">
+                        <strong>@mantsSvcPendientes mantenimiento(s) Servicio pendiente(s).</strong><br/>
+                        <a asp-controller="Engineering" asp-action="MaintenanceDue" class="alert-link">Ver pendientes</a>
+                    </div>
+                </div>
+            </div>
+        }
+        @if (partsSinStock > 0)
+        {
+            <div class="col-md-6">
+                <div class="alert alert-danger d-flex align-items-center gap-3 mb-0">
+                    <i class="bi bi-exclamation-triangle-fill fs-4"></i>
+                    <div>
+                        <strong>@partsSinStock repuesto(s) sin existencia (stock = 0).</strong>
+                        <a asp-controller="Engineering" asp-action="Index" class="alert-link ms-1">Ver lineas</a>
+                    </div>
+                </div>
+            </div>
+        }
+        @if (partsBajoStock > 0)
+        {
+            <div class="col-md-6">
+                <div class="alert alert-warning d-flex align-items-center gap-3 mb-0">
+                    <i class="bi bi-arrow-down-circle-fill fs-4"></i>
+                    <div>
+                        <strong>@partsBajoStock repuesto(s) con stock bajo (1-3 unidades).</strong>
+                        <a asp-controller="Engineering" asp-action="Index" class="alert-link ms-1">Ver lineas</a>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+<div class="row g-3">
+    <!-- Distribución por línea -->
+    <div class="col-md-5">
+        <div class="card shadow-sm h-100">
+            <div class="card-header fw-bold bg-dark text-white">
+                <i class="bi bi-bar-chart me-1"></i>Repuestos por Linea (Top 8)
+            </div>
+            <div class="card-body p-0">
+                <table class="table table-sm mb-0">
+                    <thead class="table-light">
+                        <tr><th>Linea</th><th class="text-end">Total</th><th class="text-end text-danger">Sin stock</th><th></th></tr>
+                    </thead>
+                    <tbody>
+                        @{
+                            var lineas = ViewBag.PartsPorLinea as IEnumerable<dynamic> ?? [];
+                            var maxLinea = lineas.Any() ? (int)lineas.Max(l => l.Total) : 1;
+                        }
+                        @foreach (var l in lineas)
+                        {
+                            var pct = maxLinea > 0 ? (int)((l.Total / (double)maxLinea) * 100) : 0;
+                            <tr>
+                                <td>
+                                    <a asp-controller="Engineering" asp-action="Index" class="text-decoration-none">@l.Linea</a>
+                                </td>
+                                <td class="text-end fw-bold">@l.Total</td>
+                                <td class="text-end @(l.SinStock > 0 ? "text-danger fw-bold" : "text-muted")">@l.SinStock</td>
+                                <td style="width:80px;">
+                                    <div class="progress" style="height:8px;">
+                                        <div class="progress-bar bg-warning" style="width:@pct%"></div>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                        @if (!lineas.Any())
+                        {
+                            <tr><td colspan="4" class="text-center text-muted py-3">Sin datos.</td></tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lista repuestos sin stock -->
+    <div class="col-md-7">
+        <div class="card shadow-sm h-100 @(partsSinStock > 0 ? "border-danger" : "")">
+            <div class="card-header fw-bold d-flex justify-content-between align-items-center
+                        @(partsSinStock > 0 ? "bg-danger text-white" : "bg-dark text-white")">
+                <span><i class="bi bi-exclamation-triangle me-1"></i>Repuestos sin Stock @(partsSinStock > 0 ? $"({partsSinStock})" : "")</span>
+                <a asp-controller="Engineering" asp-action="Search" class="btn btn-outline-light btn-sm">
+                    <i class="bi bi-search me-1"></i>Buscar
+                </a>
+            </div>
+            <div class="card-body p-0">
+                <table class="table table-sm table-hover mb-0 small">
+                    <thead class="table-light">
+                        <tr><th>Repuesto</th><th>Referencia</th><th>Linea / Caja</th></tr>
+                    </thead>
+                    <tbody>
+                        @{
+                            var sinStock = ViewBag.ListaSinStock as IEnumerable<EngPart> ?? [];
+                        }
+                        @foreach (var p in sinStock)
+                        {
+                            <tr>
+                                <td class="fw-semibold">@p.PartName</td>
+                                <td class="text-muted">@(p.PartRef ?? "—")</td>
+                                <td class="text-muted">
+                                    @(p.Box?.Line?.LineName ?? "—")
+                                    @if (p.Box != null){ <span class="text-muted"> / Caja @p.Box.BoxNumber</span> }
+                                </td>
+                            </tr>
+                        }
+                        @if (!sinStock.Any())
+                        {
+                            <tr><td colspan="3" class="text-center text-muted py-3">
+                                <i class="bi bi-check-circle text-success me-1"></i>Todos los repuestos tienen stock.
+                            </td></tr>
+                        }
+                        @if (partsSinStock > 12)
+                        {
+                            <tr><td colspan="3" class="text-center text-muted">
+                                <a asp-controller="Engineering" asp-action="Index" class="small">
+                                    + @(partsSinStock - 12) mas — ver todas las lineas
+                                </a>
+                            </td></tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+} @* fin canSeeSvc *@

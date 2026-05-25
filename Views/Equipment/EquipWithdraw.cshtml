@@ -1,0 +1,76 @@
+@model EDInventory.Models.ViewModels.EquipMovementVM
+@{ ViewData["Title"] = "Movimiento de Equipo IT"; }
+
+<div class="d-flex align-items-center mb-3 gap-2">
+    <a asp-action="Detail" asp-route-id="@Model.EntityCode" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-arrow-left"></i>
+    </a>
+    <h4 class="mb-0"><i class="bi bi-box-arrow-right me-2 text-warning"></i>Movimiento de Equipo IT</h4>
+</div>
+
+<div class="alert alert-light border mb-3">
+    <i class="bi bi-laptop me-1 text-primary"></i>
+    <strong>Equipo:</strong> @Model.EntityDesc
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-md-7 col-lg-6">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <form asp-action="EquipWithdraw" method="post">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" asp-for="EntityCode" />
+                    <input type="hidden" asp-for="EntityType" />
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Tipo de movimiento</label>
+                        <div class="d-flex gap-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" asp-for="MovType" value="RETIRO" id="chkRetiro" checked>
+                                <label class="form-check-label text-danger fw-semibold" for="chkRetiro">
+                                    <i class="bi bi-box-arrow-right me-1"></i>Retiro
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" asp-for="MovType" value="DEVOLUCION" id="chkDevol">
+                                <label class="form-check-label text-success fw-semibold" for="chkDevol">
+                                    <i class="bi bi-box-arrow-in-left me-1"></i>Devolución
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="MovDest" class="form-label fw-semibold">Destino / Procedencia <span class="text-muted fw-normal">(opcional)</span></label>
+                        <input asp-for="MovDest" class="form-control" placeholder="Ej: Taller de reparación, proveedor externo..." maxlength="100" />
+                        <span asp-validation-for="MovDest" class="text-danger small"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="HospCode" class="form-label fw-semibold">Hospital <span class="text-muted fw-normal">(opcional)</span></label>
+                        <select asp-for="HospCode" asp-items="Model.Hospitals" class="form-select">
+                            <option value="">-- Sin especificar --</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-4">
+                        <label asp-for="MovNotes" class="form-label fw-semibold">Notas <span class="text-muted fw-normal">(opcional)</span></label>
+                        <textarea asp-for="MovNotes" class="form-control" rows="2" maxlength="200"></textarea>
+                        <span asp-validation-for="MovNotes" class="text-danger small"></span>
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-warning flex-grow-1">
+                            <i class="bi bi-check-lg me-1"></i>Registrar movimiento
+                        </button>
+                        <a asp-action="Detail" asp-route-id="@Model.EntityCode" class="btn btn-outline-secondary">Cancelar</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{ await Html.RenderPartialAsync("_ValidationScriptsPartial"); }
+}

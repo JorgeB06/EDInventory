@@ -1,0 +1,48 @@
+## ── Archivos de credenciales / secretos ────────────────────────
+appsettings.Development.json
+appsettings.Production.json
+appsettings.Staging.json
+*.user
+secrets.json
+
+## ── Build outputs ───────────────────────────────────────────────
+[Oo]bj/
+[Bb]in/
+out/
+[Ll]og/
+[Ll]ogs/
+
+## ── Visual Studio / Rider ───────────────────────────────────────
+.vs/
+.idea/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+*.rsuser
+
+## ── NuGet ───────────────────────────────────────────────────────
+*.nupkg
+*.snupkg
+packages/
+project.lock.json
+project.fragment.lock.json
+artifacts/
+
+## ── DataProtection keys (contienen material criptográfico) ─────
+DataProtectionKeys/
+
+## ── Archivos del SO ─────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+
+## ── Publicación ─────────────────────────────────────────────────
+publish/
+PublishProfiles/
+
+## ── Temporales ──────────────────────────────────────────────────
+*.tmp
+*.bak
+*.swp
+*~

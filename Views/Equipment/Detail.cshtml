@@ -1,0 +1,444 @@
+﻿@model EDInventory.Models.Entities.ItEquip
+@using EDInventory.Models.Entities
+@{
+    ViewData["Title"] = Model.ItequipDesc ?? "Detalle Equipo";
+    var equipMovements = ViewBag.EquipMovements  as List<ItEquipMovement>   ?? new List<ItEquipMovement>();
+    var maintenances   = ViewBag.Maintenances    as List<ItEquipMaintenance> ?? new List<ItEquipMaintenance>();
+    var today          = DateOnly.FromDateTime(DateTime.Today);
+    bool canWrite = User.IsInRole(AppRoles.Admin) || User.IsInRole(AppRoles.TiAdmin) || User.IsInRole(AppRoles.TiTecnico);
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="mb-0"><i class="bi bi-laptop me-2"></i>@Model.ItequipDesc</h4>
+    <div class="d-flex gap-2">
+        <a asp-action="Label" asp-route-id="@Model.ItequipCode" target="_blank"
+           class="btn btn-outline-dark btn-sm">
+            <i class="bi bi-tag me-1"></i>Imprimir Etiqueta
+        </a>
+        @if (canWrite)
+        {
+            <a asp-action="MaintCreate" asp-route-equipCode="@Model.ItequipCode" class="btn btn-outline-primary btn-sm">
+                <i class="bi bi-wrench-adjustable me-1"></i>Mantenimiento
+            </a>
+            <a asp-action="EquipWithdraw" asp-route-id="@Model.ItequipCode" class="btn btn-outline-warning btn-sm">
+                <i class="bi bi-box-arrow-right me-1"></i>Retiro / Devolución
+            </a>
+        }
+        @if (canWrite)
+        {
+            <a asp-action="Edit" asp-route-id="@Model.ItequipCode" class="btn btn-outline-primary btn-sm">
+                <i class="bi bi-pencil me-1"></i>Editar
+            </a>
+        }
+        <a asp-action="Index" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-arrow-left me-1"></i>Volver
+        </a>
+    </div>
+</div>
+
+<div class="row g-3">
+    <!-- Informacion General -->
+    <div class="col-md-6">
+        <div class="card shadow-sm h-100">
+            <div class="card-header fw-bold bg-dark text-white">
+                <i class="bi bi-info-circle me-1"></i>Informacion General
+            </div>
+            <div class="card-body">
+                <dl class="row mb-0 small">
+                    <dt class="col-5">Tipo de Activo</dt>
+                    <dd class="col-7">@Model.Model?.Brand?.AssetType?.GenAssetType?.GenAssetsDesc / @Model.Model?.Brand?.AssetType?.AssetsDesc</dd>
+
+                    <dt class="col-5">Marca / Modelo</dt>
+                    <dd class="col-7">@Model.Model?.Brand?.BrandDesc — @Model.Model?.ModelDesc</dd>
+
+                    <dt class="col-5">Numero de Serie</dt>
+                    <dd class="col-7">@(Model.ItequipSn ?? "—")</dd>
+
+                    <dt class="col-5">Numero de Equipo</dt>
+                    <dd class="col-7">@(Model.ItequipNum ?? "—")</dd>
+
+                    <dt class="col-5">Num. Garantia</dt>
+                    <dd class="col-7">@(Model.ItequipGnum ?? "—")</dd>
+
+                    <dt class="col-5">Estado</dt>
+                    <dd class="col-7">
+                        <span class="badge @(Model.Active ? "bg-success" : "bg-secondary")">
+                            @(Model.Active ? "Activo" : "Inactivo")
+                        </span>
+                    </dd>
+
+                    <dt class="col-5">Fecha Registro</dt>
+                    <dd class="col-7">@Model.ItequipDnew?.ToString("dd/MM/yyyy")</dd>
+
+                    <dt class="col-5">Ultima Modif.</dt>
+                    <dd class="col-7">@Model.ItequipDmod?.ToString("dd/MM/yyyy")</dd>
+
+                    @if (Model.ItequipDjequip.HasValue)
+                    {
+                        <dt class="col-5">Fecha Baja</dt>
+                        <dd class="col-7 text-danger">@Model.ItequipDjequip?.ToString("dd/MM/yyyy")</dd>
+                    }
+                </dl>
+            </div>
+        </div>
+    </div>
+
+    <!-- Ubicacion actual -->
+    <div class="col-md-6">
+        <div class="card shadow-sm mb-3">
+            <div class="card-header fw-bold bg-dark text-white">
+                <i class="bi bi-geo-alt me-1"></i>Ubicacion Actual
+            </div>
+            <div class="card-body small">
+                @if (Model.WareCode.HasValue)
+                {
+                    <dl class="row mb-0">
+                        <dt class="col-4">Bodega</dt>
+                        <dd class="col-8"><i class="bi bi-box-seam me-1 text-primary"></i>@Model.Warehouse?.WareName</dd>
+                        <dt class="col-4">Rack</dt>
+                        <dd class="col-8">@(Model.WareRack ?? "—")</dd>
+                        <dt class="col-4">Estante</dt>
+                        <dd class="col-8">@(Model.WareEstante ?? "—")</dd>
+                        <dt class="col-4">Caja</dt>
+                        <dd class="col-8">@(Model.WareCaja ?? "—")</dd>
+                    </dl>
+                }
+                else if (Model.HospCode.HasValue)
+                {
+                    <dl class="row mb-0">
+                        <dt class="col-4">Hospital</dt>
+                        <dd class="col-8"><i class="bi bi-hospital me-1 text-primary"></i>@Model.Hospital?.HospName</dd>
+                        <dt class="col-4">Zona</dt>
+                        <dd class="col-8">@(Model.HospitalDepartment?.HospDepName ?? "—")</dd>
+                        <dt class="col-4">Posicion</dt>
+                        <dd class="col-8">@(Model.ItequipHospPos ?? "—")</dd>
+                    </dl>
+                }
+                else if (Model.SiteCode.HasValue)
+                {
+                    <dl class="row mb-0">
+                        <dt class="col-4">Sede</dt>
+                        <dd class="col-8"><i class="bi bi-geo-alt me-1 text-primary"></i>@Model.Site?.SiteName</dd>
+                    </dl>
+                }
+                else
+                {
+                    <span class="text-muted">Sin ubicacion asignada.</span>
+                }
+            </div>
+        </div>
+
+        <!-- Licitacion -->
+        <div class="card shadow-sm">
+            <div class="card-header fw-bold bg-dark text-white">
+                <i class="bi bi-file-earmark-text me-1"></i>Licitacion
+            </div>
+            <div class="card-body small">
+                @if (Model.Licitacion != null)
+                {
+                    var detHoy     = DateOnly.FromDateTime(DateTime.Today);
+                    var detVencida  = Model.Licitacion.LicEnd.HasValue && Model.Licitacion.LicEnd < detHoy && !Model.Licitacion.LicPostponed;
+                    var detAplazada = Model.Licitacion.LicEnd.HasValue && Model.Licitacion.LicEnd < detHoy &&  Model.Licitacion.LicPostponed;
+                    var detSoon     = Model.Licitacion.LicEnd.HasValue && !detVencida && !detAplazada &&
+                                      Model.Licitacion.LicEnd <= DateOnly.FromDateTime(DateTime.Today.AddDays(Model.Licitacion.LicWarnDays));
+                    <dl class="row mb-0">
+                        <dt class="col-5">Num. Licitacion</dt>
+                        <dd class="col-7">@Model.Licitacion.LicNum</dd>
+                        <dt class="col-5">Descripcion</dt>
+                        <dd class="col-7">@Model.Licitacion.LicDesc</dd>
+                        <dt class="col-5">Inicio</dt>
+                        <dd class="col-7">@(Model.Licitacion.LicStart?.ToString("dd/MM/yyyy") ?? "—")</dd>
+                        <dt class="col-5">Vencimiento</dt>
+                        <dd class="col-7 @(detVencida ? "text-danger fw-bold" : detAplazada ? "text-warning fw-bold" : detSoon ? "text-warning fw-bold" : "")">
+                            @(Model.Licitacion.LicEnd?.ToString("dd/MM/yyyy") ?? "—")
+                            @if (detVencida)  { <span class="badge bg-danger ms-1"><i class="bi bi-exclamation-triangle-fill me-1"></i>Vencida</span> }
+                            else if (detAplazada) { <span class="badge bg-warning text-dark ms-1"><i class="bi bi-pause-circle-fill me-1"></i>Aplazada</span> }
+                            else if (detSoon)  { <span class="badge bg-warning text-dark ms-1"><i class="bi bi-clock-history me-1"></i>Por vencer</span> }
+                            else if (Model.Licitacion.LicEnd.HasValue) { <span class="badge bg-success ms-1">Vigente</span> }
+                        </dd>
+                        @if (detAplazada && !string.IsNullOrWhiteSpace(Model.Licitacion.LicPostponedNote))
+                        {
+                            <dt class="col-5">Nota aplazamiento</dt>
+                            <dd class="col-7 text-muted"><i class="bi bi-info-circle me-1"></i>@Model.Licitacion.LicPostponedNote</dd>
+                        }
+                    </dl>
+                }
+                else
+                {
+                    <span class="text-muted">Sin licitacion asignada.</span>
+                }
+            </div>
+        </div>
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(Model.ItequipAddata))
+    {
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header fw-bold bg-dark text-white">
+                    <i class="bi bi-card-text me-1"></i>Datos Adicionales
+                </div>
+                <div class="card-body small">@Model.ItequipAddata</div>
+            </div>
+        </div>
+    }
+
+    @if (Model.Details.Any())
+    {
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header fw-bold bg-dark text-white">
+                    <i class="bi bi-list-ul me-1"></i>Detalles del Equipo
+                </div>
+                <div class="card-body p-0">
+                    <table class="table table-sm mb-0">
+                        <thead class="table-light">
+                            <tr><th>#</th><th>Detalle</th></tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var d in Model.Details)
+                            {
+                                <tr>
+                                    <td>@d.ItequipDetailCode</td>
+                                    <td>@d.Detail</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- Mantenimientos -->
+    <div class="col-12">
+        <div class="card shadow-sm">
+            <div class="card-header fw-bold bg-dark text-white d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-wrench-adjustable me-1"></i>Mantenimientos</span>
+                @if (canWrite)
+                {
+                    <a asp-action="MaintCreate" asp-route-equipCode="@Model.ItequipCode"
+                       class="btn btn-outline-light btn-sm">
+                        <i class="bi bi-plus me-1"></i>Programar
+                    </a>
+                }
+            </div>
+            @if (!maintenances.Any())
+            {
+                <div class="card-body text-muted small">Sin mantenimientos registrados.</div>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover mb-0 small">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Tipo</th>
+                                <th>Estado</th>
+                                <th>Programado</th>
+                                <th>Completado</th>
+                                <th>Técnico</th>
+                                <th>Notas / Resultado</th>
+                                @if (canWrite)
+                                {
+                                    <th style="width:80px"></th>
+                                }
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var m in maintenances)
+                            {
+                                var dias = m.MaintScheduled.DayNumber - today.DayNumber;
+                                string rowBg = m.MaintStatus == "COMPLETADO" ? "" :
+                                               m.MaintStatus == "CANCELADO"  ? "table-secondary" :
+                                               dias < 0 ? "table-danger" : dias <= 7 ? "table-warning" : "";
+                                <tr class="@rowBg">
+                                    <td>
+                                        <span class="badge @(m.MaintType == "PREVENTIVO" ? "bg-primary" : m.MaintType == "CALIBRACION" ? "bg-info text-dark" : "bg-danger")">
+                                            @m.MaintType
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="badge @(m.MaintStatus == "COMPLETADO" ? "bg-success" : m.MaintStatus == "CANCELADO" ? "bg-secondary" : "bg-warning text-dark")">
+                                            @m.MaintStatus
+                                        </span>
+                                    </td>
+                                    <td>@m.MaintScheduled.ToString("dd/MM/yyyy")</td>
+                                    <td>@(m.MaintCompleted?.ToString("dd/MM/yyyy") ?? "—")</td>
+                                    <td>
+                                        @(m.User?.Employee != null
+                                            ? $"{m.User.Employee.EmpName} {m.User.Employee.EmpSurname}"
+                                            : m.User?.UserLogin ?? "—")
+                                    </td>
+                                    <td class="text-muted">
+                                        @(m.MaintStatus == "COMPLETADO" ? m.MaintResult : m.MaintNotes)
+                                    </td>
+                                    @if (canWrite)
+                                    {
+                                        <td class="text-end">
+                                            @if (m.MaintStatus == "PENDIENTE")
+                                            {
+                                                <a asp-action="MaintComplete" asp-route-id="@m.MaintCode"
+                                                   class="btn btn-outline-success btn-sm py-0 px-1 me-1" title="Completar">
+                                                    <i class="bi bi-check-lg"></i>
+                                                </a>
+                                                <form asp-action="MaintCancel" asp-route-id="@m.MaintCode" method="post" class="d-inline">
+                                                    @Html.AntiForgeryToken()
+                                                    <button type="submit" class="btn btn-outline-secondary btn-sm py-0 px-1" title="Cancelar">
+                                                        <i class="bi bi-x-lg"></i>
+                                                    </button>
+                                                </form>
+                                            }
+                                        </td>
+                                    }
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- Retiros y Devoluciones -->
+    @if (equipMovements.Any())
+    {
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header fw-bold bg-dark text-white">
+                    <i class="bi bi-arrow-left-right me-1"></i>Retiros y Devoluciones
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover mb-0 small">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Fecha</th>
+                                <th>Tipo</th>
+                                <th>Destino / Procedencia</th>
+                                <th>Hospital</th>
+                                <th>Usuario</th>
+                                <th>Notas</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var m in equipMovements)
+                            {
+                                <tr>
+                                    <td class="text-muted text-nowrap">@m.MovDate.ToString("dd/MM/yyyy HH:mm")</td>
+                                    <td>
+                                        @if (m.MovType == "RETIRO")
+                                        {
+                                            <span class="badge bg-warning text-dark"><i class="bi bi-box-arrow-right me-1"></i>Retiro</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-success"><i class="bi bi-box-arrow-in-left me-1"></i>Devolución</span>
+                                        }
+                                    </td>
+                                    <td>@(m.MovDest ?? "—")</td>
+                                    <td>@(m.Hospital?.HospName ?? "—")</td>
+                                    <td>
+                                        @(m.User?.Employee != null
+                                            ? $"{m.User.Employee.EmpName} {m.User.Employee.EmpSurname}"
+                                            : m.User?.UserLogin ?? "—")
+                                    </td>
+                                    <td class="text-muted">@(m.MovNotes ?? "—")</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- Historial de movimientos -->
+    <div class="col-12">
+        <div class="card shadow-sm">
+            <div class="card-header fw-bold bg-dark text-white">
+                <i class="bi bi-clock-history me-1"></i>Historial de Movimientos
+            </div>
+            <div class="card-body p-0">
+                @if (Model.History.Any())
+                {
+                    <table class="table table-sm mb-0 small">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Fecha</th>
+                                <th>Tipo</th>
+                                <th>Ubicacion</th>
+                                <th>Notas</th>
+                                <th>Usuario</th>
+                                <th>Responsable</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var h in Model.History.OrderByDescending(x => x.HistDate))
+                            {
+                                <tr>
+                                    <td class="text-nowrap">@h.HistDate.ToString("dd/MM/yyyy HH:mm")</td>
+                                    <td>
+                                        @if (h.LocType == "HOSPITAL")
+                                        {
+                                            <span class="badge bg-primary"><i class="bi bi-hospital me-1"></i>Hospital</span>
+                                        }
+                                        else if (h.LocType == "BODEGA")
+                                        {
+                                            <span class="badge bg-secondary"><i class="bi bi-box-seam me-1"></i>Bodega</span>
+                                        }
+                                        else if (h.LocType == "SEDE")
+                                        {
+                                            <span class="badge bg-info text-dark"><i class="bi bi-geo-alt me-1"></i>Sede</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-light text-dark">Sin ubicacion</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        @if (h.LocType == "HOSPITAL")
+                                        {
+                                            <span>@h.Hospital?.HospName</span>
+                                            @if (h.HospitalDepartment != null)
+                                            {
+                                                <br /><small class="text-muted">@h.HospitalDepartment.HospDepName @(!string.IsNullOrWhiteSpace(h.ItequipHospPos) ? $"— {h.ItequipHospPos}" : "")</small>
+                                            }
+                                        }
+                                        else if (h.LocType == "BODEGA")
+                                        {
+                                            <span>@h.Warehouse?.WareName</span>
+                                            @if (!string.IsNullOrWhiteSpace(h.WareRack))
+                                            {
+                                                <br /><small class="text-muted">Rack: @h.WareRack / Est: @h.WareEstante @(!string.IsNullOrWhiteSpace(h.WareCaja) ? $"/ Caja: {h.WareCaja}" : "")</small>
+                                            }
+                                        }
+                                        else if (h.LocType == "SEDE")
+                                        {
+                                            <span>@h.Site?.SiteName</span>
+                                        }
+                                    </td>
+                                    <td>@(h.HistNotes ?? "—")</td>
+                                    <td>@(h.User?.UserLogin ?? "—")</td>
+                                    <td>
+                                        @if (h.Employee != null)
+                                        {
+                                            <span>@h.Employee.EmpName @h.Employee.EmpSurname</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">—</span>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                }
+                else
+                {
+                    <div class="text-center text-muted py-3 small">No hay movimientos registrados.</div>
+                }
+            </div>
+        </div>
+    </div>
+</div>

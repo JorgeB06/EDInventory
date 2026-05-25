@@ -1,0 +1,35 @@
+@model EDInventory.Models.ViewModels.HospitalRoleViewModel
+@{ ViewData["Title"] = "Editar Cargo"; }
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="mb-0"><i class="bi bi-person-badge me-2"></i>Editar Cargo</h4>
+    <a asp-action="Index" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left me-1"></i>Hospitales</a>
+</div>
+
+<div class="card shadow-sm" style="max-width:480px;">
+    <div class="card-body">
+        <form asp-action="RoleEdit" method="post">
+            @Html.AntiForgeryToken()
+            <input asp-for="HospRoleCode" type="hidden" />
+            <div asp-validation-summary="ModelOnly" class="alert alert-danger small py-2"></div>
+            <div class="mb-3">
+                <label asp-for="HospRoleName" class="form-label fw-semibold"></label>
+                <input asp-for="HospRoleName" class="form-control" />
+                <span asp-validation-for="HospRoleName" class="text-danger small"></span>
+            </div>
+            <div class="mb-3">
+                <label asp-for="HospDepCode" class="form-label fw-semibold"></label>
+                <select asp-for="HospDepCode" asp-items="Model.HospitalDepartments" class="form-select">
+                    <option value="">-- Seleccione departamento --</option>
+                </select>
+                <span asp-validation-for="HospDepCode" class="text-danger small"></span>
+            </div>
+            <div class="mb-4 form-check">
+                <input asp-for="Active" class="form-check-input" type="checkbox" />
+                <label asp-for="Active" class="form-check-label">Activo</label>
+            </div>
+            <button type="submit" class="btn btn-primary"><i class="bi bi-floppy me-1"></i>Guardar cambios</button>
+        </form>
+    </div>
+</div>
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

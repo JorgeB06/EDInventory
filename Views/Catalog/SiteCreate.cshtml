@@ -1,0 +1,38 @@
+@model EDInventory.Models.ViewModels.SiteViewModel
+@{ ViewData["Title"] = "Nueva Sede"; }
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="mb-0"><i class="bi bi-geo-alt me-2"></i>Nueva Sede</h4>
+    <a asp-action="Sites" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left me-1"></i>Volver</a>
+</div>
+
+<div class="card shadow-sm" style="max-width:560px;">
+    <div class="card-body">
+        <form asp-action="SiteCreate" method="post">
+            @Html.AntiForgeryToken()
+            <div asp-validation-summary="ModelOnly" class="alert alert-danger small py-2"></div>
+            <div class="mb-3">
+                <label asp-for="SiteName" class="form-label fw-semibold"></label>
+                <input asp-for="SiteName" class="form-control" />
+                <span asp-validation-for="SiteName" class="text-danger small"></span>
+            </div>
+            <div class="mb-3">
+                <label asp-for="SiteAddress" class="form-label fw-semibold"></label>
+                <input asp-for="SiteAddress" class="form-control" />
+            </div>
+            <div class="mb-3">
+                <label asp-for="CompanyCode" class="form-label fw-semibold"></label>
+                <select asp-for="CompanyCode" asp-items="Model.Companies" class="form-select">
+                    <option value="">-- Seleccione empresa --</option>
+                </select>
+                <span asp-validation-for="CompanyCode" class="text-danger small"></span>
+            </div>
+            <div class="mb-4 form-check">
+                <input asp-for="Active" class="form-check-input" type="checkbox" />
+                <label asp-for="Active" class="form-check-label">Activo</label>
+            </div>
+            <button type="submit" class="btn btn-primary"><i class="bi bi-floppy me-1"></i>Guardar</button>
+        </form>
+    </div>
+</div>
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

@@ -1,0 +1,27 @@
+@model EDInventory.Models.ViewModels.UserRoleViewModel
+@{ ViewData["Title"] = "Nuevo Rol de Sistema"; }
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="mb-0"><i class="bi bi-shield-plus me-2"></i>Nuevo Rol de Sistema</h4>
+    <a asp-action="SystemRoles" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left me-1"></i>Volver</a>
+</div>
+
+<div class="card shadow-sm" style="max-width:420px;">
+    <div class="card-body">
+        <form asp-action="SystemRoleCreate" method="post">
+            @Html.AntiForgeryToken()
+            <div asp-validation-summary="ModelOnly" class="alert alert-danger small py-2"></div>
+            <div class="mb-3">
+                <label asp-for="UroleDesc" class="form-label fw-semibold"></label>
+                <input asp-for="UroleDesc" class="form-control" placeholder="Ej: Administrador, Tecnico, Consulta..." />
+                <span asp-validation-for="UroleDesc" class="text-danger small"></span>
+            </div>
+            <div class="mb-4 form-check">
+                <input asp-for="Active" class="form-check-input" type="checkbox" />
+                <label asp-for="Active" class="form-check-label">Activo</label>
+            </div>
+            <button type="submit" class="btn btn-primary"><i class="bi bi-floppy me-1"></i>Guardar</button>
+        </form>
+    </div>
+</div>
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

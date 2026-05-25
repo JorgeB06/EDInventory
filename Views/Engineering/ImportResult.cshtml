@@ -1,0 +1,101 @@
+@model EDInventory.Models.ViewModels.EngImportResultViewModel
+@{
+    ViewData["Title"] = "Resultado de Importación";
+    bool success = Model.PartsInserted > 0 || Model.LinesCreated > 0 || Model.BoxesCreated > 0;
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h4 class="mb-0"><i class="bi bi-check2-circle me-2"></i>Resultado de Importación</h4>
+    <div class="d-flex gap-2">
+        <a asp-action="Import" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-upload me-1"></i>Nueva importación
+        </a>
+        <a asp-action="Index" class="btn btn-primary btn-sm">
+            <i class="bi bi-tools me-1"></i>Ver inventario
+        </a>
+    </div>
+</div>
+
+@if (success)
+{
+    <div class="alert alert-success">
+        <i class="bi bi-check-circle-fill me-1"></i>
+        Importación completada. Se procesaron <strong>@Model.TotalRows</strong> filas.
+    </div>
+}
+else if (Model.TotalRows == 0)
+{
+    <div class="alert alert-warning">
+        <i class="bi bi-exclamation-triangle me-1"></i>
+        El archivo no contenía filas de datos. Verifica que la fila 1 sea la cabecera y los datos empiecen en la fila 2.
+    </div>
+}
+else
+{
+    <div class="alert alert-warning">
+        <i class="bi bi-exclamation-triangle me-1"></i>
+        No se insertó ningún repuesto. Revisa los errores abajo.
+    </div>
+}
+
+<div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+        <div class="card text-center border-0 shadow-sm h-100">
+            <div class="card-body py-3">
+                <div class="fs-2 fw-bold text-primary">@Model.TotalRows</div>
+                <div class="small text-muted">Filas procesadas</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card text-center border-0 shadow-sm h-100">
+            <div class="card-body py-3">
+                <div class="fs-2 fw-bold text-success">@Model.PartsInserted</div>
+                <div class="small text-muted">Repuestos insertados</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card text-center border-0 shadow-sm h-100">
+            <div class="card-body py-3">
+                <div class="fs-2 fw-bold text-info">@(Model.LinesCreated + Model.BoxesCreated)</div>
+                <div class="small text-muted">
+                    Líneas/Cajas creadas
+                    <span class="d-block text-muted" style="font-size:0.75rem;">
+                        (@Model.LinesCreated líneas · @Model.BoxesCreated cajas)
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card text-center border-0 shadow-sm h-100">
+            <div class="card-body py-3">
+                <div class="fs-2 fw-bold @(Model.PartsSkipped > 0 ? "text-warning" : "text-secondary")">
+                    @Model.PartsSkipped
+                </div>
+                <div class="small text-muted">Duplicados omitidos</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (Model.Errors.Any())
+{
+    <div class="card border-warning shadow-sm">
+        <div class="card-header bg-warning bg-opacity-10 fw-semibold text-warning-emphasis">
+            <i class="bi bi-exclamation-triangle me-1"></i>
+            @Model.Errors.Count error(s) encontrado(s)
+        </div>
+        <div class="card-body p-0">
+            <ul class="list-group list-group-flush">
+                @foreach (var err in Model.Errors)
+                {
+                    <li class="list-group-item list-group-item-warning small py-2">
+                        <i class="bi bi-x-circle me-1"></i>@err
+                    </li>
+                }
+            </ul>
+        </div>
+    </div>
+}

@@ -1,0 +1,83 @@
+@model EDInventory.Models.ViewModels.MaintCreateVM
+@{ ViewData["Title"] = "Programar Mantenimiento"; }
+
+<div class="d-flex align-items-center mb-3 gap-2">
+    <a asp-action="AssetDetail" asp-route-id="@Model.AssetCode" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-arrow-left"></i>
+    </a>
+    <h4 class="mb-0"><i class="bi bi-wrench-adjustable me-2 text-primary"></i>Programar Mantenimiento</h4>
+</div>
+
+<div class="alert alert-light border mb-3">
+    <i class="bi bi-hospital me-1 text-primary"></i>
+    <strong>Equipo:</strong> @Model.AssetDesc
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-md-7 col-lg-6">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <form asp-action="MaintCreate" method="post">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" asp-for="AssetCode" />
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Tipo de mantenimiento</label>
+                        <div class="d-flex flex-wrap gap-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" asp-for="MaintType" value="PREVENTIVO" id="tPreventivo" checked>
+                                <label class="form-check-label" for="tPreventivo">
+                                    <span class="badge bg-primary">PREVENTIVO</span>
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" asp-for="MaintType" value="CORRECTIVO" id="tCorrectivo">
+                                <label class="form-check-label" for="tCorrectivo">
+                                    <span class="badge bg-danger">CORRECTIVO</span>
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" asp-for="MaintType" value="CALIBRACION" id="tCalibracion">
+                                <label class="form-check-label" for="tCalibracion">
+                                    <span class="badge bg-info text-dark">CALIBRACIÓN</span>
+                                </label>
+                            </div>
+                        </div>
+                        <span asp-validation-for="MaintType" class="text-danger small"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="MaintScheduled" class="form-label fw-semibold">Fecha programada</label>
+                        <input asp-for="MaintScheduled" class="form-control" type="date" style="max-width:200px;" />
+                        <span asp-validation-for="MaintScheduled" class="text-danger small"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="UserCode" class="form-label fw-semibold">Técnico asignado <span class="text-muted fw-normal">(opcional)</span></label>
+                        <select asp-for="UserCode" asp-items="Model.Technicians" class="form-select">
+                            <option value="">-- Sin asignar --</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-4">
+                        <label asp-for="MaintNotes" class="form-label fw-semibold">Instrucciones / Checklist <span class="text-muted fw-normal">(opcional)</span></label>
+                        <textarea asp-for="MaintNotes" class="form-control" rows="3" maxlength="200"
+                                  placeholder="Ej: Limpieza de filtros, revisión de calibración, prueba de ciclos..."></textarea>
+                        <span asp-validation-for="MaintNotes" class="text-danger small"></span>
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary flex-grow-1">
+                            <i class="bi bi-calendar-check me-1"></i>Programar
+                        </button>
+                        <a asp-action="AssetDetail" asp-route-id="@Model.AssetCode" class="btn btn-outline-secondary">Cancelar</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{ await Html.RenderPartialAsync("_ValidationScriptsPartial"); }
+}

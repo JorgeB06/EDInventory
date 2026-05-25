@@ -1,0 +1,975 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Manual de Software — EDInventory</title>
+<style>
+  /* ── Estilos base ───────────────────────────────────────────── */
+  @page { margin: 2.5cm 2.5cm 2.5cm 3cm; }
+  body { font-family: "Calibri", "Segoe UI", sans-serif; font-size: 11pt; color: #1a1a1a; line-height: 1.5; }
+
+  /* ── Portada ─────────────────────────────────────────────────  */
+  .cover { text-align: center; padding: 4cm 2cm; page-break-after: always; }
+  .cover .logo { font-size: 48pt; font-weight: 900; color: #0d6efd; letter-spacing: -2px; }
+  .cover .logo span { color: #198754; }
+  .cover .subtitle { font-size: 18pt; color: #495057; margin-top: 0.5cm; }
+  .cover .edition { font-size: 13pt; color: #6c757d; margin-top: 2cm; }
+  .cover .company { font-size: 12pt; color: #495057; margin-top: 4cm; border-top: 2px solid #dee2e6; padding-top: 0.5cm; }
+
+  /* ── Tabla de contenido ──────────────────────────────────────  */
+  .toc { page-break-after: always; }
+  .toc h2 { font-size: 16pt; color: #0d6efd; border-bottom: 2px solid #0d6efd; padding-bottom: 4px; margin-bottom: 16px; }
+  .toc ul { list-style: none; padding: 0; margin: 0; }
+  .toc > ul > li { margin: 6px 0; font-weight: 600; font-size: 11pt; }
+  .toc > ul > li a { color: #212529; text-decoration: none; }
+  .toc > ul ul { padding-left: 20px; font-weight: 400; margin: 2px 0; }
+  .toc > ul ul li { margin: 2px 0; font-size: 10.5pt; }
+  .toc > ul ul a { color: #495057; text-decoration: none; }
+
+  /* ── Secciones ─────────────────────────────────────────────── */
+  /* Pantalla: márgenes normales, bordes redondeados             */
+  .part-header {
+    page-break-before: always;
+    background: linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%);
+    color: white;
+    padding: 1.2cm 1.5cm;
+    margin: 1.5cm 0 1.2cm 0;
+    text-align: center;
+    border-radius: 10px;
+  }
+  /* Impresión: sangra hasta los bordes del papel (compensa @page margins) */
+  @media print {
+    .part-header {
+      padding: 2cm 1.5cm;
+      margin: -2.5cm -2.5cm 1.5cm -3cm;
+      border-radius: 0;
+    }
+  }
+  .part-header.green { background: linear-gradient(135deg, #198754 0%, #146c43 100%); }
+  .part-header.dark  { background: linear-gradient(135deg, #343a40 0%, #1a1d20 100%); }
+  .part-header h1 { font-size: 22pt; margin: 0; font-weight: 700; }
+  .part-header p  { font-size: 12pt; margin: 8px 0 0 0; opacity: 0.9; }
+
+  /* ── Títulos ─────────────────────────────────────────────────  */
+  h1 { font-size: 18pt; color: #0d6efd; border-bottom: 2px solid #0d6efd; padding-bottom: 4px; margin-top: 24px; }
+  h2 { font-size: 14pt; color: #0d6efd; margin-top: 20px; }
+  h3 { font-size: 12pt; color: #343a40; border-left: 4px solid #0d6efd; padding-left: 8px; margin-top: 16px; }
+  h4 { font-size: 11pt; color: #495057; margin-top: 12px; font-style: italic; }
+
+  /* Colores por sección */
+  .sec-admin h1, .sec-admin h2 { color: #198754; border-color: #198754; }
+  .sec-admin h3 { border-color: #198754; }
+  .sec-tech  h1, .sec-tech h2  { color: #495057; border-color: #495057; }
+  .sec-tech  h3 { border-color: #6c757d; }
+
+  /* ── Tablas ──────────────────────────────────────────────────  */
+  table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 10pt; }
+  th { background: #0d6efd; color: white; padding: 7px 10px; text-align: left; font-weight: 600; }
+  .sec-admin th { background: #198754; }
+  .sec-tech  th { background: #343a40; }
+  td { padding: 6px 10px; border-bottom: 1px solid #dee2e6; vertical-align: top; }
+  tr:nth-child(even) td { background: #f8f9fa; }
+
+  /* ── Cajas informativas ──────────────────────────────────────  */
+  .tip   { background: #d1ecf1; border-left: 4px solid #0dcaf0; padding: 10px 14px; margin: 10px 0; border-radius: 0 4px 4px 0; font-size: 10.5pt; }
+  .warn  { background: #fff3cd; border-left: 4px solid #ffc107; padding: 10px 14px; margin: 10px 0; border-radius: 0 4px 4px 0; font-size: 10.5pt; }
+  .danger{ background: #f8d7da; border-left: 4px solid #dc3545; padding: 10px 14px; margin: 10px 0; border-radius: 0 4px 4px 0; font-size: 10.5pt; }
+  .info  { background: #e2e3e5; border-left: 4px solid #6c757d; padding: 10px 14px; margin: 10px 0; border-radius: 0 4px 4px 0; font-size: 10.5pt; }
+
+  /* ── Código / rutas ──────────────────────────────────────────  */
+  code { font-family: "Consolas", monospace; background: #f1f3f5; padding: 1px 5px; border-radius: 3px; font-size: 10pt; color: #c0392b; }
+  pre  { background: #1e1e1e; color: #d4d4d4; padding: 14px; border-radius: 6px; font-size: 9.5pt; overflow-x: auto; white-space: pre-wrap; }
+
+  /* ── Pasos numerados ─────────────────────────────────────────  */
+  .steps { counter-reset: step; padding: 0; list-style: none; }
+  .steps li { counter-increment: step; margin: 8px 0; padding-left: 36px; position: relative; }
+  .steps li::before { content: counter(step); position: absolute; left: 0; top: 0;
+    background: #0d6efd; color: white; width: 24px; height: 24px;
+    border-radius: 50%; text-align: center; line-height: 24px; font-size: 9.5pt; font-weight: 700; }
+  .sec-admin .steps li::before { background: #198754; }
+
+  /* ── Badges de rol ───────────────────────────────────────────  */
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 9pt; font-weight: 600; margin: 1px; }
+  .badge-blue  { background: #cfe2ff; color: #084298; }
+  .badge-green { background: #d1e7dd; color: #0a3622; }
+  .badge-gray  { background: #e2e3e5; color: #383d41; }
+  .badge-yellow{ background: #fff3cd; color: #664d03; }
+  .badge-red   { background: #f8d7da; color: #842029; }
+
+  /* ── Separador de sección ────────────────────────────────────  */
+  hr { border: none; border-top: 1px solid #dee2e6; margin: 20px 0; }
+  .page-break { page-break-before: always; }
+
+  /* ── Imágenes / capturas (placeholder) ──────────────────────  */
+  .screenshot { border: 1px solid #dee2e6; border-radius: 6px; padding: 40px; text-align: center;
+    background: #f8f9fa; color: #6c757d; font-size: 10pt; margin: 12px 0; font-style: italic; }
+
+  /* ── Footer ──────────────────────────────────────────────────  */
+  .footer { margin-top: 3cm; padding-top: 0.5cm; border-top: 1px solid #dee2e6;
+    text-align: center; font-size: 9pt; color: #adb5bd; }
+</style>
+</head>
+<body>
+
+<!-- ════════════════════════════════════════════════════════════ -->
+<!--  PORTADA                                                      -->
+<!-- ════════════════════════════════════════════════════════════ -->
+<div class="cover">
+  <div class="logo">ED<span>Inventory</span></div>
+  <div class="subtitle">Sistema de Inventario de Equipos IT y Activos Clínicos</div>
+  <div style="margin-top:2.5cm; font-size:28pt; font-weight:700; color:#343a40;">MANUAL DE SOFTWARE</div>
+  <div style="font-size:13pt; color:#6c757d; margin-top:8px;">Manual de Usuario &nbsp;·&nbsp; Manual de Administrador &nbsp;·&nbsp; Manual Técnico</div>
+  <div class="edition">
+    <strong>Versión 1.1</strong> &nbsp;—&nbsp; Mayo 2026
+  </div>
+  <div class="company">
+    <strong>Diagnostika</strong><br>
+    Departamento de Tecnología de la Información<br>
+    Documento interno — Uso restringido
+  </div>
+</div>
+
+
+<!-- ════════════════════════════════════════════════════════════ -->
+<!--  TABLA DE CONTENIDO                                           -->
+<!-- ════════════════════════════════════════════════════════════ -->
+<div class="toc">
+  <h2>Tabla de Contenido</h2>
+  <ul>
+    <li><a href="#intro">1. Introducción al Sistema</a>
+      <ul>
+        <li><a href="#intro-que">¿Qué es EDInventory?</a></li>
+        <li><a href="#intro-modulos">Módulos del sistema</a></li>
+        <li><a href="#intro-roles">Roles de acceso</a></li>
+        <li><a href="#intro-requisitos">Requisitos del usuario</a></li>
+      </ul>
+    </li>
+    <li><a href="#usuario">PARTE I — MANUAL DE USUARIO</a>
+      <ul>
+        <li><a href="#u-acceso">2. Acceso al Sistema</a></li>
+        <li><a href="#u-dashboard">3. Panel de Control (Dashboard)</a></li>
+        <li><a href="#u-ti">4. Módulo TI — Inventario de Equipos</a></li>
+        <li><a href="#u-ti-mantenimiento">5. Mantenimientos TI</a></li>
+        <li><a href="#u-servicio">6. Módulo Servicio — Ingeniería</a></li>
+        <li><a href="#u-activos">7. Activos Clínicos</a></li>
+        <li><a href="#u-hospital">8. Hospitales y Contactos</a></li>
+      </ul>
+    </li>
+    <li><a href="#admin">PARTE II — MANUAL DE ADMINISTRADOR</a>
+      <ul>
+        <li><a href="#a-usuarios">9. Gestión de Usuarios y Roles</a></li>
+        <li><a href="#a-catalogos">10. Catálogos del Sistema</a></li>
+        <li><a href="#a-gestion">11. Licitaciones y Bodegas</a></li>
+      </ul>
+    </li>
+    <li><a href="#tecnico">PARTE III — MANUAL TÉCNICO</a>
+      <ul>
+        <li><a href="#t-arquitectura">12. Arquitectura del Sistema</a></li>
+        <li><a href="#t-bd">13. Base de Datos</a></li>
+        <li><a href="#t-instalacion">14. Instalación y Configuración</a></li>
+        <li><a href="#t-seguridad">15. Seguridad y Autenticación</a></li>
+        <li><a href="#t-estructura">16. Estructura del Proyecto</a></li>
+      </ul>
+    </li>
+  </ul>
+</div>
+
+
+<!-- ════════════════════════════════════════════════════════════ -->
+<!--  1. INTRODUCCIÓN                                              -->
+<!-- ════════════════════════════════════════════════════════════ -->
+<div id="intro">
+  <h1>1. Introducción al Sistema</h1>
+
+  <h2 id="intro-que">1.1 ¿Qué es EDInventory?</h2>
+  <p>
+    <strong>EDInventory</strong> es un sistema web de inventario desarrollado internamente por Diagnostika
+    para la gestión integral de dos tipos de activos:
+  </p>
+  <ul>
+    <li><strong>División TI:</strong> Equipos de tecnología (computadoras, impresoras, UPS, switches, etc.) instalados en hospitales clientes, sedes propias o almacenados en bodega.</li>
+    <li><strong>División Servicio:</strong> Activos clínicos (equipos médicos como monitores, bombas de infusión, desfibriladores, etc.) y el inventario de repuestos de ingeniería organizados por línea de servicio y caja.</li>
+  </ul>
+  <p>El sistema permite rastrear la ubicación exacta de cada activo, controlar contratos de licitación con alertas de vencimiento, gestionar mantenimientos preventivos y correctivos, y generar reportes exportables a Excel.</p>
+
+  <h2 id="intro-modulos">1.2 Módulos del Sistema</h2>
+  <table>
+    <tr><th>Módulo</th><th>División</th><th>Descripción</th></tr>
+    <tr><td><strong>Dashboard</strong></td><td>Ambas</td><td>Panel de control con KPIs, alertas de mantenimientos y licitaciones por vencer.</td></tr>
+    <tr><td><strong>Inventario TI</strong></td><td>TI</td><td>Registro y seguimiento de equipos IT con historial de ubicaciones.</td></tr>
+    <tr><td><strong>Ingeniería</strong></td><td>Servicio</td><td>Cajas de repuestos con control de stock y movimientos por hospital.</td></tr>
+    <tr><td><strong>Activos Clínicos</strong></td><td>Servicio</td><td>Equipos médicos con historial de ubicación y mantenimientos.</td></tr>
+    <tr><td><strong>Hospitales</strong></td><td>Ambas</td><td>Directorio de hospitales, departamentos, cargos y contactos clínicos.</td></tr>
+    <tr><td><strong>Licitaciones</strong></td><td>Ambas</td><td>Contratos de mantenimiento con alertas de vencimiento configurables.</td></tr>
+    <tr><td><strong>Bodegas</strong></td><td>Ambas</td><td>Almacenes con ubicación detallada por rack y estante.</td></tr>
+    <tr><td><strong>Administración</strong></td><td>Admin</td><td>Usuarios, roles, empleados, catálogos (marcas, modelos, tipos de activo).</td></tr>
+    <tr><td><strong>Reporte General</strong></td><td>Ambas</td><td>Informe completo del inventario visible/imprimible.</td></tr>
+  </table>
+
+  <h2 id="intro-roles">1.3 Roles de Acceso</h2>
+  <p>El sistema tiene 7 roles predefinidos que determinan qué módulos y acciones puede realizar cada usuario:</p>
+  <table>
+    <tr><th>Rol</th><th>División</th><th>Acceso</th></tr>
+    <tr><td><span class="badge badge-red">Administrador</span></td><td>Global</td><td>Acceso total al sistema: usuarios, catálogos, ambas divisiones.</td></tr>
+    <tr><td><span class="badge badge-blue">TI.Administrador</span></td><td>TI</td><td>Gestión completa del módulo TI + visibilidad en Servicio.</td></tr>
+    <tr><td><span class="badge badge-blue">TI.Tecnico</span></td><td>TI</td><td>Crear y editar equipos IT, registrar movimientos y mantenimientos.</td></tr>
+    <tr><td><span class="badge badge-gray">TI.Consulta</span></td><td>TI</td><td>Solo lectura del módulo TI.</td></tr>
+    <tr><td><span class="badge badge-green">Servicio.Administrador</span></td><td>Servicio</td><td>Gestión completa del módulo Servicio + visibilidad en TI.</td></tr>
+    <tr><td><span class="badge badge-green">Servicio.Tecnico</span></td><td>Servicio</td><td>Crear y editar activos, registrar retiros de repuestos y mantenimientos.</td></tr>
+    <tr><td><span class="badge badge-gray">Servicio.Consulta</span></td><td>Servicio</td><td>Solo lectura del módulo Servicio.</td></tr>
+  </table>
+
+  <h2 id="intro-requisitos">1.4 Requisitos del Usuario</h2>
+  <table>
+    <tr><th>Requisito</th><th>Detalle</th></tr>
+    <tr><td>Navegador web</td><td>Chrome 110+, Firefox 110+, Edge 110+ (recomendado). Safari compatible.</td></tr>
+    <tr><td>Resolución mínima</td><td>1280 × 720 píxeles. Responsive para tablets (≥ 768 px).</td></tr>
+    <tr><td>Conexión de red</td><td>Acceso a la red interna donde está desplegado el servidor.</td></tr>
+    <tr><td>Cuenta de usuario</td><td>Credenciales asignadas por el Administrador del sistema.</td></tr>
+  </table>
+</div>
+
+
+<!-- ════════════════════════════════════════════════════════════ -->
+<!--  PARTE I — MANUAL DE USUARIO                                  -->
+<!-- ════════════════════════════════════════════════════════════ -->
+<div class="part-header">
+  <h1>PARTE I — MANUAL DE USUARIO</h1>
+  <p>Guía operativa para el personal de TI y del Departamento de Ingeniería de Servicio</p>
+</div>
+
+<div id="usuario">
+
+  <!-- ──────────────────────────────────────────────────────── -->
+  <h1 id="u-acceso">2. Acceso al Sistema</h1>
+
+  <h2>2.1 Iniciar Sesión</h2>
+  <ol class="steps">
+    <li>Abra el navegador e ingrese la URL del sistema (ej. <code>http://servidor:5000</code>).</li>
+    <li>En la pantalla de login, ingrese su <strong>Usuario</strong> y <strong>Contraseña</strong>.</li>
+    <li>Presione el botón <strong>Ingresar</strong>.</li>
+    <li>Si las credenciales son correctas, será redirigido al <strong>Dashboard</strong>.</li>
+  </ol>
+  <div class="warn">
+    <strong>⚠ Credenciales incorrectas:</strong> Si el usuario o contraseña no coinciden, el sistema mostrará el mensaje
+    "Usuario o contraseña incorrectos" y no registrará la sesión. Contacte al administrador si olvidó su contraseña.
+  </div>
+  <div class="tip">
+    <strong>💡 Sesión:</strong> La sesión dura <strong>8 horas</strong> desde el último movimiento. Si el sistema le solicita volver a iniciar sesión es porque la sesión expiró.
+  </div>
+
+  <h2>2.2 Cambiar Contraseña</h2>
+  <ol class="steps">
+    <li>En la barra de navegación superior, haga clic en su nombre de usuario.</li>
+    <li>Seleccione <strong>"Cambiar Contraseña"</strong>.</li>
+    <li>Ingrese su contraseña actual y la nueva contraseña (mínimo 6 caracteres).</li>
+    <li>Confirme la nueva contraseña y presione <strong>Guardar</strong>.</li>
+  </ol>
+
+  <h2>2.3 Cerrar Sesión</h2>
+  <p>En la barra de navegación superior, haga clic en su nombre y seleccione <strong>"Cerrar Sesión"</strong>.
+  La sesión se cerrará inmediatamente y será redirigido a la pantalla de login.</p>
+
+
+  <!-- ──────────────────────────────────────────────────────── -->
+  <h1 id="u-dashboard">3. Panel de Control (Dashboard)</h1>
+  <p>El Dashboard es la pantalla principal del sistema. Muestra un resumen del estado del inventario de acuerdo con el rol del usuario autenticado.</p>
+
+  <h2>3.1 Tarjetas de Resumen</h2>
+  <p>Dependiendo del rol, verá tarjetas con los siguientes indicadores:</p>
+  <table>
+    <tr><th>División</th><th>Indicador</th><th>Descripción</th></tr>
+    <tr><td>TI</td><td>Total Equipos</td><td>Cantidad total de equipos IT registrados.</td></tr>
+    <tr><td>TI</td><td>En Hospital</td><td>Equipos actualmente instalados en hospitales.</td></tr>
+    <tr><td>TI</td><td>En Bodega</td><td>Equipos almacenados en bodegas.</td></tr>
+    <tr><td>TI</td><td>Sin Licitación</td><td>Equipos sin contrato de licitación asignado.</td></tr>
+    <tr><td>Servicio</td><td>Total Activos</td><td>Cantidad total de activos clínicos registrados.</td></tr>
+    <tr><td>Servicio</td><td>Stock Cero</td><td>Repuestos con cantidad igual a 0.</td></tr>
+    <tr><td>Servicio</td><td>Stock Bajo</td><td>Repuestos con menos de 5 unidades.</td></tr>
+  </table>
+
+  <h2>3.2 Alertas</h2>
+  <p>El sistema genera alertas automáticas en el Dashboard:</p>
+  <table>
+    <tr><th>Tipo de Alerta</th><th>Color</th><th>Condición</th></tr>
+    <tr><td>Mantenimientos vencidos TI</td><td><span class="badge badge-red">Rojo</span></td><td>Mantenimientos con estado PENDIENTE y fecha pasada.</td></tr>
+    <tr><td>Mantenimientos próximos TI</td><td><span class="badge badge-yellow">Amarillo</span></td><td>Mantenimientos pendientes en los próximos 7 días.</td></tr>
+    <tr><td>Licitaciones vencidas</td><td><span class="badge badge-red">Rojo</span></td><td>Contratos con fecha de vencimiento pasada (no aplazados).</td></tr>
+    <tr><td>Licitaciones por vencer</td><td><span class="badge badge-yellow">Amarillo</span></td><td>Contratos que vencen dentro del periodo de aviso configurado (defecto: 180 días).</td></tr>
+    <tr><td>Licitaciones aplazadas</td><td><span class="badge badge-yellow">Amarillo</span></td><td>Contratos vencidos pero marcados como aplazados por decisión administrativa.</td></tr>
+    <tr><td>Mantenimientos vencidos Servicio</td><td><span class="badge badge-red">Rojo</span></td><td>Mantenimientos de activos clínicos con fecha pasada.</td></tr>
+  </table>
+
+  <h2>3.3 Reporte General</h2>
+  <p>Haga clic en el botón <strong>"Ver Reporte"</strong> en el Dashboard para acceder a una vista completa
+  del inventario con tablas detalladas de equipos IT y activos clínicos. Esta vista es apta para imprimir
+  directamente desde el navegador (<kbd>Ctrl</kbd>+<kbd>P</kbd>).</p>
+
+
+  <!-- ──────────────────────────────────────────────────────── -->
+  <h1 id="u-ti">4. Módulo TI — Inventario de Equipos</h1>
+  <div class="info">
+    <strong>Roles requeridos:</strong>
+    <span class="badge badge-blue">TI.Administrador</span>
+    <span class="badge badge-blue">TI.Tecnico</span>
+    <span class="badge badge-gray">TI.Consulta</span>
+    <span class="badge badge-green">Servicio.Administrador</span>
+    <span class="badge badge-red">Administrador</span>
+  </div>
+
+  <h2>4.1 Ver el Inventario</h2>
+  <ol class="steps">
+    <li>En el menú lateral, sección <strong>TI</strong>, haga clic en <strong>"Inventario"</strong>.</li>
+    <li>La lista muestra todos los equipos con su descripción, modelo, ubicación actual y estado de licitación.</li>
+    <li>Use los filtros en la parte superior para buscar por texto, sede, hospital, bodega o estado.</li>
+    <li>El checkbox <strong>"Sin Licitación"</strong> filtra equipos que no tienen contrato asignado.</li>
+  </ol>
+  <div class="tip">💡 Los indicadores de color en la columna <strong>Licitación</strong> muestran: Verde = vigente, Amarillo = por vencer, Rojo = vencida, Naranja = aplazada, Gris = sin licitación.</div>
+
+  <h2>4.2 Registrar un Nuevo Equipo</h2>
+  <div class="warn">⚠ Esta acción requiere rol <span class="badge badge-blue">TI.Tecnico</span> o superior.</div>
+  <ol class="steps">
+    <li>En la vista de Inventario, haga clic en <strong>"+ Nuevo Equipo"</strong>.</li>
+    <li>Complete el campo <strong>Descripción</strong> (obligatorio) y seleccione el <strong>Modelo</strong> del equipo.</li>
+    <li>Seleccione la <strong>Ubicación</strong>: Hospital, Bodega o Sede (solo puede seleccionarse una opción a la vez).
+      <ul>
+        <li><strong>Hospital:</strong> Seleccione hospital, departamento y escriba la posición exacta (ej. "Sala UCI - Cama 3").</li>
+        <li><strong>Bodega:</strong> Seleccione la bodega e ingrese rack y estante.</li>
+        <li><strong>Sede:</strong> Seleccione la sede donde se ubica el equipo.</li>
+      </ul>
+    </li>
+    <li>Ingrese el <strong>Número de Serie</strong> (único en el sistema), el número interno del equipo y la licitación aplicable.</li>
+    <li>Opcionalmente complete fechas de licitación, número de garantía y datos adicionales.</li>
+    <li>Haga clic en <strong>"Guardar"</strong>.</li>
+  </ol>
+  <div class="tip">💡 Si asigna el equipo directamente a un hospital, el sistema registrará automáticamente la primera entrada en el historial de ubicación.</div>
+
+  <h2>4.3 Ver el Detalle de un Equipo</h2>
+  <p>Haga clic en el nombre del equipo en la lista o en el botón <strong>"Detalle"</strong>. La vista de detalle muestra:</p>
+  <ul>
+    <li>Información completa del equipo (modelo, marca, serie, licitación).</li>
+    <li>Ubicación actual con indicador visual.</li>
+    <li>Historial de cambios de ubicación.</li>
+    <li>Registros de movimientos (retiros y devoluciones).</li>
+    <li>Mantenimientos programados y completados.</li>
+  </ul>
+
+  <h2>4.4 Editar un Equipo</h2>
+  <ol class="steps">
+    <li>En la vista de detalle, haga clic en <strong>"Editar"</strong>.</li>
+    <li>Modifique los campos necesarios. Si cambia la ubicación, ingrese las <strong>Notas del movimiento</strong> en el campo correspondiente (se guardará en el historial).</li>
+    <li>Haga clic en <strong>"Guardar"</strong>.</li>
+  </ol>
+  <div class="tip">💡 El sistema detecta automáticamente si cambió la ubicación y crea una entrada en el historial solo si la ubicación fue modificada.</div>
+
+  <h2>4.5 Exportar el Inventario a Excel</h2>
+  <ol class="steps">
+    <li>En la vista de Inventario, aplique los filtros que desee (sede, hospital, bodega, estado).</li>
+    <li>Haga clic en el botón <strong>"Exportar Excel"</strong>.</li>
+    <li>El sistema descargará un archivo <code>.xlsx</code> con todos los equipos del filtro activo.</li>
+  </ol>
+  <p>El archivo incluye: descripción, tipo de activo, marca, modelo, serie, número de equipo, garantía, ubicación, licitación, estado de licitación y fechas de registro.</p>
+
+  <h2>4.6 Importar Equipos desde Excel</h2>
+  <div class="warn">⚠ Esta acción requiere rol <span class="badge badge-blue">TI.Tecnico</span> o superior.</div>
+  <ol class="steps">
+    <li>Descargue la plantilla haciendo clic en <strong>"Descargar Plantilla"</strong>.</li>
+    <li>Complete la plantilla con los datos de los equipos. No modifique los encabezados.</li>
+    <li>En el menú TI → <strong>"Importar Excel"</strong>, seleccione el archivo completado.</li>
+    <li>Haga clic en <strong>"Importar"</strong>.</li>
+    <li>El sistema mostrará un resumen: equipos insertados, actualizados y errores.</li>
+  </ol>
+
+  <h2>4.7 Etiqueta del Equipo (Código QR)</h2>
+  <p>En la vista de detalle de un equipo, haga clic en <strong>"Etiqueta"</strong>. Se mostrará una vista imprimible con:</p>
+  <ul>
+    <li>Código QR con el número de serie del equipo.</li>
+    <li>Descripción, modelo, marca y tipo de activo.</li>
+    <li>Ubicación actual y fecha de última salida de bodega.</li>
+    <li>Número de equipo y número de serie.</li>
+  </ul>
+  <p>Use <kbd>Ctrl</kbd>+<kbd>P</kbd> para imprimir la etiqueta directamente desde el navegador.</p>
+
+  <h2>4.8 Estación de Movimiento (Escaneo Masivo)</h2>
+  <div class="warn">⚠ Esta acción requiere rol <span class="badge badge-blue">TI.Tecnico</span> o superior.</div>
+  <p>La estación de movimiento permite reubicar múltiples equipos IT rápidamente escaneando su número de serie:</p>
+  <ol class="steps">
+    <li>En el menú TI, seleccione <strong>"Estación de Movimiento"</strong>.</li>
+    <li>Seleccione el destino: <strong>Bodega</strong> (con rack y estante) u <strong>Hospital</strong> (con departamento y posición).</li>
+    <li>Escanee o escriba el número de serie del equipo y presione <strong>Enter</strong> o el botón <strong>"Mover"</strong>.</li>
+    <li>El sistema localizará el equipo, actualizará su ubicación y registrará el cambio en el historial.</li>
+    <li>Continúe escaneando equipos adicionales. El destino se mantiene seleccionado para agilizar el proceso.</li>
+  </ol>
+  <div class="tip">💡 Ideal para mover lotes de equipos al recibir o despachar desde bodega.</div>
+
+  <h2>4.9 Registrar Retiro o Devolución</h2>
+  <p>En la vista de detalle de un equipo, haga clic en <strong>"Registrar Movimiento"</strong>. Seleccione el tipo (<strong>Retiro</strong> o <strong>Devolución</strong>), el hospital correspondiente y agregue notas. Esto registra el movimiento sin cambiar la ubicación del equipo (es una bitácora operativa separada del historial de ubicación).</p>
+
+
+  <!-- ──────────────────────────────────────────────────────── -->
+  <h1 id="u-ti-mantenimiento">5. Mantenimientos TI</h1>
+
+  <h2>5.1 Ver Mantenimientos Pendientes</h2>
+  <p>En el menú TI, haga clic en <strong>"Mantenimientos"</strong>. Se mostrará la lista de mantenimientos con estado PENDIENTE, ordenados por fecha programada. Los mantenimientos vencidos (fecha pasada) se resaltan en rojo.</p>
+
+  <h2>5.2 Programar un Mantenimiento</h2>
+  <ol class="steps">
+    <li>En la vista de detalle del equipo, haga clic en <strong>"Programar Mantenimiento"</strong>.</li>
+    <li>Seleccione el tipo: <strong>PREVENTIVO</strong> o <strong>CORRECTIVO</strong>.</li>
+    <li>Seleccione la fecha programada (por defecto se sugiere 7 días a partir de hoy).</li>
+    <li>Asigne el técnico responsable y agregue instrucciones en el campo de notas.</li>
+    <li>Haga clic en <strong>"Programar"</strong>.</li>
+  </ol>
+
+  <h2>5.3 Completar un Mantenimiento</h2>
+  <ol class="steps">
+    <li>En la lista de mantenimientos, haga clic en <strong>"Completar"</strong> junto al mantenimiento correspondiente.</li>
+    <li>Ingrese la <strong>fecha real de finalización</strong> y el <strong>resultado</strong> del trabajo realizado.</li>
+    <li>Haga clic en <strong>"Marcar Completado"</strong>.</li>
+  </ol>
+
+  <h2>5.4 Cancelar un Mantenimiento</h2>
+  <p>En la lista de mantenimientos, haga clic en <strong>"Cancelar"</strong>. El mantenimiento pasará a estado CANCELADO y dejará de aparecer en las alertas del Dashboard.</p>
+
+
+  <!-- ──────────────────────────────────────────────────────── -->
+  <h1 id="u-servicio">6. Módulo Servicio — Ingeniería (Repuestos)</h1>
+  <div class="info">
+    <strong>Roles requeridos:</strong>
+    <span class="badge badge-green">Servicio.Administrador</span>
+    <span class="badge badge-green">Servicio.Tecnico</span>
+    <span class="badge badge-gray">Servicio.Consulta</span>
+    <span class="badge badge-blue">TI.Administrador</span>
+    <span class="badge badge-red">Administrador</span>
+  </div>
+
+  <h2>6.1 Estructura del Módulo de Repuestos</h2>
+  <p>El inventario de repuestos de ingeniería está organizado jerárquicamente:</p>
+  <p style="text-align:center; font-size:11pt; margin:16px 0;">
+    <strong>Línea de Servicio</strong> → <strong>Caja</strong> → <strong>Repuesto</strong>
+  </p>
+  <table>
+    <tr><th>Nivel</th><th>Ejemplo</th><th>Descripción</th></tr>
+    <tr><td>Línea de Servicio</td><td>Hemodiálisis</td><td>Especialidad técnica que agrupa cajas de repuestos relacionados.</td></tr>
+    <tr><td>Caja</td><td>Caja #3 — Filtros y membranas</td><td>Contenedor físico con una colección de repuestos de la misma línea.</td></tr>
+    <tr><td>Repuesto</td><td>Filtro de diálisis AK-10</td><td>Pieza individual con stock, referencia interna y referencia del fabricante.</td></tr>
+  </table>
+
+  <h2>6.2 Ver Líneas y Cajas</h2>
+  <ol class="steps">
+    <li>En el menú lateral, sección <strong>Servicio</strong>, haga clic en <strong>"Ingeniería"</strong>.</li>
+    <li>Verá el listado de líneas de servicio. Use los filtros por nombre o grupo para encontrar una línea específica.</li>
+    <li>Haga clic en una línea para ver su detalle: cajas de repuestos con la ubicación en bodega y la cantidad total de repuestos.</li>
+    <li>Haga clic en una caja para ver sus repuestos con el stock actual.</li>
+  </ol>
+
+  <h2>6.3 Retirar o Devolver Repuestos</h2>
+  <div class="warn">⚠ Esta acción requiere rol <span class="badge badge-green">Servicio.Tecnico</span> o superior.</div>
+  <ol class="steps">
+    <li>En la vista de detalle de una caja, haga clic en el icono de <strong>"Retiro/Devolución"</strong> junto al repuesto.</li>
+    <li>Seleccione el tipo: <strong>RETIRO</strong> (reduce el stock) o <strong>DEVOLUCIÓN</strong> (aumenta el stock).</li>
+    <li>Ingrese la cantidad, el hospital al que se destina el repuesto y notas opcionales.</li>
+    <li>Haga clic en <strong>"Confirmar"</strong>.</li>
+  </ol>
+  <div class="tip">💡 El sistema actualiza el stock automáticamente y registra el movimiento con fecha, hora, usuario y cantidad antes/después del movimiento.</div>
+
+  <h2>6.4 Ver Historial de Movimientos de un Repuesto</h2>
+  <p>En la vista de una caja, haga clic en el ícono de historial junto al repuesto. Verá todos los retiros y devoluciones con fecha, usuario, cantidad y hospital destino.</p>
+
+  <h2>6.5 Buscar un Repuesto</h2>
+  <ol class="steps">
+    <li>En el menú Servicio, haga clic en <strong>"Buscar Repuesto"</strong>.</li>
+    <li>Ingrese el nombre, referencia interna o referencia del fabricante.</li>
+    <li>El sistema muestra todos los repuestos coincidentes con un enlace directo a su caja.</li>
+  </ol>
+
+  <h2>6.6 Escanear Caja (Código de Barras)</h2>
+  <p>En el menú Servicio → <strong>"Escanear Caja"</strong>, escanee o ingrese el código de la caja para ir directamente a su detalle sin buscar manualmente.</p>
+
+  <h2>6.7 Etiqueta de Caja</h2>
+  <p>En la vista de detalle de una caja, haga clic en <strong>"Etiqueta"</strong> para generar una etiqueta imprimible con código de barras, número de caja, línea de servicio y ubicación en bodega.</p>
+
+  <h2>6.8 Reporte de Stock</h2>
+  <p>En el menú Servicio → <strong>"Reporte de Stock"</strong>, verá un reporte completo imprimible con todas las líneas, cajas y repuestos incluyendo stock actual. Ideal para hacer inventario físico.</p>
+
+  <h2>6.9 Exportar Stock a Excel</h2>
+  <p>En el menú Servicio, haga clic en <strong>"Exportar Stock"</strong> para descargar un archivo Excel completo con todos los repuestos, su stock, ubicación y referencias.</p>
+
+  <h2>6.10 Importar Repuestos desde Excel</h2>
+  <div class="warn">⚠ Esta acción requiere rol <span class="badge badge-green">Servicio.Tecnico</span> o superior.</div>
+  <ol class="steps">
+    <li>Descargue la plantilla de importación en el menú Servicio → <strong>"Importar"</strong>.</li>
+    <li>Complete las columnas: LINEA_GRUPO, LINEA_NOMBRE, CAJA_NUMERO, CAJA_DESC, PART_REF, PART_MFR_REF, PART_NAME, PART_QTY, PART_NOTES.</li>
+    <li>Suba el archivo y haga clic en <strong>"Importar"</strong>.</li>
+    <li>El sistema creará automáticamente las líneas y cajas que no existan e insertará los repuestos.</li>
+  </ol>
+
+
+  <!-- ──────────────────────────────────────────────────────── -->
+  <h1 id="u-activos">7. Activos Clínicos (Módulo Servicio)</h1>
+  <p>Los activos clínicos son los equipos médicos gestionados por el Departamento de Ingeniería de Servicio (monitores de signos vitales, bombas de infusión, ventiladores, etc.).</p>
+
+  <h2>7.1 Ver el Inventario de Activos</h2>
+  <p>En el menú Servicio → <strong>"Activos en Sitio"</strong>. Funciona igual que el inventario TI: filtros por línea de servicio, hospital, bodega y estado activo/inactivo.</p>
+
+  <h2>7.2 Exportar Activos a Excel</h2>
+  <p>En la vista de Activos en Sitio, haga clic en <strong>"Exportar Excel"</strong>. El archivo respeta los filtros activos e incluye estado de licitación con color de fila.</p>
+
+  <h2>7.3 Registrar, Editar y Gestionar Activos</h2>
+  <p>El flujo es idéntico al de equipos IT (sección 4.2 a 4.9), con la diferencia de que debe seleccionar también la <strong>Línea de Servicio</strong> a la que pertenece el activo.</p>
+
+  <h2>7.4 Mantenimientos de Activos Clínicos</h2>
+  <p>En el menú Servicio → <strong>"Mantenimientos"</strong>. El flujo es idéntico al de mantenimientos TI (sección 5).</p>
+
+
+  <!-- ──────────────────────────────────────────────────────── -->
+  <h1 id="u-hospital">8. Hospitales y Contactos</h1>
+  <div class="info">
+    <strong>Lectura:</strong> Todos los roles.<br>
+    <strong>Escritura:</strong> <span class="badge badge-blue">TI.Administrador</span> <span class="badge badge-green">Servicio.Administrador</span> <span class="badge badge-red">Administrador</span>
+  </div>
+
+  <h2>8.1 Directorio de Hospitales</h2>
+  <p>En el menú principal → <strong>"Hospitales"</strong>. Verá el listado paginado de hospitales con filtros por nombre y unidad programática. Haga clic en un hospital para ver su detalle completo.</p>
+
+  <h2>8.2 Estructura Clínica de un Hospital</h2>
+  <p>Cada hospital tiene una jerarquía de:</p>
+  <ul>
+    <li><strong>Departamentos</strong> (ej. Hemodiálisis, UCI, Urgencias).</li>
+    <li><strong>Cargos clínicos</strong> por departamento (ej. Médico Jefe, Técnico de Imágenes).</li>
+    <li><strong>Contactos</strong> para cada cargo (nombre, apellido, correo electrónico).</li>
+  </ul>
+  <p>Desde la vista de detalle del hospital puede agregar, editar y desactivar departamentos, cargos y contactos directamente.</p>
+
+</div> <!-- fin #usuario -->
+
+
+<!-- ════════════════════════════════════════════════════════════ -->
+<!--  PARTE II — MANUAL DE ADMINISTRADOR                          -->
+<!-- ════════════════════════════════════════════════════════════ -->
+<div class="part-header green">
+  <h1>PARTE II — MANUAL DE ADMINISTRADOR</h1>
+  <p>Gestión de usuarios, roles, catálogos y recursos compartidos del sistema</p>
+</div>
+
+<div id="admin" class="sec-admin">
+
+  <!-- ──────────────────────────────────────────────────────── -->
+  <h1 id="a-usuarios">9. Gestión de Usuarios y Roles</h1>
+  <div class="danger">🔒 Todos los módulos de esta sección requieren exclusivamente el rol <span class="badge badge-red">Administrador</span>.</div>
+
+  <h2>9.1 Crear un Empleado</h2>
+  <p>Antes de crear un usuario del sistema es necesario que el empleado exista en el directorio.</p>
+  <ol class="steps">
+    <li>En el menú <strong>Administración</strong> → <strong>"Empleados"</strong> → <strong>"Nuevo Empleado"</strong>.</li>
+    <li>Ingrese nombre, apellido, tipo y número de documento, correo electrónico y puesto de trabajo.</li>
+    <li>Seleccione las fechas de ingreso y salida si corresponde.</li>
+    <li>Haga clic en <strong>"Guardar"</strong>.</li>
+  </ol>
+
+  <h2>9.2 Crear una Cuenta de Usuario</h2>
+  <ol class="steps">
+    <li>En Administración → <strong>"Usuarios"</strong> → <strong>"Nuevo Usuario"</strong>.</li>
+    <li>Seleccione el empleado vinculado a la cuenta.</li>
+    <li>Ingrese un nombre de usuario (máx. 15 caracteres, sin espacios).</li>
+    <li>Ingrese la contraseña inicial (mínimo 6 caracteres).</li>
+    <li>Seleccione el <strong>rol de sistema</strong> que determinará sus permisos.</li>
+    <li>Haga clic en <strong>"Guardar"</strong>.</li>
+  </ol>
+  <div class="tip">💡 Comunique la contraseña inicial al empleado y solicítele que la cambie en su primer acceso.</div>
+
+  <h2>9.3 Editar Usuario y Cambiar Contraseña</h2>
+  <p>En Administración → Usuarios, haga clic en <strong>"Editar"</strong> junto al usuario. En la edición, el campo contraseña es <em>opcional</em>: si lo deja vacío, la contraseña no cambia. Si ingresa una nueva contraseña, se actualizará.</p>
+
+  <h2>9.4 Activar / Desactivar un Usuario</h2>
+  <p>Use el botón de alternancia en la lista de usuarios. Un usuario inactivo <strong>no puede iniciar sesión</strong> aunque recuerde su contraseña.</p>
+
+  <h2>9.5 Roles de Sistema (Solo Lectura)</h2>
+  <p>En Administración → <strong>"Roles de Sistema"</strong> se puede consultar el listado de los 7 roles disponibles. Los roles no se crean ni modifican desde la interfaz; están predefinidos en el sistema.</p>
+
+  <table>
+    <tr><th>Rol</th><th>Módulos con acceso de escritura</th></tr>
+    <tr><td>Administrador</td><td>Todos los módulos (total)</td></tr>
+    <tr><td>TI.Administrador</td><td>TI (total) + Servicio (lectura) + Hospitales/Licitaciones/Bodegas (escritura)</td></tr>
+    <tr><td>TI.Tecnico</td><td>TI (crear/editar) + Hospitales/Licitaciones/Bodegas (lectura)</td></tr>
+    <tr><td>TI.Consulta</td><td>TI (lectura) + Hospitales/Licitaciones/Bodegas (lectura)</td></tr>
+    <tr><td>Servicio.Administrador</td><td>Servicio (total) + TI (lectura) + Hospitales/Licitaciones/Bodegas (escritura)</td></tr>
+    <tr><td>Servicio.Tecnico</td><td>Servicio (crear/editar) + Hospitales/Licitaciones/Bodegas (lectura)</td></tr>
+    <tr><td>Servicio.Consulta</td><td>Servicio (lectura) + Hospitales/Licitaciones/Bodegas (lectura)</td></tr>
+  </table>
+
+  <h2>9.6 Puestos de Trabajo y Departamentos Internos</h2>
+  <p>En Administración → <strong>"Departamentos"</strong> y <strong>"Puestos"</strong>, puede gestionar la estructura interna de la organización (sedes propias, departamentos y puestos de trabajo). Esta información se usa al registrar empleados.</p>
+
+
+  <!-- ──────────────────────────────────────────────────────── -->
+  <h1 id="a-catalogos">10. Catálogos del Sistema</h1>
+  <div class="danger">🔒 Requiere rol <span class="badge badge-red">Administrador</span>.</div>
+  <p>Los catálogos definen la jerarquía de clasificación de los activos. Antes de registrar equipos IT o activos clínicos es necesario tener configurados los catálogos.</p>
+
+  <h2>10.1 Jerarquía del Catálogo de Activos</h2>
+  <p style="text-align:center; margin: 16px 0; font-size: 11pt;">
+    <strong>Tipo General</strong> → <strong>Tipo Específico</strong> → <strong>Marca</strong> → <strong>Modelo</strong>
+  </p>
+  <table>
+    <tr><th>Nivel</th><th>Ejemplo</th><th>Descripción</th></tr>
+    <tr><td>Tipo General de Activo</td><td>Equipos de Cómputo</td><td>Categoría más amplia de activos.</td></tr>
+    <tr><td>Tipo Específico</td><td>Computadora de Escritorio</td><td>Subtipo dentro de la categoría general.</td></tr>
+    <tr><td>Marca</td><td>Dell</td><td>Fabricante del equipo.</td></tr>
+    <tr><td>Modelo</td><td>OptiPlex 7090</td><td>Modelo específico del equipo.</td></tr>
+  </table>
+
+  <h2>10.2 Agregar un Nuevo Modelo</h2>
+  <ol class="steps">
+    <li>Verifique que exista el Tipo General y el Tipo Específico en Catálogos → <strong>"Tipos de Activo"</strong>.</li>
+    <li>Verifique que exista la marca en Catálogos → <strong>"Marcas y Modelos"</strong>. Si no existe, créela con el botón <strong>"Nueva Marca"</strong>.</li>
+    <li>En la fila de la marca, haga clic en <strong>"+ Modelo"</strong>.</li>
+    <li>Ingrese el nombre del modelo y guarde.</li>
+  </ol>
+
+  <h2>10.3 Gestión de Empresas y Sedes</h2>
+  <p>En Catálogos → <strong>"Empresas"</strong> y <strong>"Sedes"</strong> se administran las entidades propietarias y las ubicaciones físicas de la organización. Son la base para asignar equipos a "Sede" en lugar de Hospital o Bodega.</p>
+
+  <h2>10.4 Eliminar Elementos del Catálogo</h2>
+  <div class="danger">⚠ No es posible eliminar un elemento del catálogo si tiene activos o equipos que lo referencian. El sistema mostrará un error indicando el motivo.</div>
+  <p>Para "retirar" un elemento sin perder el historial, use el botón de <strong>Activar/Desactivar</strong>: los elementos inactivos no aparecen en los formularios pero sus datos históricos se conservan.</p>
+
+
+  <!-- ──────────────────────────────────────────────────────── -->
+  <h1 id="a-gestion">11. Licitaciones y Bodegas</h1>
+  <div class="info">
+    <strong>Lectura:</strong> Todos los roles con acceso TI o Servicio.<br>
+    <strong>Escritura/Gestión:</strong> <span class="badge badge-blue">TI.Administrador</span> <span class="badge badge-green">Servicio.Administrador</span> <span class="badge badge-red">Administrador</span>
+  </div>
+
+  <h2>11.1 Gestionar Licitaciones</h2>
+  <p>En el menú Licitaciones, haga clic en <strong>"Gestión" → "Licitaciones"</strong>.</p>
+  <table>
+    <tr><th>Campo</th><th>Descripción</th></tr>
+    <tr><td>Número de Licitación</td><td>Identificador oficial del contrato (obligatorio).</td></tr>
+    <tr><td>Descripción</td><td>Nombre descriptivo del contrato.</td></tr>
+    <tr><td>Fecha de Inicio / Fin</td><td>Vigencia del contrato. Si no tiene fecha de fin, la licitación aparece como "Sin fecha" en el Dashboard.</td></tr>
+    <tr><td>Días de aviso previo</td><td>Días antes del vencimiento en que aparecerá la alerta amarilla en el Dashboard. Defecto: 180 días.</td></tr>
+    <tr><td>Aplazada</td><td>Marcar si la licitación venció pero se aplazó administrativamente. Cambia la alerta de rojo a amarillo.</td></tr>
+    <tr><td>Nota de aplazamiento</td><td>Justificación del aplazamiento (requerido si se marca aplazada).</td></tr>
+  </table>
+
+  <h2>11.2 Exportar Licitaciones a Excel</h2>
+  <p>En la vista de Licitaciones, haga clic en <strong>"Exportar Excel"</strong>. El archivo incluye el estado calculado de cada licitación con coloreado de filas.</p>
+
+  <h2>11.3 Gestionar Bodegas</h2>
+  <p>En el menú <strong>"Gestión" → "Bodegas"</strong>. Puede crear, editar y activar/desactivar bodegas.</p>
+  <div class="tip">💡 Las bodegas son compartidas entre TI y Servicio. Los equipos IT, activos clínicos y cajas de repuestos pueden estar almacenados en la misma bodega física, pero el rack y estante exactos se registran en cada activo individualmente.</div>
+
+</div> <!-- fin #admin -->
+
+
+<!-- ════════════════════════════════════════════════════════════ -->
+<!--  PARTE III — MANUAL TÉCNICO                                   -->
+<!-- ════════════════════════════════════════════════════════════ -->
+<div class="part-header dark">
+  <h1>PARTE III — MANUAL TÉCNICO</h1>
+  <p>Arquitectura, base de datos, instalación y seguridad del sistema</p>
+</div>
+
+<div id="tecnico" class="sec-tech">
+
+  <!-- ──────────────────────────────────────────────────────── -->
+  <h1 id="t-arquitectura">12. Arquitectura del Sistema</h1>
+
+  <h2>12.1 Stack Tecnológico</h2>
+  <table>
+    <tr><th>Capa</th><th>Tecnología</th><th>Versión</th></tr>
+    <tr><td>Framework web</td><td>ASP.NET Core MVC</td><td>8.0 (LTS)</td></tr>
+    <tr><td>ORM</td><td>Entity Framework Core + Pomelo.EntityFrameworkCore.MySql</td><td>8.x</td></tr>
+    <tr><td>Base de datos</td><td>MySQL</td><td>8.0.45</td></tr>
+    <tr><td>Autenticación</td><td>Cookie Authentication (ASP.NET Core)</td><td>Integrado</td></tr>
+    <tr><td>Hashing de contraseñas</td><td>BCrypt.Net-Next</td><td>4.x</td></tr>
+    <tr><td>Exportación Excel</td><td>ClosedXML</td><td>0.102+</td></tr>
+    <tr><td>UI / CSS</td><td>Bootstrap 5 + Bootstrap Icons</td><td>5.3.x</td></tr>
+    <tr><td>Servidor</td><td>Kestrel / IIS (producción)</td><td>.NET 8</td></tr>
+    <tr><td>Plataforma de despliegue</td><td>Windows Server / Linux</td><td>—</td></tr>
+  </table>
+
+  <h2>12.2 Patrón Arquitectónico</h2>
+  <p>El sistema sigue el patrón <strong>MVC (Model-View-Controller)</strong> estándar de ASP.NET Core:</p>
+  <ul>
+    <li><strong>Models/Entities:</strong> Clases EF Core mapeadas directamente a tablas MySQL (Code-First).</li>
+    <li><strong>Models/ViewModels:</strong> DTOs para el binding de formularios. Separados de las entidades para no exponer campos sensibles.</li>
+    <li><strong>Controllers:</strong> Lógica de negocio. Aplican autorización por rol antes de ejecutar cualquier acción.</li>
+    <li><strong>Views:</strong> Razor Pages (.cshtml) con Bootstrap 5. Cada vista corresponde a una acción del controlador.</li>
+    <li><strong>Data/AppDbContext:</strong> Único punto de acceso a la base de datos vía EF Core.</li>
+  </ul>
+
+  <h2>12.3 Flujo de una Petición Típica</h2>
+  <ol class="steps">
+    <li>El navegador envía un request HTTP al servidor Kestrel.</li>
+    <li>El middleware de autenticación verifica la cookie <code>CookieAuth</code>. Si no existe o expiró, redirige a <code>/Auth/Login</code>.</li>
+    <li>El middleware de autorización verifica si el rol del usuario cumple el atributo <code>[Authorize(Roles=...)]</code> del controlador/acción.</li>
+    <li>El controlador ejecuta la lógica: consultas EF Core a MySQL, cálculos y preparación de ViewModel.</li>
+    <li>La vista Razor renderiza el HTML y lo devuelve al navegador.</li>
+  </ol>
+
+
+  <!-- ──────────────────────────────────────────────────────── -->
+  <h1 id="t-bd">13. Base de Datos</h1>
+
+  <h2>13.1 Configuración de Conexión</h2>
+  <table>
+    <tr><th>Parámetro</th><th>Valor</th></tr>
+    <tr><td>Motor</td><td>MySQL 8.0.45</td></tr>
+    <tr><td>Esquema (base de datos)</td><td><code>DB_EInventory</code></td></tr>
+    <tr><td>Usuario</td><td><code>root</code></td></tr>
+    <tr><td>Puerto</td><td>3306 (defecto)</td></tr>
+    <tr><td>Cadena de conexión (appsettings.json)</td><td><code>"DefaultConnection"</code></td></tr>
+  </table>
+
+  <h2>13.2 Tablas Principales</h2>
+  <table>
+    <tr><th>Tabla</th><th>Entidad C#</th><th>Descripción</th></tr>
+    <tr><td>TB_USERS</td><td>User</td><td>Cuentas de usuario. Contraseña en hash BCrypt VARCHAR(72).</td></tr>
+    <tr><td>TB_UROLES</td><td>UserRole</td><td>Roles de sistema. Los 7 roles predefinidos.</td></tr>
+    <tr><td>TB_EMPLOYEE</td><td>Employee</td><td>Empleados de la organización.</td></tr>
+    <tr><td>TB_HOSPITAL</td><td>Hospital</td><td>Hospitales clientes con Unidad Programática.</td></tr>
+    <tr><td>TB_HOSP_DEP</td><td>HospitalDepartment</td><td>Departamentos/zonas dentro de un hospital.</td></tr>
+    <tr><td>TB_ITEQUIP</td><td>ItEquip</td><td>Equipos IT. Columnas de ubicación: SITE_CODE, HOSP_CODE, WARE_CODE (mutuamente excluyentes).</td></tr>
+    <tr><td>TB_ITEQUIP_HIST</td><td>ItEquipHistory</td><td>Historial automático de cambios de ubicación de equipos IT.</td></tr>
+    <tr><td>TB_ITEQUIP_MOV</td><td>ItEquipMovement</td><td>Retiros/devoluciones de equipos IT.</td></tr>
+    <tr><td>TB_ITEQUIP_MAINT</td><td>ItEquipMaintenance</td><td>Mantenimientos TI (PENDIENTE/COMPLETADO/CANCELADO).</td></tr>
+    <tr><td>TB_LIC</td><td>Licitacion</td><td>Contratos de mantenimiento con alertas de vencimiento.</td></tr>
+    <tr><td>TB_WARE</td><td>Warehouse</td><td>Bodegas compartidas entre TI y Servicio.</td></tr>
+    <tr><td>TB_ENG_LINE</td><td>EngLine</td><td>Líneas de servicio de ingeniería.</td></tr>
+    <tr><td>TB_ENG_BOX</td><td>EngBox</td><td>Cajas de repuestos por línea de servicio.</td></tr>
+    <tr><td>TB_ENG_PART</td><td>EngPart</td><td>Repuestos con control de stock (PART_QTY).</td></tr>
+    <tr><td>TB_ENG_PART_MOV</td><td>EngPartMovement</td><td>Movimientos de repuestos con snapshot de stock post-movimiento.</td></tr>
+    <tr><td>TB_ENG_ASSET</td><td>EngAsset</td><td>Activos clínicos. Misma estructura de ubicación que TB_ITEQUIP.</td></tr>
+    <tr><td>TB_ENG_ASSET_HIST</td><td>EngAssetHistory</td><td>Historial automático de cambios de ubicación de activos clínicos.</td></tr>
+    <tr><td>TB_ENG_MAINT</td><td>EngMaintenance</td><td>Mantenimientos de activos clínicos.</td></tr>
+    <tr><td>TB_MODEL</td><td>Model</td><td>Modelos de equipo (nivel 4 de la jerarquía de catálogo).</td></tr>
+    <tr><td>TB_BRAND</td><td>Brand</td><td>Marcas de fabricante (nivel 3).</td></tr>
+    <tr><td>TB_ASSETS_TYPE</td><td>AssetType</td><td>Tipos específicos de activo (nivel 2).</td></tr>
+    <tr><td>TB_GEN_ASSETS_TYPE</td><td>GenAssetType</td><td>Categorías generales de activo (nivel 1).</td></tr>
+  </table>
+
+  <h2>13.3 Convención de Nomenclatura de Columnas</h2>
+  <table>
+    <tr><th>Sufijo</th><th>Significado</th><th>Ejemplo</th></tr>
+    <tr><td><code>_CODE</code></td><td>Clave primaria (INT AUTO_INCREMENT)</td><td>ITEQUIP_CODE</td></tr>
+    <tr><td><code>_DESC</code></td><td>Descripción textual</td><td>ITEQUIP_DESC</td></tr>
+    <tr><td><code>_NAME</code></td><td>Nombre</td><td>HOSP_NAME</td></tr>
+    <tr><td><code>_SN</code></td><td>Número de serie</td><td>ITEQUIP_SN</td></tr>
+    <tr><td><code>_NUM</code></td><td>Número interno</td><td>ITEQUIP_NUM</td></tr>
+    <tr><td><code>_DNEW</code></td><td>Fecha de creación del registro</td><td>ITEQUIP_DNEW</td></tr>
+    <tr><td><code>_DMOD</code></td><td>Fecha de última modificación</td><td>ITEQUIP_DMOD</td></tr>
+    <tr><td><code>_DJEQUIP</code></td><td>Fecha de baja del activo</td><td>ITEQUIP_DJEQUIP</td></tr>
+    <tr><td><code>ACTIVE</code></td><td>Estado activo/inactivo (TINYINT 0/1)</td><td>ACTIVE</td></tr>
+  </table>
+
+
+  <!-- ──────────────────────────────────────────────────────── -->
+  <h1 id="t-instalacion">14. Instalación y Configuración</h1>
+
+  <h2>14.1 Requisitos del Servidor</h2>
+  <table>
+    <tr><th>Componente</th><th>Mínimo</th><th>Recomendado</th></tr>
+    <tr><td>Sistema Operativo</td><td>Windows Server 2019 / Ubuntu 22.04</td><td>Windows Server 2022</td></tr>
+    <tr><td>Runtime</td><td>.NET 8 Runtime</td><td>.NET 8 SDK (para builds)</td></tr>
+    <tr><td>Base de datos</td><td>MySQL 8.0</td><td>MySQL 8.0.45+</td></tr>
+    <tr><td>RAM</td><td>2 GB</td><td>4 GB</td></tr>
+    <tr><td>Almacenamiento</td><td>10 GB</td><td>50 GB (según volumen de datos)</td></tr>
+  </table>
+
+  <h2>14.2 Configuración de la Cadena de Conexión</h2>
+  <p>Edite el archivo <code>appsettings.json</code> en la raíz del proyecto:</p>
+  <pre>{
+  "ConnectionStrings": {
+    "DefaultConnection": "server=localhost;port=3306;database=DB_EInventory;user=root;password=SU_CONTRASEÑA"
+  }
+}</pre>
+
+  <h2>14.3 Inicialización de la Base de Datos</h2>
+  <p>En el primer arranque de la aplicación, EF Core ejecuta <code>db.Database.EnsureCreated()</code> que crea automáticamente todas las tablas si el esquema no existe. Adicionalmente, el seed crea:</p>
+  <ul>
+    <li>Rol "Administrador"</li>
+    <li>Empleado "Admin Sistema"</li>
+    <li>Usuario <code>admin</code> con contraseña <code>Admin123</code></li>
+  </ul>
+  <div class="danger">🔒 <strong>Importante:</strong> Cambie la contraseña del usuario <code>admin</code> inmediatamente después del primer acceso desde Administración → Usuarios → Editar.</div>
+
+  <h2>14.4 Despliegue en IIS (Windows)</h2>
+  <ol class="steps">
+    <li>Instale el módulo <strong>ASP.NET Core Hosting Bundle</strong> en el servidor.</li>
+    <li>Publique la aplicación: <code>dotnet publish -c Release -o ./publish</code></li>
+    <li>En IIS, cree un nuevo sitio apuntando a la carpeta <code>publish</code>.</li>
+    <li>Asegúrese de que el Application Pool tenga <strong>No Managed Code</strong> y que el usuario tenga permisos de escritura sobre la carpeta <code>DataProtectionKeys</code>.</li>
+    <li>Configure el binding (puerto 80/443) y agregue un certificado SSL si es necesario.</li>
+  </ol>
+
+  <h2>14.5 Despliegue en Linux (systemd)</h2>
+  <pre>dotnet publish -c Release -o /var/www/edinventory
+# Crear servicio systemd
+cat &gt; /etc/systemd/system/edinventory.service &lt;&lt;EOF
+[Unit]
+Description=EDInventory Web App
+
+[Service]
+WorkingDirectory=/var/www/edinventory
+ExecStart=/usr/bin/dotnet EDInventory.dll
+Restart=always
+RestartSec=10
+Environment=ASPNETCORE_ENVIRONMENT=Production
+Environment=ASPNETCORE_URLS=http://localhost:5000
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+systemctl enable edinventory
+systemctl start edinventory</pre>
+
+
+  <!-- ──────────────────────────────────────────────────────── -->
+  <h1 id="t-seguridad">15. Seguridad y Autenticación</h1>
+
+  <h2>15.1 Autenticación por Cookie</h2>
+  <p>El sistema usa el esquema <code>CookieAuth</code> de ASP.NET Core Identity:</p>
+  <ul>
+    <li>La cookie se genera al iniciar sesión exitosamente y contiene claims: <code>NameIdentifier</code> (ID de usuario), <code>Name</code> (login), <code>FullName</code> (nombre completo) y <code>Role</code> (rol).</li>
+    <li>La cookie expira tras <strong>8 horas de inactividad</strong> (expiración deslizante).</li>
+    <li>En caso de reinicio del servidor, las claves de protección se persisten en la carpeta <code>DataProtectionKeys/</code> para que las cookies existentes sigan siendo válidas.</li>
+  </ul>
+
+  <h2>15.2 Hashing de Contraseñas (BCrypt)</h2>
+  <ul>
+    <li>Las contraseñas <strong>nunca se almacenan en texto plano</strong>.</li>
+    <li>Se usa BCrypt con salt automático. El hash resultante se almacena en <code>TB_USERS.USER_PASSWORD</code> como VARCHAR(72).</li>
+    <li>En el login, se usa <code>BCrypt.Net.BCrypt.Verify(plaintext, hash)</code> para la comparación.</li>
+  </ul>
+
+  <h2>15.3 Protección CSRF</h2>
+  <p>Todos los formularios POST incluyen un token antiforgery (<code>[ValidateAntiForgeryToken]</code>). El único endpoint que lo omite intencionalmente es <code>ProcessScan</code> (AJAX JSON desde JavaScript del mismo origen).</p>
+
+  <h2>15.4 Autorización por Rol</h2>
+  <p>Los controladores usan el atributo <code>[Authorize(Roles = AppRoles.XxxRead)]</code> en la clase, y pueden sobreescribir con un rol más restrictivo en acciones específicas. Los grupos de roles compuestos (cadenas separadas por coma) son interpretados por ASP.NET Core como OR lógico.</p>
+  <div class="tip">💡 Consulte el archivo <code>Models/AppRoles.cs</code> para ver la definición completa de todos los grupos de roles y sus composiciones.</div>
+
+
+  <!-- ──────────────────────────────────────────────────────── -->
+  <h1 id="t-estructura">16. Estructura del Proyecto</h1>
+
+  <h2>16.1 Árbol de Directorios</h2>
+  <pre>EDInventory/
+├── Controllers/
+│   ├── AuthController.cs          # Login, logout, cambio de contraseña
+│   ├── AdminController.cs         # Empleados, usuarios, roles (Admin only)
+│   ├── CatalogController.cs       # Empresas, sedes, jerarquía de activos (Admin)
+│   ├── HospitalController.cs      # Hospitales, UP, departamentos, contactos
+│   ├── EquipmentController.cs     # Módulo TI completo
+│   ├── EngineeringController.cs   # Módulo Servicio completo
+│   ├── GestionController.cs       # Licitaciones y bodegas (compartido)
+│   └── DashboardController.cs     # Dashboard y reporte general
+│
+├── Models/
+│   ├── AppRoles.cs                # Constantes de roles y grupos
+│   ├── Entities/                  # 22 entidades EF Core
+│   │   ├── ItEquip.cs, ItEquipHistory.cs, ItEquipMaintenance.cs ...
+│   │   ├── EngAsset.cs, EngLine.cs, EngBox.cs, EngPart.cs ...
+│   │   └── Hospital.cs, Licitacion.cs, Warehouse.cs ...
+│   └── ViewModels/                # 9 archivos con ViewModels
+│       ├── LoginViewModel.cs
+│       ├── EquipmentViewModel.cs  # ItEquipVM, LicitacionVM, WarehouseVM, EngAssetVM, ScanMoveRequest
+│       ├── MaintCreateVM.cs       # MaintCreateVM + MaintCompleteVM
+│       └── ...
+│
+├── Views/
+│   ├── Shared/
+│   │   ├── _Layout.cshtml         # Layout principal con navbar por rol
+│   │   └── _ValidationScripts...
+│   ├── Dashboard/                 # Index.cshtml, Report.cshtml
+│   ├── Equipment/                 # Inventario TI, Label, MovementStation...
+│   ├── Engineering/               # Líneas, cajas, repuestos, activos...
+│   ├── Hospital/                  # Index, Detail...
+│   ├── Auth/                      # Login, ChangePassword, AccessDenied
+│   └── ...
+│
+├── Data/
+│   └── AppDbContext.cs            # Único DbContext, 30 DbSets
+│
+├── DataProtectionKeys/            # Claves de protección de datos (auto-generadas)
+├── Program.cs                     # Configuración DI, middleware, seed
+└── appsettings.json               # Cadena de conexión</pre>
+
+  <h2>16.2 Convenciones de Código</h2>
+  <table>
+    <tr><th>Elemento</th><th>Convención</th><th>Ejemplo</th></tr>
+    <tr><td>Controladores</td><td>PascalCase + "Controller"</td><td><code>EquipmentController</code></td></tr>
+    <tr><td>Acciones GET</td><td>Nombre descriptivo sin prefijo</td><td><code>Index()</code>, <code>Detail(int id)</code></td></tr>
+    <tr><td>Acciones POST</td><td>Mismo nombre que GET + <code>[HttpPost]</code></td><td><code>Create(ViewModel vm)</code></td></tr>
+    <tr><td>Toggle activo/inactivo</td><td><code>XxxToggle(int id)</code></td><td><code>EmployeeToggle(int id)</code></td></tr>
+    <tr><td>Helpers privados</td><td><code>GetXxxSelectList()</code></td><td><code>GetHospitalSelectList()</code></td></tr>
+    <tr><td>Entidades</td><td>Singular, PascalCase</td><td><code>ItEquip</code>, <code>EngAsset</code></td></tr>
+    <tr><td>ViewModels</td><td>EntityName + "ViewModel" o "VM"</td><td><code>ItEquipViewModel</code></td></tr>
+    <tr><td>Propiedades de entidad</td><td>PascalCase reflejando columna DB</td><td><code>ItequipCode</code> → <code>ITEQUIP_CODE</code></td></tr>
+  </table>
+
+  <h2>16.3 Agregar un Nuevo Módulo (Guía Rápida)</h2>
+  <ol class="steps">
+    <li>Cree la entidad en <code>Models/Entities/NombreEntidad.cs</code> con atributos <code>[Table]</code>, <code>[Key]</code>, <code>[Column]</code> y <code>[ForeignKey]</code>.</li>
+    <li>Agregue el <code>DbSet&lt;NombreEntidad&gt;</code> en <code>AppDbContext.cs</code>.</li>
+    <li>Cree el ViewModel en <code>Models/ViewModels/NombreViewModel.cs</code>.</li>
+    <li>Cree el controlador en <code>Controllers/NombreController.cs</code> con el atributo <code>[Authorize(Roles = AppRoles.XxxRead)]</code>.</li>
+    <li>Cree las vistas en <code>Views/Nombre/</code>.</li>
+    <li>Agregue el enlace en <code>Views/Shared/_Layout.cshtml</code> con la verificación de rol correspondiente.</li>
+    <li>Si la tabla no existe en la base de datos, ejecute un <code>ALTER TABLE</code> o <code>CREATE TABLE</code> manualmente en MySQL (no se usan migraciones EF Core en este proyecto).</li>
+  </ol>
+  <div class="tip">💡 Este proyecto <strong>no usa migraciones EF Core</strong>. Los cambios en la base de datos se aplican manualmente con scripts SQL.</div>
+
+</div> <!-- fin #tecnico -->
+
+
+<!-- ════════════════════════════════════════════════════════════ -->
+<!--  APÉNDICES                                                    -->
+<!-- ════════════════════════════════════════════════════════════ -->
+<div class="page-break">
+  <h1 style="color:#495057; border-color:#495057;">Apéndice A — Glosario de Términos</h1>
+  <table>
+    <tr><th>Término</th><th>Definición</th></tr>
+    <tr><td>Activo clínico</td><td>Equipo médico gestionado por el Departamento de Ingeniería de Servicio (EngAsset).</td></tr>
+    <tr><td>Bodega</td><td>Almacén físico donde se guardan equipos IT, activos clínicos y cajas de repuestos.</td></tr>
+    <tr><td>Caja</td><td>Contenedor físico de repuestos de ingeniería, identificado por número dentro de una línea de servicio.</td></tr>
+    <tr><td>Dashboard</td><td>Panel de control con KPIs y alertas del sistema.</td></tr>
+    <tr><td>Equipo IT</td><td>Equipo de tecnología (computadora, impresora, UPS, etc.) gestionado por la división TI (ItEquip).</td></tr>
+    <tr><td>Historial de ubicación</td><td>Registro automático de cada cambio de sede/hospital/bodega de un activo o equipo.</td></tr>
+    <tr><td>Licitación</td><td>Contrato de mantenimiento bajo el cual fue adquirido un equipo.</td></tr>
+    <tr><td>Línea de servicio</td><td>Especialidad técnica de ingeniería que agrupa cajas de repuestos y activos clínicos.</td></tr>
+    <tr><td>Movimiento</td><td>Registro de retiro o devolución operativa de un activo sin cambio de ubicación oficial en el inventario.</td></tr>
+    <tr><td>Rack / Estante</td><td>Ubicación física dentro de una bodega (pasillo + estante).</td></tr>
+    <tr><td>Rol</td><td>Nivel de acceso del usuario al sistema (ver sección 1.3).</td></tr>
+    <tr><td>Sede</td><td>Instalación propia de Diagnostika donde pueden estar ubicados equipos.</td></tr>
+    <tr><td>Serie (SN)</td><td>Número de serie del fabricante. Único por equipo en el sistema.</td></tr>
+    <tr><td>Unidad Programática (UP)</td><td>Agrupación administrativa de hospitales clientes.</td></tr>
+  </table>
+
+  <h1 style="color:#495057; border-color:#495057; margin-top:32px;">Apéndice B — Atajos y Tips Rápidos</h1>
+  <table>
+    <tr><th>Acción</th><th>Cómo hacerlo</th></tr>
+    <tr><td>Imprimir etiqueta de equipo</td><td>Detalle del equipo → "Etiqueta" → Ctrl+P</td></tr>
+    <tr><td>Imprimir reporte general</td><td>Dashboard → "Ver Reporte" → Ctrl+P</td></tr>
+    <tr><td>Exportar inventario TI a Excel</td><td>Inventario TI → aplicar filtros → "Exportar Excel"</td></tr>
+    <tr><td>Exportar stock de repuestos</td><td>Ingeniería → "Exportar Stock"</td></tr>
+    <tr><td>Mover muchos equipos rápido</td><td>TI → "Estación de Movimiento" → escanear seriales</td></tr>
+    <tr><td>Encontrar un repuesto rápido</td><td>Servicio → "Buscar Repuesto" → escribir nombre o referencia</td></tr>
+    <tr><td>Ver historial de ubicación</td><td>Detalle del equipo/activo → sección "Historial"</td></tr>
+    <tr><td>Ver alertas actuales</td><td>Dashboard → sección de alertas (banners de color)</td></tr>
+  </table>
+
+  <div class="footer">
+    EDInventory v1.1 &nbsp;—&nbsp; Manual de Software &nbsp;—&nbsp; Mayo 2026<br>
+    Diagnostika — Departamento de Tecnología de la Información<br>
+    Documento interno. Prohibida su distribución sin autorización.
+  </div>
+</div>
+
+</body>
+</html>

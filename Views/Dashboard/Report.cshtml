@@ -1,0 +1,283 @@
+﻿@model IEnumerable<EDInventory.Models.Entities.ItEquip>
+@using EDInventory.Models.Entities
+@{
+    ViewData["Title"] = "Reporte de Inventario";
+    var today     = (DateOnly)ViewBag.Today;
+    bool canSeeTI  = (bool)(ViewBag.CanSeeTI  ?? true);
+    bool canSeeSvc = (bool)(ViewBag.CanSeeSvc ?? false);
+    var activos = ViewBag.Activos as IEnumerable<EngAsset> ?? [];
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3 d-print-none">
+    <h4 class="mb-0"><i class="bi bi-file-earmark-text me-2"></i>Reporte de Inventario IT</h4>
+    <div class="d-flex gap-2">
+        <button onclick="window.print()" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-printer me-1"></i>Imprimir / PDF
+        </button>
+        <a asp-action="Index" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-arrow-left me-1"></i>Dashboard
+        </a>
+    </div>
+</div>
+
+<!-- Encabezado para impresion -->
+<div class="d-none d-print-block mb-3">
+    <h4 class="fw-bold">Reporte de Inventario IT</h4>
+    <p class="text-muted small mb-0">Generado el @DateTime.Now.ToString("dd/MM/yyyy HH:mm")</p>
+</div>
+
+<!-- Resumen -->
+<div class="row g-3 mb-4">
+    <div class="col-4 col-md-2">
+        <div class="card text-center shadow-sm">
+            <div class="card-body py-2">
+                <div class="fs-4 fw-bold text-primary">@Model.Count()</div>
+                <div class="small text-muted">Total</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-4 col-md-2">
+        <div class="card text-center shadow-sm">
+            <div class="card-body py-2">
+                <div class="fs-4 fw-bold text-success">@Model.Count(e => e.Active)</div>
+                <div class="small text-muted">Activos</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-4 col-md-2">
+        <div class="card text-center shadow-sm">
+            <div class="card-body py-2">
+                <div class="fs-4 fw-bold text-secondary">@Model.Count(e => !e.Active)</div>
+                <div class="small text-muted">Inactivos</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-4 col-md-2">
+        <div class="card text-center shadow-sm">
+            <div class="card-body py-2">
+                <div class="fs-4 fw-bold text-danger">
+                    @Model.Count(e => e.Active && e.Licitacion?.LicEnd.HasValue == true
+                                   && e.Licitacion.LicEnd < today
+                                   && e.Licitacion.LicPostponed == false)
+                </div>
+                <div class="small text-muted">Lic. Vencida</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-4 col-md-2">
+        <div class="card text-center shadow-sm">
+            <div class="card-body py-2">
+                <div class="fs-4 fw-bold text-warning">
+                    @Model.Count(e => e.Active && e.ItequipDelic.HasValue &&
+                               e.Licitacion != null && e.Licitacion.LicEnd.HasValue && e.Licitacion.LicEnd >= today && e.Licitacion.LicEnd <= DateOnly.FromDateTime(DateTime.Today.AddDays(e.Licitacion.LicWarnDays)))
+                </div>
+                <div class="small text-muted">Lic. Por Vencer</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-4 col-md-2">
+        <div class="card text-center shadow-sm">
+            <div class="card-body py-2">
+                <div class="fs-4 fw-bold text-info">
+                    @Model.Count(e => e.Active && e.LicCode.HasValue)
+                </div>
+                <div class="small text-muted">Con Licitacion</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Tabla completa -->
+<div class="card shadow-sm">
+    <div class="card-body p-0">
+        <table class="table table-sm table-bordered mb-0" style="font-size:.8rem;">
+            <thead class="table-dark">
+                <tr>
+                    <th>#</th>
+                    <th>Descripcion</th>
+                    <th>Tipo</th>
+                    <th>Marca / Modelo</th>
+                    <th>Serie</th>
+                    <th>Num.</th>
+                    <th>Ubicacion</th>
+                    <th>Licitacion</th>
+                    <th>Inicio Lic.</th>
+                    <th>Fin Lic.</th>
+                    <th>Garantia</th>
+                    <th class="text-center">Estado</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var eq in Model)
+                {
+                    var licVencida    = eq.Licitacion?.LicEnd.HasValue == true && eq.Licitacion.LicEnd < today && eq.Licitacion?.LicPostponed == false;
+                    var licAplazada   = eq.Licitacion?.LicEnd.HasValue == true && eq.Licitacion.LicEnd < today && eq.Licitacion?.LicPostponed == true;
+                    var licSoon       = eq.Licitacion?.LicEnd.HasValue == true && !licVencida && !licAplazada &&
+                                        eq.Licitacion.LicEnd <= DateOnly.FromDateTime(DateTime.Today.AddDays(eq.Licitacion.LicWarnDays));
+                    <tr class="@(licVencida ? "table-danger" : (licAplazada || licSoon) ? "table-warning" : "")">
+                        <td>@eq.ItequipCode</td>
+                        <td>@eq.ItequipDesc</td>
+                        <td>@eq.Model?.Brand?.AssetType?.AssetsDesc</td>
+                        <td>@eq.Model?.Brand?.BrandDesc — @eq.Model?.ModelDesc</td>
+                        <td>@eq.ItequipSn</td>
+                        <td>@eq.ItequipNum</td>
+                        <td>
+                            @if (eq.WareCode.HasValue) { <text>@eq.Warehouse?.WareName (Bodega)</text> }
+                            else if (eq.HospCode.HasValue) { <text>@eq.Hospital?.HospName @(eq.HospitalDepartment != null ? $"/ {eq.HospitalDepartment.HospDepName}" : "")</text> }
+                            else { <text>@(eq.Site?.SiteName ?? "—")</text> }
+                        </td>
+                        <td>@eq.Licitacion?.LicNum</td>
+                        <td>@eq.ItequipDslic?.ToString("dd/MM/yy")</td>
+                        <td class="@(licVencida ? "text-danger fw-bold" : licAplazada ? "text-warning fw-bold" : licSoon ? "text-warning fw-bold" : "")">
+                            @eq.Licitacion?.LicEnd?.ToString("dd/MM/yy")
+                            @if (licVencida)  { <i class="bi bi-exclamation-triangle-fill ms-1"></i> }
+                            else if (licAplazada) { <i class="bi bi-pause-circle-fill ms-1"></i> }
+                            else if (licSoon)  { <i class="bi bi-clock-history ms-1"></i> }
+                        </td>
+                        <td>@eq.ItequipGnum</td>
+                        <td class="text-center">
+                            <span class="badge @(eq.Active ? "bg-success" : "bg-secondary")">
+                                @(eq.Active ? "Activo" : "Inactivo")
+                            </span>
+                        </td>
+                    </tr>
+                }
+                @if (!Model.Any())
+                {
+                    <tr><td colspan="12" class="text-center text-muted py-4">Sin equipos registrados.</td></tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@* ══════════════════════════════════════════════════════════
+   SECCIÓN ACTIVOS CLÍNICOS (Servicio)
+   ══════════════════════════════════════════════════════════ *@
+@if (canSeeSvc && activos.Any())
+{
+<div class="d-flex align-items-center gap-2 mt-5 mb-3">
+    <i class="bi bi-tools text-warning fs-5"></i>
+    <h5 class="mb-0 fw-bold">Activos Clínicos — División Servicio</h5>
+    <span class="badge bg-warning text-dark ms-2">@activos.Count() registros</span>
+</div>
+
+<!-- Resumen Activos Clínicos -->
+<div class="row g-3 mb-4">
+    <div class="col-4 col-md-2">
+        <div class="card text-center shadow-sm">
+            <div class="card-body py-2">
+                <div class="fs-4 fw-bold text-primary">@activos.Count()</div>
+                <div class="small text-muted">Total</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-4 col-md-2">
+        <div class="card text-center shadow-sm">
+            <div class="card-body py-2">
+                <div class="fs-4 fw-bold text-success">@activos.Count(a => a.Active)</div>
+                <div class="small text-muted">Activos</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-4 col-md-2">
+        <div class="card text-center shadow-sm">
+            <div class="card-body py-2">
+                <div class="fs-4 fw-bold text-info">@activos.Count(a => a.Active && a.HospCode.HasValue)</div>
+                <div class="small text-muted">En Hospital</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-4 col-md-2">
+        <div class="card text-center shadow-sm">
+            <div class="card-body py-2">
+                <div class="fs-4 fw-bold text-secondary">@activos.Count(a => a.Active && a.WareCode.HasValue)</div>
+                <div class="small text-muted">En Bodega</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-4 col-md-2">
+        <div class="card text-center shadow-sm">
+            <div class="card-body py-2">
+                <div class="fs-4 fw-bold text-danger">
+                    @activos.Count(a => a.Active && a.Licitacion?.LicEnd.HasValue == true
+                                     && a.Licitacion.LicEnd < today && !a.Licitacion.LicPostponed)
+                </div>
+                <div class="small text-muted">Lic. Vencida</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Tabla Activos Clínicos -->
+<div class="card shadow-sm">
+    <div class="card-body p-0">
+        <table class="table table-sm table-bordered mb-0" style="font-size:.8rem;">
+            <thead style="background:#8a4800; color:#fff;">
+                <tr>
+                    <th>#</th>
+                    <th>Descripcion</th>
+                    <th>Linea</th>
+                    <th>Tipo</th>
+                    <th>Marca / Modelo</th>
+                    <th>Serie</th>
+                    <th>Num.</th>
+                    <th>Ubicacion</th>
+                    <th>Licitacion</th>
+                    <th>Fin Lic.</th>
+                    <th>Garantia</th>
+                    <th class="text-center">Estado</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var a in activos)
+                {
+                    var licVencida  = a.Licitacion?.LicEnd.HasValue == true && a.Licitacion.LicEnd < today && !a.Licitacion.LicPostponed;
+                    var licAplazada = a.Licitacion?.LicEnd.HasValue == true && a.Licitacion.LicEnd < today && a.Licitacion.LicPostponed == true;
+                    var licSoon     = a.Licitacion?.LicEnd.HasValue == true && !licVencida && !licAplazada &&
+                                      a.Licitacion.LicEnd <= DateOnly.FromDateTime(DateTime.Today.AddDays(a.Licitacion.LicWarnDays));
+                    <tr class="@(licVencida ? "table-danger" : (licAplazada || licSoon) ? "table-warning" : "")">
+                        <td>@a.AssetCode</td>
+                        <td>@a.AssetDesc</td>
+                        <td>@a.Line?.LineName</td>
+                        <td>@a.Model?.Brand?.AssetType?.AssetsDesc</td>
+                        <td>@a.Model?.Brand?.BrandDesc — @a.Model?.ModelDesc</td>
+                        <td>@a.AssetSN</td>
+                        <td>@a.AssetNum</td>
+                        <td>
+                            @if (a.WareCode.HasValue)      { <text>@a.Warehouse?.WareName (Bodega)</text> }
+                            else if (a.HospCode.HasValue)  { <text>@a.Hospital?.HospName @(a.HospitalDepartment != null ? $"/ {a.HospitalDepartment.HospDepName}" : "")</text> }
+                            else                           { <text>—</text> }
+                        </td>
+                        <td>@a.Licitacion?.LicNum</td>
+                        <td class="@(licVencida ? "text-danger fw-bold" : licAplazada ? "text-warning fw-bold" : licSoon ? "text-warning fw-bold" : "")">
+                            @a.Licitacion?.LicEnd?.ToString("dd/MM/yy")
+                            @if (licVencida)       { <i class="bi bi-exclamation-triangle-fill ms-1"></i> }
+                            else if (licAplazada)  { <i class="bi bi-pause-circle-fill ms-1"></i> }
+                            else if (licSoon)      { <i class="bi bi-clock-history ms-1"></i> }
+                        </td>
+                        <td>@a.AssetGnum</td>
+                        <td class="text-center">
+                            <span class="badge @(a.Active ? "bg-success" : "bg-secondary")">
+                                @(a.Active ? "Activo" : "Inactivo")
+                            </span>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+}
+
+@section Scripts {
+<style>
+    @@media print {
+        .navbar, .d-print-none { display: none !important; }
+        .container-fluid { padding: 0 !important; }
+        .card { border: 1px solid #ccc !important; box-shadow: none !important; }
+        .table-danger { background-color: #f8d7da !important; -webkit-print-color-adjust: exact; }
+        .table-warning { background-color: #fff3cd !important; -webkit-print-color-adjust: exact; }
+    }
+</style>
+}

@@ -1,0 +1,178 @@
+@model IEnumerable<EDInventory.Models.Entities.EngLine>
+@{
+    ViewData["Title"] = "Inventario Ingeniería";
+    var groups = Model
+        .GroupBy(l => string.IsNullOrWhiteSpace(l.LineGroup) ? l.LineName : l.LineGroup)
+        .OrderBy(g => g.Key)
+        .ToList();
+    var allGroups = ViewBag.Groups as List<string> ?? new List<string>();
+    bool canWrite = User.IsInRole(AppRoles.Admin) || User.IsInRole(AppRoles.SvcAdmin) || User.IsInRole(AppRoles.SvcTecnico);
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+    <h4 class="mb-0"><i class="bi bi-tools me-2"></i>Repuestos</h4>
+    <div class="d-flex gap-2">
+        <a asp-action="Search" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-search me-1"></i>Buscar Repuesto
+        </a>
+        <a asp-action="StockReport" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-printer me-1"></i>Reporte
+        </a>
+        <a asp-action="ExportStock" class="btn btn-outline-success btn-sm">
+            <i class="bi bi-file-earmark-arrow-down me-1"></i>Exportar Excel
+        </a>
+        @if (canWrite)
+        {
+            <a asp-action="Import" class="btn btn-outline-primary btn-sm">
+                <i class="bi bi-file-earmark-arrow-up me-1"></i>Importar Excel
+            </a>
+            <a asp-action="LineCreate" class="btn btn-success btn-sm">
+                <i class="bi bi-plus-circle me-1"></i>Nueva Línea
+            </a>
+        }
+    </div>
+</div>
+
+<div class="card shadow-sm mb-3">
+    <div class="card-body py-2">
+        <form method="get" class="row g-2 align-items-end">
+            <div class="col-md-6">
+                <input type="text" name="search" value="@ViewBag.Search" class="form-control form-control-sm"
+                       placeholder="Buscar por nombre o descripción de línea..." />
+            </div>
+            <div class="col-md-4">
+                <select name="group" class="form-select form-select-sm">
+                    <option value="">-- Todos los grupos --</option>
+                    @foreach (var g in allGroups)
+                    {
+                        if (ViewBag.Group == g)
+                        {
+                            <option value="@g" selected>@g</option>
+                        }
+                        else
+                        {
+                            <option value="@g">@g</option>
+                        }
+                    }
+                </select>
+            </div>
+            <div class="col-md-2 d-flex gap-1">
+                <button type="submit" class="btn btn-primary btn-sm flex-grow-1"><i class="bi bi-search"></i></button>
+                <a asp-action="Index" class="btn btn-outline-secondary btn-sm"><i class="bi bi-x-lg"></i></a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@{
+    int page       = ViewBag.Page ?? 1;
+    int totalPages = ViewBag.TotalPages ?? 1;
+    int total      = ViewBag.Total ?? 0;
+
+    string QS(int p) {
+        var q = new System.Text.StringBuilder();
+        q.Append("?page=").Append(p);
+        if (!string.IsNullOrWhiteSpace(ViewBag.Search as string)) q.Append("&search=").Append(Uri.EscapeDataString(ViewBag.Search));
+        if (!string.IsNullOrWhiteSpace(ViewBag.Group  as string)) q.Append("&group=").Append(Uri.EscapeDataString(ViewBag.Group));
+        return q.ToString();
+    }
+}
+
+@if (!Model.Any())
+{
+    <div class="text-center text-muted py-5">No hay líneas de ingeniería registradas.</div>
+}
+else
+{
+    @foreach (var group in groups)
+    {
+        var groupLines = group.ToList();
+
+        <div class="mb-4">
+            @if (!string.IsNullOrWhiteSpace(groupLines[0].LineGroup))
+            {
+                <h5 class="text-secondary border-bottom pb-1 mb-3">
+                    <i class="bi bi-collection me-1"></i>@group.Key
+                </h5>
+            }
+            <div class="row g-3">
+                @foreach (var line in groupLines)
+                {
+                    var totalBoxes = line.Boxes.Count(b => b.Active);
+                    var totalParts = line.Boxes.SelectMany(b => b.Parts).Count();
+                    var totalQty   = line.Boxes.SelectMany(b => b.Parts).Sum(p => p.PartQty);
+
+                    <div class="col-md-6 col-xl-4">
+                        <div class="card h-100 shadow-sm">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <h6 class="fw-bold mb-1">
+                                            <i class="bi bi-diagram-2 me-1 text-primary"></i>@line.LineName
+                                        </h6>
+                                        @if (!string.IsNullOrWhiteSpace(line.LineDesc))
+                                        {
+                                            <p class="text-muted small mb-0">@line.LineDesc</p>
+                                        }
+                                    </div>
+                                    @if (!line.Active)
+                                    {
+                                        <span class="badge bg-secondary">Inactiva</span>
+                                    }
+                                </div>
+                                <div class="d-flex gap-3 mt-3">
+                                    <div class="text-center">
+                                        <div class="fs-5 fw-bold text-primary">@totalBoxes</div>
+                                        <div class="small text-muted">Cajas</div>
+                                    </div>
+                                    <div class="text-center">
+                                        <div class="fs-5 fw-bold text-success">@totalParts</div>
+                                        <div class="small text-muted">Ítems</div>
+                                    </div>
+                                    <div class="text-center">
+                                        <div class="fs-5 fw-bold text-warning">@totalQty</div>
+                                        <div class="small text-muted">Unidades</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card-footer bg-transparent d-flex gap-2">
+                                <a asp-action="LineDetail" asp-route-id="@line.LineCode" class="btn btn-outline-primary btn-sm flex-fill">
+                                    <i class="bi bi-eye me-1"></i>Ver Inventario
+                                </a>
+                                @if (canWrite)
+                                {
+                                    <a asp-action="LineEdit" asp-route-id="@line.LineCode" class="btn btn-outline-secondary btn-sm">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+}
+
+<div class="d-flex justify-content-between align-items-center mt-2 flex-wrap gap-2">
+    <div class="text-muted small"><strong>@total</strong> líneas encontradas</div>
+    @if (totalPages > 1)
+    {
+        <nav>
+            <ul class="pagination pagination-sm mb-0">
+                <li class="page-item @(page <= 1 ? "disabled" : "")">
+                    <a class="page-link" href="@QS(page - 1)"><i class="bi bi-chevron-left"></i></a>
+                </li>
+                @for (int i = Math.Max(1, page - 2); i <= Math.Min(totalPages, page + 2); i++)
+                {
+                    <li class="page-item @(i == page ? "active" : "")">
+                        <a class="page-link" href="@QS(i)">@i</a>
+                    </li>
+                }
+                <li class="page-item @(page >= totalPages ? "disabled" : "")">
+                    <a class="page-link" href="@QS(page + 1)"><i class="bi bi-chevron-right"></i></a>
+                </li>
+            </ul>
+        </nav>
+    }
+</div>

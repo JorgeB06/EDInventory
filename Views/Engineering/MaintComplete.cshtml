@@ -1,0 +1,57 @@
+@model EDInventory.Models.ViewModels.MaintCompleteVM
+@{ ViewData["Title"] = "Completar Mantenimiento"; }
+
+<div class="d-flex align-items-center mb-3 gap-2">
+    <a asp-action="AssetDetail" asp-route-id="@Model.AssetCode" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-arrow-left"></i>
+    </a>
+    <h4 class="mb-0"><i class="bi bi-check-circle me-2 text-success"></i>Completar Mantenimiento</h4>
+</div>
+
+<div class="alert alert-light border mb-3">
+    <div><i class="bi bi-hospital me-1 text-primary"></i><strong>Equipo:</strong> @Model.AssetDesc</div>
+    <div class="mt-1">
+        <span class="badge @(Model.MaintType == "PREVENTIVO" ? "bg-primary" : Model.MaintType == "CALIBRACION" ? "bg-info text-dark" : "bg-danger")">
+            @Model.MaintType
+        </span>
+        <span class="text-muted small ms-2">Programado: @Model.MaintScheduled.ToString("dd/MM/yyyy")</span>
+    </div>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-md-7 col-lg-6">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <form asp-action="MaintComplete" method="post">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" asp-for="MaintCode" />
+                    <input type="hidden" asp-for="AssetCode" />
+
+                    <div class="mb-3">
+                        <label asp-for="MaintCompleted" class="form-label fw-semibold">Fecha de realización</label>
+                        <input asp-for="MaintCompleted" class="form-control" type="date" style="max-width:200px;" />
+                        <span asp-validation-for="MaintCompleted" class="text-danger small"></span>
+                    </div>
+
+                    <div class="mb-4">
+                        <label asp-for="MaintResult" class="form-label fw-semibold">Resultado / Hallazgos <span class="text-muted fw-normal">(opcional)</span></label>
+                        <textarea asp-for="MaintResult" class="form-control" rows="3" maxlength="200"
+                                  placeholder="Ej: Sin observaciones. Filtros limpios, calibración dentro de rango..."></textarea>
+                        <span asp-validation-for="MaintResult" class="text-danger small"></span>
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-success flex-grow-1">
+                            <i class="bi bi-check-lg me-1"></i>Marcar como completado
+                        </button>
+                        <a asp-action="AssetDetail" asp-route-id="@Model.AssetCode" class="btn btn-outline-secondary">Cancelar</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{ await Html.RenderPartialAsync("_ValidationScriptsPartial"); }
+}

@@ -1,0 +1,87 @@
+@model IEnumerable<EDInventory.Models.Entities.EngMaintenance>
+@{
+    ViewData["Title"] = "Mantenimientos Pendientes";
+    var today = (DateOnly)ViewBag.Today;
+    bool canWrite = User.IsInRole(AppRoles.Admin) || User.IsInRole(AppRoles.SvcAdmin) || User.IsInRole(AppRoles.SvcTecnico);
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="mb-0"><i class="bi bi-wrench-adjustable me-2"></i>Mantenimientos Pendientes</h4>
+    <span class="badge bg-secondary fs-6">@Model.Count() pendiente(s)</span>
+</div>
+
+@if (!Model.Any())
+{
+    <div class="text-center text-muted py-5">
+        <i class="bi bi-check-circle fs-1 d-block mb-2 text-success"></i>
+        No hay mantenimientos pendientes.
+    </div>
+}
+else
+{
+    <div class="card shadow-sm">
+        <div class="table-responsive">
+            <table class="table table-sm table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Equipo</th>
+                        <th>Hospital</th>
+                        <th>Tipo</th>
+                        <th>Fecha programada</th>
+                        <th>Técnico</th>
+                        <th>Notas</th>
+                        <th style="width:120px"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var m in Model)
+                    {
+                        var diasRestantes = m.MaintScheduled.DayNumber - today.DayNumber;
+                        string rowClass = diasRestantes < 0 ? "table-danger" :
+                                          diasRestantes <= 7 ? "table-warning" : "";
+                        <tr class="@rowClass">
+                            <td class="fw-semibold small">
+                                <a asp-action="AssetDetail" asp-route-id="@m.AssetCode"
+                                   class="text-decoration-none text-dark">
+                                    @m.Asset?.AssetDesc
+                                </a>
+                            </td>
+                            <td class="small text-muted">@(m.Asset?.Hospital?.HospName ?? "—")</td>
+                            <td>
+                                <span class="badge @(m.MaintType == "PREVENTIVO" ? "bg-primary" : m.MaintType == "CALIBRACION" ? "bg-info text-dark" : "bg-danger")">
+                                    @m.MaintType
+                                </span>
+                            </td>
+                            <td class="small">
+                                @m.MaintScheduled.ToString("dd/MM/yyyy")
+                                @if (diasRestantes < 0)
+                                {
+                                    <span class="badge bg-danger ms-1">@Math.Abs(diasRestantes)d vencido</span>
+                                }
+                                else if (diasRestantes <= 7)
+                                {
+                                    <span class="badge bg-warning text-dark ms-1">@diasRestantes d</span>
+                                }
+                            </td>
+                            <td class="small">
+                                @(m.User?.Employee != null
+                                    ? $"{m.User.Employee.EmpName} {m.User.Employee.EmpSurname}"
+                                    : m.User?.UserLogin ?? "—")
+                            </td>
+                            <td class="small text-muted">@(m.MaintNotes ?? "—")</td>
+                            <td class="text-end">
+                                @if (canWrite)
+                                {
+                                    <a asp-action="MaintComplete" asp-route-id="@m.MaintCode"
+                                       class="btn btn-outline-success btn-sm py-0 px-1" title="Completar">
+                                        <i class="bi bi-check-lg"></i>
+                                    </a>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}

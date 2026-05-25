@@ -1,0 +1,95 @@
+﻿@model IEnumerable<EDInventory.Models.Entities.Brand>
+@{ ViewData["Title"] = "Marcas y Modelos"; }
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="mb-0"><i class="bi bi-bookmark-star me-2"></i>Marcas y Modelos</h4>
+    <a asp-action="BrandCreate" class="btn btn-primary btn-sm"><i class="bi bi-plus-lg me-1"></i>Nueva Marca</a>
+</div>
+
+@foreach (var brand in Model)
+{
+    <div class="card shadow-sm mb-3">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <span class="fw-bold">
+                <i class="bi bi-bookmark me-1"></i>@brand.BrandDesc
+                <small class="text-muted ms-2">(@brand.AssetType?.AssetsDesc)</small>
+                <span class="badge @(brand.Active ? "bg-success" : "bg-secondary") ms-2">
+                    @(brand.Active ? "Activo" : "Inactivo")
+                </span>
+            </span>
+            <div>
+                <a asp-action="BrandEdit" asp-route-id="@brand.BrandCode" class="btn btn-outline-primary btn-sm me-1">
+                    <i class="bi bi-pencil"></i>
+                </a>
+                <form asp-action="BrandToggle" asp-route-id="@brand.BrandCode" method="post" data-confirm="¿Confirma el cambio de estado?" class="d-inline">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="btn btn-sm @(brand.Active ? "btn-outline-warning" : "btn-outline-success") me-2"
+                            title="@(brand.Active ? "Desactivar" : "Activar")">
+                        <i class="bi @(brand.Active ? "bi-toggle-on" : "bi-toggle-off")"></i>
+                    </button>
+                </form>
+                <form asp-action="BrandDelete" asp-route-id="@brand.BrandCode" method="post" class="d-inline me-2"
+                      onsubmit="return confirm('¿Eliminar esta marca y todos sus modelos?')">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="btn btn-outline-danger btn-sm" title="Eliminar">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </form>
+                <a asp-action="ModelCreate" asp-route-brandId="@brand.BrandCode" class="btn btn-outline-secondary btn-sm">
+                    <i class="bi bi-plus-lg me-1"></i>Modelo
+                </a>
+            </div>
+        </div>
+        <div class="card-body p-0">
+            <table class="table table-sm mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Modelo</th>
+                        <th class="text-center">Estado</th>
+                        <th class="text-center">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var mdl in brand.Models)
+                    {
+                        <tr>
+                            <td>@mdl.ModelDesc</td>
+                            <td class="text-center">
+                                <span class="badge @(mdl.Active ? "bg-success" : "bg-secondary")">
+                                    @(mdl.Active ? "Activo" : "Inactivo")
+                                </span>
+                            </td>
+                            <td class="text-center">
+                                <a asp-action="ModelEdit" asp-route-id="@mdl.ModelCode" class="btn btn-outline-primary btn-sm">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                <form asp-action="ModelToggle" asp-route-id="@mdl.ModelCode" method="post" data-confirm="¿Confirma el cambio de estado?" class="d-inline">
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="btn btn-sm @(mdl.Active ? "btn-outline-warning" : "btn-outline-success")"
+                                            title="@(mdl.Active ? "Desactivar" : "Activar")">
+                                        <i class="bi @(mdl.Active ? "bi-toggle-on" : "bi-toggle-off")"></i>
+                                    </button>
+                                </form>
+                                <form asp-action="ModelDelete" asp-route-id="@mdl.ModelCode" method="post" class="d-inline"
+                                      onsubmit="return confirm('¿Eliminar este modelo?')">
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="btn btn-outline-danger btn-sm" title="Eliminar">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                    @if (!brand.Models.Any())
+                    {
+                        <tr><td colspan="3" class="text-muted small ps-3 py-2">Sin modelos registrados.</td></tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}
+@if (!Model.Any())
+{
+    <div class="text-center text-muted py-5">No hay marcas registradas.</div>
+}

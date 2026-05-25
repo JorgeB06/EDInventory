@@ -1,0 +1,60 @@
+@model IEnumerable<EDInventory.Models.Entities.UserRole>
+@{ ViewData["Title"] = "Roles de Sistema"; }
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="mb-0"><i class="bi bi-shield-lock me-2"></i>Roles de Sistema</h4>
+    <span class="badge bg-secondary fs-6"><i class="bi bi-lock me-1"></i>Roles fijos del sistema</span>
+</div>
+
+<div class="alert alert-info d-flex align-items-center gap-2 mb-3" style="max-width:600px;">
+    <i class="bi bi-info-circle-fill"></i>
+    <span>Los roles son fijos y no pueden crearse ni modificarse. Asigne roles a los usuarios desde la seccion <strong>Usuarios</strong>.</span>
+</div>
+
+<div class="card shadow-sm" style="max-width:600px;">
+    <div class="card-body p-0">
+        <table class="table table-hover mb-0">
+            <thead class="table-dark">
+                <tr>
+                    <th>#</th>
+                    <th>Rol</th>
+                    <th>Division</th>
+                    <th class="text-center">Estado</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var rol in Model.OrderBy(r => r.UroleDesc))
+                {
+                    string division = (rol.UroleDesc ?? "") switch
+                    {
+                        "Administrador"                                        => "Global",
+                        var r when r.StartsWith("TI.")       => "TI",
+                        var r when r.StartsWith("Servicio.")  => "Servicio",
+                        _                                                      => "otro"
+                    };
+                    string badgeDiv = division switch
+                    {
+                        "Global"   => "bg-dark",
+                        "TI"       => "bg-primary",
+                        "Servicio" => "bg-warning text-dark",
+                        _          => "bg-secondary"
+                    };
+                    <tr>
+                        <td class="text-muted small">@rol.UroleCode</td>
+                        <td class="fw-semibold">@rol.UroleDesc</td>
+                        <td><span class="badge @badgeDiv">@division</span></td>
+                        <td class="text-center">
+                            <span class="badge @(rol.Active ? "bg-success" : "bg-secondary")">
+                                @(rol.Active ? "Activo" : "Inactivo")
+                            </span>
+                        </td>
+                    </tr>
+                }
+                @if (!Model.Any())
+                {
+                    <tr><td colspan="4" class="text-center text-muted py-4">No hay roles registrados.</td></tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

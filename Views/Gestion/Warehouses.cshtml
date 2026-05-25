@@ -1,0 +1,83 @@
+@model IEnumerable<EDInventory.Models.Entities.Warehouse>
+@{
+    ViewData["Title"] = "Bodegas";
+    bool canWrite = User.IsInRole(AppRoles.Admin) || User.IsInRole(AppRoles.TiAdmin) || User.IsInRole(AppRoles.SvcAdmin);
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="mb-0"><i class="bi bi-box-seam me-2"></i>Bodegas</h4>
+    @if (canWrite)
+    {
+        <a asp-controller="Gestion" asp-action="WarehouseCreate" class="btn btn-primary btn-sm">
+            <i class="bi bi-plus-lg me-1"></i>Nueva Bodega
+        </a>
+    }
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-body p-0">
+        <table class="table table-hover mb-0">
+            <thead class="table-dark">
+                <tr>
+                    <th>#</th>
+                    <th>Nombre</th>
+                    <th>Descripcion</th>
+                    <th class="text-center">Equipos IT</th>
+                    <th class="text-center">Servicio</th>
+                    <th class="text-center">Estado</th>
+                    <th class="text-center">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var w in Model)
+                {
+                    <tr>
+                        <td>@w.WareCode</td>
+                        <td class="fw-semibold"><i class="bi bi-box-seam me-1 text-muted"></i>@w.WareName</td>
+                        <td>@(w.WareDesc ?? "—")</td>
+                        <td class="text-center">
+                            <span class="badge bg-primary bg-opacity-75">@w.ItEquips.Count(e => e.Active)</span>
+                        </td>
+                        <td class="text-center">
+                            @{
+                                var cajasActivas   = w.EngBoxes.Count(b => b.Active);
+                                var repuestosTotal = w.EngBoxes.Where(b => b.Active).Sum(b => b.Parts.Count);
+                            }
+                            <span class="badge bg-info text-dark bg-opacity-75">@cajasActivas caja(s)</span>
+                            @if (repuestosTotal > 0)
+                            {
+                                <span class="badge bg-secondary ms-1">@repuestosTotal rep.</span>
+                            }
+                        </td>
+                        <td class="text-center">
+                            <span class="badge @(w.Active ? "bg-success" : "bg-secondary")">
+                                @(w.Active ? "Activo" : "Inactivo")
+                            </span>
+                        </td>
+                        <td class="text-center">
+                            @if (canWrite)
+                            {
+                                <a asp-controller="Gestion" asp-action="WarehouseEdit" asp-route-id="@w.WareCode"
+                                   class="btn btn-outline-primary btn-sm">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                <form asp-controller="Gestion" asp-action="WarehouseToggle" asp-route-id="@w.WareCode"
+                                      method="post" data-confirm="¿Confirma el cambio de estado?" class="d-inline">
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit"
+                                            class="btn btn-sm @(w.Active ? "btn-outline-warning" : "btn-outline-success")">
+                                        <i class="bi @(w.Active ? "bi-toggle-on" : "bi-toggle-off")"></i>
+                                    </button>
+                                </form>
+                            }
+                        </td>
+                    </tr>
+                }
+                @if (!Model.Any())
+                {
+                    <tr><td colspan="7" class="text-center text-muted py-4">No hay bodegas registradas.</td></tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

@@ -1,0 +1,340 @@
+@{
+    ViewData["Title"] = "Estacion de Movimiento";
+    var warehouses = ViewBag.Warehouses as IEnumerable<EDInventory.Models.Entities.Warehouse> ?? [];
+    var hospitals  = ViewBag.Hospitals  as IEnumerable<EDInventory.Models.Entities.Hospital>  ?? [];
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="mb-0"><i class="bi bi-upc-scan me-2"></i>Estacion de Movimiento</h4>
+    <a asp-action="Index" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-arrow-left me-1"></i>Inventario
+    </a>
+</div>
+
+<div class="row g-3">
+    <!-- Panel de destino -->
+    <div class="col-lg-5">
+        <div class="card shadow-sm">
+            <div class="card-header bg-dark text-white fw-bold">
+                <i class="bi bi-geo-alt me-1"></i>Configurar Destino
+            </div>
+            <div class="card-body">
+                <!-- Tipo de destino -->
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Tipo de destino</label>
+                    <div class="d-flex gap-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="destType" id="destBodega" value="BODEGA" checked />
+                            <label class="form-check-label" for="destBodega">
+                                <i class="bi bi-box-seam me-1"></i>Bodega
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="destType" id="destHospital" value="HOSPITAL" />
+                            <label class="form-check-label" for="destHospital">
+                                <i class="bi bi-hospital me-1"></i>Hospital
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Destino: Bodega -->
+                <div id="secDestBodega">
+                    <div class="mb-2">
+                        <label class="form-label fw-semibold small">Bodega</label>
+                        <select id="wareCode" class="form-select form-select-sm">
+                            <option value="">-- Seleccione bodega --</option>
+                            @foreach (var w in warehouses)
+                            {
+                                <option value="@w.WareCode">@w.WareName</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="row g-2">
+                        <div class="col-6">
+                            <label class="form-label fw-semibold small">Rack</label>
+                            <input type="text" id="wareRack" class="form-control form-control-sm" placeholder="Ej: R-01" />
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label fw-semibold small">Estante</label>
+                            <input type="text" id="wareEstante" class="form-control form-control-sm" placeholder="Ej: E-03" />
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label fw-semibold small">Caja <span class="text-muted">(opcional)</span></label>
+                            <input type="text" id="wareCaja" class="form-control form-control-sm" placeholder="Ej: C-12" />
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Destino: Hospital -->
+                <div id="secDestHospital" class="d-none">
+                    <div class="mb-2">
+                        <label class="form-label fw-semibold small">Hospital</label>
+                        <select id="hospCode" class="form-select form-select-sm">
+                            <option value="">-- Seleccione hospital --</option>
+                            @foreach (var h in hospitals)
+                            {
+                                <option value="@h.HospCode">@h.HospName</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label fw-semibold small">Zona / Departamento</label>
+                        <select id="hospDepCode" class="form-select form-select-sm">
+                            <option value="">-- Primero seleccione hospital --</option>
+                        </select>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label fw-semibold small">Posicion</label>
+                        <input type="text" id="hospPos" class="form-control form-control-sm"
+                               placeholder="Ej: Estacion principal Banco de Sangre" />
+                    </div>
+                </div>
+
+                <!-- Notas de movimiento -->
+                <div class="mt-3">
+                    <label class="form-label fw-semibold small">Notas del movimiento <span class="text-muted">(opcional)</span></label>
+                    <input type="text" id="histNotes" class="form-control form-control-sm"
+                           placeholder="Ej: Ingreso por licitacion LIC-2024-001" />
+                </div>
+
+                <!-- Boton confirmar destino -->
+                <button id="btnLockDest" class="btn btn-success w-100 mt-3">
+                    <i class="bi bi-lock me-1"></i>Confirmar destino y comenzar escaneo
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Panel de escaneo -->
+    <div class="col-lg-7">
+        <div class="card shadow-sm">
+            <div class="card-header bg-dark text-white fw-bold d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-upc-scan me-1"></i>Escanear Equipos</span>
+                <span id="sessionCount" class="badge bg-light text-dark">0 procesados</span>
+            </div>
+            <div class="card-body">
+                <!-- Resumen destino activo -->
+                <div id="destSummary" class="alert alert-secondary small py-2 d-none">
+                    <i class="bi bi-geo-alt me-1"></i><span id="destSummaryText"></span>
+                </div>
+
+                <!-- Input de escaneo -->
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">
+                        <i class="bi bi-upc me-1"></i>Escanear serial
+                    </label>
+                    <div class="input-group">
+                        <input type="text" id="scanInput" class="form-control form-control-lg"
+                               placeholder="Apunte el lector al codigo de barras..."
+                               disabled autocomplete="off" />
+                        <button id="btnManual" class="btn btn-outline-secondary" type="button" disabled
+                                title="Procesar manualmente">
+                            <i class="bi bi-arrow-return-left"></i>
+                        </button>
+                    </div>
+                    <small class="text-muted">El lector envia Enter automaticamente al escanear.</small>
+                </div>
+
+                <!-- Ultimo resultado -->
+                <div id="lastResult" class="d-none mb-3"></div>
+
+                <!-- Log de sesion -->
+                <div id="sessionLog" class="d-none">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <span class="fw-semibold small">Log de sesion</span>
+                        <button id="btnClearLog" class="btn btn-outline-secondary btn-sm py-0">
+                            <i class="bi bi-trash me-1"></i>Limpiar
+                        </button>
+                    </div>
+                    <div style="max-height:320px; overflow-y:auto;">
+                        <table class="table table-sm table-hover mb-0 small" id="logTable">
+                            <thead class="table-light sticky-top">
+                                <tr>
+                                    <th>Hora</th>
+                                    <th>Serial</th>
+                                    <th>Equipo</th>
+                                    <th>Anterior</th>
+                                    <th>Nuevo</th>
+                                    <th class="text-center">Res.</th>
+                                </tr>
+                            </thead>
+                            <tbody id="logBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    // ── Estado ──────────────────────────────────────────────
+    let destLocked = false;
+    let sessionCount = 0;
+
+    // ── Cambio tipo destino ──────────────────────────────────
+    document.querySelectorAll('input[name="destType"]').forEach(r => {
+        r.addEventListener('change', function () {
+            document.getElementById('secDestBodega').classList.toggle('d-none', this.value !== 'BODEGA');
+            document.getElementById('secDestHospital').classList.toggle('d-none', this.value !== 'HOSPITAL');
+        });
+    });
+
+    // ── Carga departamentos ──────────────────────────────────
+    document.getElementById('hospCode').addEventListener('change', function () {
+        const depSel = document.getElementById('hospDepCode');
+        depSel.innerHTML = '<option value="">-- Cargando... --</option>';
+        if (!this.value) { depSel.innerHTML = '<option value="">-- Primero seleccione hospital --</option>'; return; }
+        fetch(`/Equipment/GetHospDepartments?hospCode=${this.value}`)
+            .then(r => r.json())
+            .then(data => {
+                depSel.innerHTML = '<option value="">-- Seleccione zona --</option>';
+                data.forEach(d => depSel.innerHTML += `<option value="${d.value}">${d.text}</option>`);
+            });
+    });
+
+    // ── Confirmar destino ────────────────────────────────────
+    document.getElementById('btnLockDest').addEventListener('click', function () {
+        const type = document.querySelector('input[name="destType"]:checked').value;
+
+        if (type === 'BODEGA') {
+            if (!document.getElementById('wareCode').value) { alert('Seleccione una bodega.'); return; }
+            if (!document.getElementById('wareRack').value.trim()) { alert('Ingrese el rack.'); return; }
+            if (!document.getElementById('wareEstante').value.trim()) { alert('Ingrese el estante.'); return; }
+            const bName = document.getElementById('wareCode').options[document.getElementById('wareCode').selectedIndex].text;
+            setDestSummary(`Bodega: ${bName} / ${document.getElementById('wareRack').value} / ${document.getElementById('wareEstante').value}` +
+                (document.getElementById('wareCaja').value ? ` / ${document.getElementById('wareCaja').value}` : ''));
+        } else {
+            if (!document.getElementById('hospCode').value) { alert('Seleccione un hospital.'); return; }
+            if (!document.getElementById('hospDepCode').value) { alert('Seleccione la zona.'); return; }
+            if (!document.getElementById('hospPos').value.trim()) { alert('Ingrese la posicion.'); return; }
+            const hName = document.getElementById('hospCode').options[document.getElementById('hospCode').selectedIndex].text;
+            const dName = document.getElementById('hospDepCode').options[document.getElementById('hospDepCode').selectedIndex].text;
+            setDestSummary(`Hospital: ${hName} / ${dName} / ${document.getElementById('hospPos').value}`);
+        }
+
+        destLocked = true;
+        document.getElementById('scanInput').disabled = false;
+        document.getElementById('btnManual').disabled = false;
+        document.getElementById('scanInput').focus();
+        document.getElementById('btnLockDest').innerHTML = '<i class="bi bi-pencil me-1"></i>Cambiar destino';
+        document.getElementById('btnLockDest').classList.replace('btn-success', 'btn-outline-secondary');
+
+        // Bloquear formulario de destino
+        document.querySelectorAll('#secDestBodega input, #secDestBodega select, #secDestHospital input, #secDestHospital select, input[name="destType"]')
+            .forEach(el => el.disabled = true);
+    });
+
+    function setDestSummary(text) {
+        document.getElementById('destSummary').classList.remove('d-none');
+        document.getElementById('destSummaryText').textContent = text;
+    }
+
+    // ── Cambiar destino ──────────────────────────────────────
+    document.getElementById('btnLockDest').addEventListener('click', function () {
+        if (destLocked) {
+            destLocked = false;
+            document.getElementById('scanInput').disabled = true;
+            document.getElementById('btnManual').disabled = true;
+            document.querySelectorAll('#secDestBodega input, #secDestBodega select, #secDestHospital input, #secDestHospital select, input[name="destType"]')
+                .forEach(el => el.disabled = false);
+            this.innerHTML = '<i class="bi bi-lock me-1"></i>Confirmar destino y comenzar escaneo';
+            this.classList.replace('btn-outline-secondary', 'btn-success');
+            document.getElementById('destSummary').classList.add('d-none');
+        }
+    }, { once: false });
+
+    // ── Captura del scan ─────────────────────────────────────
+    document.getElementById('scanInput').addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            const serial = this.value.trim();
+            if (serial) processScan(serial);
+            this.value = '';
+            this.focus();
+        }
+    });
+
+    document.getElementById('btnManual').addEventListener('click', function () {
+        const serial = document.getElementById('scanInput').value.trim();
+        if (serial) { processScan(serial); document.getElementById('scanInput').value = ''; }
+        document.getElementById('scanInput').focus();
+    });
+
+    // ── Procesar scan ────────────────────────────────────────
+    function processScan(serial) {
+        const type = document.querySelector('input[name="destType"]:checked').value;
+        const payload = {
+            serial,
+            locType: type,
+            wareCode: type === 'BODEGA' ? parseInt(document.getElementById('wareCode').value) || null : null,
+            wareRack: type === 'BODEGA' ? document.getElementById('wareRack').value : null,
+            wareEstante: type === 'BODEGA' ? document.getElementById('wareEstante').value : null,
+            wareCaja: type === 'BODEGA' ? (document.getElementById('wareCaja').value || null) : null,
+            hospCode: type === 'HOSPITAL' ? parseInt(document.getElementById('hospCode').value) || null : null,
+            hospDepCode: type === 'HOSPITAL' ? parseInt(document.getElementById('hospDepCode').value) || null : null,
+            hospPos: type === 'HOSPITAL' ? document.getElementById('hospPos').value : null,
+            histNotes: document.getElementById('histNotes').value || null
+        };
+
+        fetch('/Equipment/ProcessScan', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'RequestVerificationToken': getAntiForgeryToken() },
+            body: JSON.stringify(payload)
+        })
+        .then(r => r.json())
+        .then(data => showResult(serial, data))
+        .catch(() => showResult(serial, { success: false, message: 'Error de conexion.' }));
+    }
+
+    // ── Mostrar resultado ────────────────────────────────────
+    function showResult(serial, data) {
+        const box = document.getElementById('lastResult');
+        box.classList.remove('d-none', 'alert-success', 'alert-danger');
+
+        if (data.success) {
+            box.classList.add('alert', 'alert-success');
+            box.innerHTML = `<i class="bi bi-check-circle me-1"></i><strong>${data.equip.desc}</strong>
+                <span class="ms-2 small text-muted">${data.equip.prevLocation} <i class="bi bi-arrow-right mx-1"></i> ${data.equip.newLocation}</span>`;
+            addLogRow(serial, data.equip, true);
+            sessionCount++;
+        } else {
+            box.classList.add('alert', 'alert-danger');
+            box.innerHTML = `<i class="bi bi-x-circle me-1"></i>${data.message}`;
+            addLogRow(serial, null, false, data.message);
+        }
+
+        document.getElementById('sessionCount').textContent = `${sessionCount} procesados`;
+        document.getElementById('sessionLog').classList.remove('d-none');
+    }
+
+    function addLogRow(serial, equip, ok, errorMsg) {
+        const now = new Date().toLocaleTimeString('es-CR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        const body = document.getElementById('logBody');
+        const tr = document.createElement('tr');
+        tr.className = ok ? 'table-success' : 'table-danger';
+        tr.innerHTML = ok
+            ? `<td>${now}</td><td><code>${serial}</code></td><td>${equip.desc}</td>
+               <td class="text-muted small">${equip.prevLocation}</td>
+               <td class="small">${equip.newLocation}</td>
+               <td class="text-center"><i class="bi bi-check-circle-fill text-success"></i></td>`
+            : `<td>${now}</td><td><code>${serial}</code></td><td colspan="3" class="text-danger">${errorMsg}</td>
+               <td class="text-center"><i class="bi bi-x-circle-fill text-danger"></i></td>`;
+        body.prepend(tr);
+    }
+
+    document.getElementById('btnClearLog').addEventListener('click', function () {
+        document.getElementById('logBody').innerHTML = '';
+        sessionCount = 0;
+        document.getElementById('sessionCount').textContent = '0 procesados';
+        document.getElementById('lastResult').classList.add('d-none');
+    });
+
+    function getAntiForgeryToken() {
+        return document.querySelector('input[name="__RequestVerificationToken"]')?.value ?? '';
+    }
+</script>
+@Html.AntiForgeryToken()
+}
