@@ -111,11 +111,13 @@ namespace EDInventory.Models.ViewModels
         public string UserLogin { get; set; } = string.Empty;
 
         /// <summary>
-        /// Nueva contraseña del usuario (mín. 6 caracteres, máx. 72).
+        /// Nueva contraseña del usuario (mín. 8 caracteres con al menos un número, máx. 72).
         /// Vacío en edición significa que no se cambia la contraseña existente.
         /// </summary>
         [Display(Name = "Contrasena")]
-        [StringLength(72, MinimumLength = 6, ErrorMessage = "Minimo 6 caracteres")]
+        [StringLength(72, ErrorMessage = "Maximo 72 caracteres")]
+        [RegularExpression(@"^$|^(?=.*[0-9]).{8,}$",
+            ErrorMessage = "Minimo 8 caracteres e incluir al menos un numero.")]
         [DataType(DataType.Password)]
         public string? Password { get; set; }
 

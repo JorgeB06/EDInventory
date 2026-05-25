@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using System.Security.Claims;
 
 namespace EDInventory.Controllers
@@ -12,15 +13,26 @@ namespace EDInventory.Controllers
     /// Controlador de autenticación. Gestiona el inicio de sesión mediante
     /// cookies (<c>CookieAuth</c>), el cierre de sesión y el cambio de contraseña.
     /// Las contraseñas se verifican y almacenan con hash BCrypt.
+    /// Incluye bloqueo temporal de cuenta tras 5 intentos fallidos consecutivos (15 minutos).
     /// </summary>
     public class AuthController : Controller
     {
         private readonly AppDbContext _context;
+        private readonly IMemoryCache  _cache;
 
-        /// <summary>Inicializa el controlador con el contexto de base de datos.</summary>
-        public AuthController(AppDbContext context)
+        // Configuración de bloqueo por intentos fallidos
+        private const int MaxFailedAttempts   = 5;
+        private const int LockoutMinutes      = 15;
+        private const int TrackingWindowMinutes = 30;
+
+        private string LockKey(string login) => $"loginlock:{login.ToLowerInvariant()}";
+
+        /// <param name="context">Contexto de base de datos.</param>
+        /// <param name="cache">Caché en memoria para rastrear intentos fallidos.</param>
+        public AuthController(AppDbContext context, IMemoryCache cache)
         {
             _context = context;
+            _cache   = cache;
         }
 
         /// <summary>
@@ -39,6 +51,7 @@ namespace EDInventory.Controllers
         /// <summary>
         /// [POST] Procesa el formulario de inicio de sesión.
         /// Verifica las credenciales contra la BD con BCrypt; crea la cookie de autenticación si son correctas.
+        /// Bloquea la cuenta durante <c>LockoutMinutes</c> minutos tras <c>MaxFailedAttempts</c> intentos fallidos.
         /// </summary>
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -47,6 +60,20 @@ namespace EDInventory.Controllers
             if (!ModelState.IsValid)
                 return View(model);
 
+            // ── Verificar bloqueo activo ──────────────────────────────────
+            var lockKey  = LockKey(model.UserLogin);
+            var lockInfo = _cache.Get<(int Count, DateTime? LockedUntil)>(lockKey);
+
+            if (lockInfo.LockedUntil.HasValue && lockInfo.LockedUntil.Value > DateTime.UtcNow)
+            {
+                var remaining = (int)Math.Ceiling((lockInfo.LockedUntil.Value - DateTime.UtcNow).TotalMinutes);
+                ModelState.AddModelError(string.Empty,
+                    $"Cuenta bloqueada por demasiados intentos fallidos. " +
+                    $"Intente nuevamente en {remaining} minuto(s).");
+                return View(model);
+            }
+
+            // ── Verificar credenciales ────────────────────────────────────
             var user = await _context.Users
                 .Include(u => u.Employee)
                 .Include(u => u.UserRole)
@@ -54,9 +81,26 @@ namespace EDInventory.Controllers
 
             if (user == null || !BCrypt.Net.BCrypt.Verify(model.Password, user.UserPassword))
             {
-                ModelState.AddModelError(string.Empty, "Usuario o contrasena incorrectos.");
+                // Incrementar contador de fallos
+                var newCount   = lockInfo.Count + 1;
+                var newLocked  = newCount >= MaxFailedAttempts
+                    ? (DateTime?)DateTime.UtcNow.AddMinutes(LockoutMinutes)
+                    : lockInfo.LockedUntil;
+
+                _cache.Set(lockKey, (newCount, newLocked),
+                    TimeSpan.FromMinutes(TrackingWindowMinutes));
+
+                string errorMsg = newCount >= MaxFailedAttempts
+                    ? $"Cuenta bloqueada {LockoutMinutes} minutos por demasiados intentos fallidos."
+                    : $"Usuario o contrasena incorrectos. " +
+                      $"Quedan {MaxFailedAttempts - newCount} intento(s) antes del bloqueo.";
+
+                ModelState.AddModelError(string.Empty, errorMsg);
                 return View(model);
             }
+
+            // ── Login exitoso: limpiar contador y crear cookie ────────────
+            _cache.Remove(lockKey);
 
             var claims = new List<Claim>
             {
@@ -66,7 +110,7 @@ namespace EDInventory.Controllers
                 new(ClaimTypes.Role, user.UserRole?.UroleDesc ?? "User")
             };
 
-            var identity = new ClaimsIdentity(claims, "CookieAuth");
+            var identity  = new ClaimsIdentity(claims, "CookieAuth");
             var principal = new ClaimsPrincipal(identity);
 
             await HttpContext.SignInAsync("CookieAuth", principal);

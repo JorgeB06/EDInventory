@@ -41,6 +41,8 @@ builder.Services.AddAuthentication("CookieAuth")
 
 builder.Services.AddControllersWithViews();
 builder.Services.AddHttpContextAccessor();
+// IMemoryCache: usado por AuthController para bloqueo por intentos fallidos de login
+builder.Services.AddMemoryCache();
 
 var app = builder.Build();
 

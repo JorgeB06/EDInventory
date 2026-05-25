@@ -308,11 +308,13 @@ namespace EDInventory.Controllers
                 Active = vm.Active
             };
 
+            // Transacción: el equipo y su historial inicial deben persistir juntos.
+            // Si falla el historial después de guardado el equipo, se revierte todo.
+            await using var tx = await _context.Database.BeginTransactionAsync();
             _context.ItEquips.Add(equip);
-            await _context.SaveChangesAsync();
-
-            // Registrar historial inicial
-            await RegisterHistory(equip, vm.HistNotes, GetCurrentUserId());
+            await _context.SaveChangesAsync();                                      // obtiene el PK
+            await RegisterHistory(equip, vm.HistNotes, GetCurrentUserId());         // usa el PK
+            await tx.CommitAsync();
 
             TempData["Success"] = "Equipo registrado correctamente.";
             return RedirectToAction(nameof(Index));
@@ -675,9 +677,11 @@ namespace EDInventory.Controllers
                     Active        = true
                 };
 
+                await using var txImp = await _context.Database.BeginTransactionAsync();
                 _context.ItEquips.Add(equip);
                 await _context.SaveChangesAsync();
                 await RegisterHistory(equip, "Importado desde Excel", GetCurrentUserId());
+                await txImp.CommitAsync();
 
                 importados++;
             }

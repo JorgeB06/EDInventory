@@ -13,9 +13,10 @@ namespace EDInventory.Models.ViewModels
         [DataType(DataType.Password)]
         public string CurrentPassword { get; set; } = string.Empty;
 
-        /// <summary>Nueva contraseña deseada. Mínimo 6 caracteres.</summary>
+        /// <summary>Nueva contraseña deseada. Mínimo 8 caracteres con al menos un número.</summary>
         [Required(ErrorMessage = "Ingrese la nueva contrasena.")]
-        [MinLength(6, ErrorMessage = "La contrasena debe tener al menos 6 caracteres.")]
+        [RegularExpression(@"^(?=.*[0-9]).{8,}$",
+            ErrorMessage = "La contrasena debe tener al menos 8 caracteres e incluir al menos un numero.")]
         [DataType(DataType.Password)]
         public string NewPassword { get; set; } = string.Empty;
 

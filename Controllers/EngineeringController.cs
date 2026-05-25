@@ -1007,9 +1007,12 @@ namespace EDInventory.Controllers
                 Active        = vm.Active
             };
 
+            // Transacción: el activo y su historial inicial deben persistir juntos.
+            await using var tx = await _context.Database.BeginTransactionAsync();
             _context.EngAssets.Add(asset);
             await _context.SaveChangesAsync();
             await RegisterAssetHistory(asset, vm.HistNotes, GetSvcCurrentUserId());
+            await tx.CommitAsync();
 
             TempData["Success"] = "Activo clinico registrado correctamente.";
             return RedirectToAction(nameof(AssetsOnSite));
