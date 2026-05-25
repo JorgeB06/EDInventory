@@ -253,21 +253,31 @@
   </ol>
   <div class="warn">
     <strong>⚠ Credenciales incorrectas:</strong> Si el usuario o contraseña no coinciden, el sistema mostrará el mensaje
-    "Usuario o contraseña incorrectos" y no registrará la sesión. Contacte al administrador si olvidó su contraseña.
+    de error indicando cuántos intentos quedan. Tras <strong>5 intentos fallidos consecutivos</strong>, la cuenta quedará
+    bloqueada durante <strong>15 minutos</strong>. Contacte al administrador si olvidó su contraseña.
   </div>
   <div class="tip">
     <strong>💡 Sesión:</strong> La sesión dura <strong>8 horas</strong> desde el último movimiento. Si el sistema le solicita volver a iniciar sesión es porque la sesión expiró.
   </div>
 
-  <h2>2.2 Cambiar Contraseña</h2>
+  <h2>2.2 Ayuda Contextual</h2>
+  <p>En la barra de navegación superior derecha se encuentra el ícono <strong>?</strong> (círculo azul con signo de interrogación).
+  Al hacer clic muestra una guía rápida específica para la página en la que se encuentra actualmente.</p>
+  <ul>
+    <li>En el <strong>Dashboard</strong> explica las tarjetas y alertas.</li>
+    <li>En el <strong>Inventario TI</strong> explica los filtros, exportación e importación.</li>
+    <li>En cada sección del sistema muestra los puntos clave de esa pantalla.</li>
+  </ul>
+
+  <h2>2.3 Cambiar Contraseña</h2>
   <ol class="steps">
     <li>En la barra de navegación superior, haga clic en su nombre de usuario.</li>
     <li>Seleccione <strong>"Cambiar Contraseña"</strong>.</li>
-    <li>Ingrese su contraseña actual y la nueva contraseña (mínimo 6 caracteres).</li>
+    <li>Ingrese su contraseña actual y la nueva contraseña (<strong>mínimo 8 caracteres e incluir al menos un número</strong>).</li>
     <li>Confirme la nueva contraseña y presione <strong>Guardar</strong>.</li>
   </ol>
 
-  <h2>2.3 Cerrar Sesión</h2>
+  <h2>2.4 Cerrar Sesión</h2>
   <p>En la barra de navegación superior, haga clic en su nombre y seleccione <strong>"Cerrar Sesión"</strong>.
   La sesión se cerrará inmediatamente y será redirigido a la pantalla de login.</p>
 
@@ -573,7 +583,7 @@
     <li>En Administración → <strong>"Usuarios"</strong> → <strong>"Nuevo Usuario"</strong>.</li>
     <li>Seleccione el empleado vinculado a la cuenta.</li>
     <li>Ingrese un nombre de usuario (máx. 15 caracteres, sin espacios).</li>
-    <li>Ingrese la contraseña inicial (mínimo 6 caracteres).</li>
+    <li>Ingrese la contraseña inicial (<strong>mínimo 8 caracteres e incluir al menos un número</strong>).</li>
     <li>Seleccione el <strong>rol de sistema</strong> que determinará sus permisos.</li>
     <li>Haga clic en <strong>"Guardar"</strong>.</li>
   </ol>
@@ -828,6 +838,31 @@ EOF
 systemctl enable edinventory
 systemctl start edinventory</pre>
 
+  <h2>14.6 Backup Automático de Base de Datos</h2>
+  <p>El proyecto incluye el script <code>Scripts/backup-mysql.ps1</code> para realizar respaldos automáticos diarios de la base de datos MySQL.</p>
+
+  <h3>Configuración del script</h3>
+  <p>Edite las variables al inicio de <code>backup-mysql.ps1</code> según su entorno:</p>
+  <table>
+    <tr><th>Variable</th><th>Valor por defecto</th><th>Descripción</th></tr>
+    <tr><td><code>$BACKUP_DIR</code></td><td><code>D:\EDInventory\Backups</code></td><td>Carpeta destino de los archivos .sql</td></tr>
+    <tr><td><code>$KEEP_LAST</code></td><td><code>30</code></td><td>Cantidad de backups a conservar (los más antiguos se eliminan)</td></tr>
+    <tr><td><code>$MYSQLDUMP</code></td><td>Ruta a mysqldump.exe</td><td>Ajustar si MySQL está en ubicación diferente</td></tr>
+  </table>
+
+  <h3>Programar con Task Scheduler (Windows)</h3>
+  <ol class="steps">
+    <li>Abra <strong>Programador de Tareas</strong> (taskschd.msc).</li>
+    <li>Clic en <strong>Crear tarea básica</strong>.</li>
+    <li>Nombre: <em>Backup EDInventory</em> — frecuencia: <strong>Diaria</strong> a las <strong>2:00 AM</strong>.</li>
+    <li>Acción: <strong>Iniciar un programa</strong>.</li>
+    <li>Programa: <code>C:\Windows\System32\cmd.exe</code></li>
+    <li>Argumentos: <code>/c "D:\EDInventory\DiagramDB1.1\Scripts\backup-mysql.bat"</code></li>
+    <li>Marque <em>"Ejecutar tanto si el usuario inició sesión como si no"</em>.</li>
+  </ol>
+  <div class="tip">💡 Los archivos de backup se nombran <code>DB_EInventory_YYYY-MM-DD_HH-mm-ss.sql</code>. El log de operaciones se guarda en <code>D:\EDInventory\Backups\backup.log</code>.</div>
+  <div class="warn">⚠ Verifique periódicamente que los archivos .sql se estén generando correctamente y que su tamaño sea coherente con el volumen de datos.</div>
+
 
   <!-- ──────────────────────────────────────────────────────── -->
   <h1 id="t-seguridad">15. Seguridad y Autenticación</h1>
@@ -840,17 +875,26 @@ systemctl start edinventory</pre>
     <li>En caso de reinicio del servidor, las claves de protección se persisten en la carpeta <code>DataProtectionKeys/</code> para que las cookies existentes sigan siendo válidas.</li>
   </ul>
 
-  <h2>15.2 Hashing de Contraseñas (BCrypt)</h2>
+  <h2>15.2 Bloqueo por Intentos Fallidos</h2>
   <ul>
-    <li>Las contraseñas <strong>nunca se almacenan en texto plano</strong>.</li>
-    <li>Se usa BCrypt con salt automático. El hash resultante se almacena en <code>TB_USERS.USER_PASSWORD</code> como VARCHAR(72).</li>
+    <li>Tras <strong>5 intentos fallidos consecutivos</strong> con el mismo usuario, la cuenta se bloquea durante <strong>15 minutos</strong>.</li>
+    <li>El sistema informa al usuario cuántos intentos le quedan antes del bloqueo.</li>
+    <li>El bloqueo se gestiona en memoria del servidor (<code>IMemoryCache</code>) — no requiere tabla adicional en BD.</li>
+    <li>Un login exitoso reinicia el contador automáticamente.</li>
+  </ul>
+
+  <h2>15.3 Política de Contraseñas</h2>
+  <ul>
+    <li>Mínimo <strong>8 caracteres</strong> con al menos <strong>un número</strong>.</li>
+    <li>Se aplica al cambiar contraseña (perfil) y al crear/editar usuarios (administrador).</li>
+    <li>Las contraseñas <strong>nunca se almacenan en texto plano</strong>: se hashean con BCrypt (salt automático) y se guardan en <code>TB_USERS.USER_PASSWORD</code> como <code>VARCHAR(72)</code>.</li>
     <li>En el login, se usa <code>BCrypt.Net.BCrypt.Verify(plaintext, hash)</code> para la comparación.</li>
   </ul>
 
-  <h2>15.3 Protección CSRF</h2>
+  <h2>15.4 Protección CSRF</h2>
   <p>Todos los formularios POST incluyen un token antiforgery (<code>[ValidateAntiForgeryToken]</code>). El único endpoint que lo omite intencionalmente es <code>ProcessScan</code> (AJAX JSON desde JavaScript del mismo origen).</p>
 
-  <h2>15.4 Autorización por Rol</h2>
+  <h2>15.5 Autorización por Rol</h2>
   <p>Los controladores usan el atributo <code>[Authorize(Roles = AppRoles.XxxRead)]</code> en la clase, y pueden sobreescribir con un rol más restrictivo en acciones específicas. Los grupos de roles compuestos (cadenas separadas por coma) son interpretados por ASP.NET Core como OR lógico.</p>
   <div class="tip">💡 Consulte el archivo <code>Models/AppRoles.cs</code> para ver la definición completa de todos los grupos de roles y sus composiciones.</div>
 
