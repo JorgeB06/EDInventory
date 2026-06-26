@@ -81,6 +81,15 @@
                     { <option value="true">Activos</option> <option value="false">Inactivos</option> }
                 </select>
             </div>
+            <div class="col-md-2">
+                <select name="status" class="form-select form-select-sm">
+                    <option value="">-- Estado Activo --</option>
+                    <option value="EN_SERVICIO"   selected="@(ViewBag.Status == "EN_SERVICIO")">En Servicio</option>
+                    <option value="EN_REPARACION" selected="@(ViewBag.Status == "EN_REPARACION")">En Reparacion</option>
+                    <option value="EN_EVALUACION" selected="@(ViewBag.Status == "EN_EVALUACION")">En Evaluacion</option>
+                    <option value="DADO_DE_BAJA"  selected="@(ViewBag.Status == "DADO_DE_BAJA")">Dado de Baja</option>
+                </select>
+            </div>
             <div class="col-md-1 d-flex gap-1">
                 <button type="submit" class="btn btn-primary btn-sm w-100"><i class="bi bi-search"></i></button>
                 <a asp-action="AssetsOnSite" class="btn btn-outline-secondary btn-sm"><i class="bi bi-x"></i></a>
@@ -141,6 +150,14 @@
                             <a asp-action="AssetDetail" asp-route-id="@a.AssetCode" class="text-decoration-none">
                                 @a.AssetDesc
                             </a>
+                            @if (a.NetEnabled)
+                            {
+                                <i class="bi bi-wifi text-success ms-1" title="En red@(!string.IsNullOrEmpty(a.NetHostname) ? " — " + a.NetHostname : "")@(!string.IsNullOrEmpty(a.NetIp) ? " | " + a.NetIp : "")"></i>
+                            }
+                            @if (a.NetInDomain)
+                            {
+                                <i class="bi bi-building-check text-info ms-1" title="En dominio"></i>
+                            }
                         </td>
                         <td><span class="badge bg-warning text-dark">@(a.Line?.LineName ?? "—")</span></td>
                         <td class="text-muted">@(a.Model != null ? $"{a.Model.ModelDesc}" : "—")</td>
@@ -156,8 +173,18 @@
                             <span class="badge @(a.Active ? "bg-success" : "bg-secondary")">
                                 @(a.Active ? "Activo" : "Inactivo")
                             </span>
+                            @{
+                                var stBadge = a.AssetStatus switch { "EN_REPARACION" => "bg-danger", "EN_EVALUACION" => "bg-warning text-dark", "DADO_DE_BAJA" => "bg-secondary", _ => "" };
+                                if (!string.IsNullOrEmpty(stBadge)) {
+                                    <br /><span class="badge @stBadge mt-1">@a.AssetStatus.Replace("_", " ")</span>
+                                }
+                            }
                         </td>
                         <td class="text-center">
+                            <a asp-action="AssetLabel" asp-route-id="@a.AssetCode" target="_blank"
+                               class="btn btn-outline-dark btn-sm" title="Etiqueta">
+                                <i class="bi bi-tag"></i>
+                            </a>
                             @if (canWrite)
                             {
                                 <a asp-action="AssetEdit" asp-route-id="@a.AssetCode"

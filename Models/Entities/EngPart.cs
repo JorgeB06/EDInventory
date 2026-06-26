@@ -50,5 +50,8 @@ namespace EDInventory.Models.Entities
         /// <summary>Caja de repuestos que contiene esta pieza.</summary>
         [ForeignKey("BoxCode")]
         public EngBox? Box { get; set; }
+
+        /// <summary>Activos con los que este repuesto es compatible.</summary>
+        public ICollection<AssetPart> AssetParts { get; set; } = [];
     }
 }

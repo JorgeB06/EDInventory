@@ -35,7 +35,7 @@ namespace EDInventory.Controllers
         /// Muestra el inventario de equipos IT paginado con filtros por sede, hospital, bodega,
         /// estado activo/inactivo y equipos sin licitación asignada.
         /// </summary>
-        public async Task<IActionResult> Index(string? search, int? siteId, int? hospId, int? wareId, bool? active, bool? sinLicitacion, int page = 1)
+        public async Task<IActionResult> Index(string? search, int? siteId, int? hospId, int? wareId, bool? active, bool? sinLicitacion, string? status, int page = 1)
         {
             const int pageSize = 20;
 
@@ -54,7 +54,9 @@ namespace EDInventory.Controllers
                 query = query.Where(e =>
                     e.ItequipDesc!.Contains(search) ||
                     e.ItequipSn!.Contains(search) ||
-                    e.ItequipNum!.Contains(search));
+                    e.ItequipNum!.Contains(search) ||
+                    e.NetHostname!.Contains(search) ||
+                    e.NetIp!.Contains(search));
 
             if (siteId.HasValue)
                 query = query.Where(e => e.SiteCode == siteId);
@@ -71,6 +73,9 @@ namespace EDInventory.Controllers
             if (sinLicitacion == true)
                 query = query.Where(e => e.LicCode == null);
 
+            if (!string.IsNullOrEmpty(status))
+                query = query.Where(e => e.EquipStatus == status);
+
             var total = await query.CountAsync();
             var totalPages = (int)Math.Ceiling(total / (double)pageSize);
             page = Math.Max(1, Math.Min(page, Math.Max(1, totalPages)));
@@ -81,6 +86,7 @@ namespace EDInventory.Controllers
             ViewBag.WareId         = wareId;
             ViewBag.Active         = active;
             ViewBag.SinLicitacion  = sinLicitacion;
+            ViewBag.Status    = status;
             ViewBag.Page      = page;
             ViewBag.TotalPages = totalPages;
             ViewBag.Total     = total;
@@ -244,6 +250,19 @@ namespace EDInventory.Controllers
                 .OrderByDescending(m => m.MaintScheduled)
                 .ToListAsync();
 
+            ViewBag.Incidents = await _context.Incidents
+                .Include(i => i.Reporter).ThenInclude(u => u!.Employee)
+                .Include(i => i.Assignee).ThenInclude(u => u!.Employee)
+                .Where(i => i.ItequipCode == id)
+                .OrderByDescending(i => i.IncidentDate)
+                .ToListAsync();
+
+            ViewBag.Documents = await _context.Documents
+                .Include(d => d.User).ThenInclude(u => u!.Employee)
+                .Where(d => d.ItequipCode == id)
+                .OrderByDescending(d => d.DocUploadDate)
+                .ToListAsync();
+
             return View(equip);
         }
 
@@ -285,35 +304,44 @@ namespace EDInventory.Controllers
 
             var equip = new ItEquip
             {
-                ItequipDesc = vm.ItequipDesc,
-                SiteCode = vm.SiteCode,
-                HospCode = vm.HospCode,
-                HospDepCode = vm.HospDepCode,
+                ItequipDesc    = vm.ItequipDesc,
+                SiteCode       = vm.SiteCode,
+                HospCode       = vm.HospCode,
+                HospDepCode    = vm.HospDepCode,
                 ItequipHospPos = vm.ItequipHospPos,
-                WareCode = vm.WareCode,
-                WareRack = vm.WareRack,
-                WareEstante = vm.WareEstante,
-                WareCaja = vm.WareCaja,
-                ModelCode = vm.ModelCode,
-                ItequipSn = vm.ItequipSn,
-                LicCode = vm.LicCode,
-                ItequipNum = vm.ItequipNum,
-                ItequipDslic = vm.ItequipDslic,
-                ItequipDelic = vm.ItequipDelic,
-                ItequipGnum = vm.ItequipGnum,
+                WareCode       = vm.WareCode,
+                WareRack       = vm.WareRack,
+                WareEstante    = vm.WareEstante,
+                WareCaja       = vm.WareCaja,
+                ModelCode      = vm.ModelCode,
+                ItequipSn      = vm.ItequipSn,
+                LicCode        = vm.LicCode,
+                ItequipNum     = vm.ItequipNum,
+                ItequipDslic   = vm.ItequipDslic,
+                ItequipDelic   = vm.ItequipDelic,
+                ItequipGnum    = vm.ItequipGnum,
                 ItequipDjequip = vm.ItequipDjequip,
-                ItequipAddata = vm.ItequipAddata,
-                ItequipDnew = DateOnly.FromDateTime(DateTime.Today),
-                ItequipDmod = DateOnly.FromDateTime(DateTime.Today),
-                Active = vm.Active
+                ItequipAddata  = vm.ItequipAddata,
+                ItequipDnew    = DateOnly.FromDateTime(DateTime.Today),
+                ItequipDmod    = DateOnly.FromDateTime(DateTime.Today),
+                Active         = vm.Active,
+                EquipStatus      = vm.EquipStatus,
+                ResponsibleUser  = vm.ResponsibleUser,
+                ResponsibleExt   = vm.ResponsibleExt,
+                AcquireCost      = vm.AcquireCost,
+                AcquireDate      = vm.AcquireDate,
+                DepreYears       = vm.DepreYears,
+                NetHostname      = vm.NetHostname,
+                NetInDomain      = vm.NetInDomain,
+                NetEnabled       = vm.NetEnabled,
+                NetIp            = vm.NetEnabled ? vm.NetIp : null,
+                NetType          = vm.NetEnabled ? vm.NetType : null,
             };
 
-            // Transacción: el equipo y su historial inicial deben persistir juntos.
-            // Si falla el historial después de guardado el equipo, se revierte todo.
             await using var tx = await _context.Database.BeginTransactionAsync();
             _context.ItEquips.Add(equip);
-            await _context.SaveChangesAsync();                                      // obtiene el PK
-            await RegisterHistory(equip, vm.HistNotes, GetCurrentUserId());         // usa el PK
+            await _context.SaveChangesAsync();
+            await RegisterHistory(equip, vm.HistNotes, GetCurrentUserId(), "CREACION");
             await tx.CommitAsync();
 
             TempData["Success"] = "Equipo registrado correctamente.";
@@ -328,28 +356,39 @@ namespace EDInventory.Controllers
 
             var vm = new ItEquipViewModel
             {
-                ItequipCode = entity.ItequipCode,
-                ItequipDesc = entity.ItequipDesc ?? string.Empty,
-                SiteCode = entity.SiteCode,
-                HospCode = entity.HospCode,
-                HospDepCode = entity.HospDepCode,
+                ItequipCode    = entity.ItequipCode,
+                ItequipDesc    = entity.ItequipDesc ?? string.Empty,
+                SiteCode       = entity.SiteCode,
+                HospCode       = entity.HospCode,
+                HospDepCode    = entity.HospDepCode,
                 ItequipHospPos = entity.ItequipHospPos,
-                WareCode = entity.WareCode,
-                WareRack = entity.WareRack,
-                WareEstante = entity.WareEstante,
-                WareCaja = entity.WareCaja,
-                ModelCode = entity.ModelCode,
-                ItequipSn = entity.ItequipSn,
-                LicCode = entity.LicCode,
-                ItequipNum = entity.ItequipNum,
-                ItequipDslic = entity.ItequipDslic,
-                ItequipDelic = entity.ItequipDelic,
-                ItequipGnum = entity.ItequipGnum,
+                WareCode       = entity.WareCode,
+                WareRack       = entity.WareRack,
+                WareEstante    = entity.WareEstante,
+                WareCaja       = entity.WareCaja,
+                ModelCode      = entity.ModelCode,
+                ItequipSn      = entity.ItequipSn,
+                LicCode        = entity.LicCode,
+                ItequipNum     = entity.ItequipNum,
+                ItequipDslic   = entity.ItequipDslic,
+                ItequipDelic   = entity.ItequipDelic,
+                ItequipGnum    = entity.ItequipGnum,
                 ItequipDjequip = entity.ItequipDjequip,
-                ItequipAddata = entity.ItequipAddata,
-                ItequipDnew = entity.ItequipDnew,
-                ItequipDmod = entity.ItequipDmod,
-                Active = entity.Active
+                ItequipAddata  = entity.ItequipAddata,
+                ItequipDnew    = entity.ItequipDnew,
+                ItequipDmod    = entity.ItequipDmod,
+                Active         = entity.Active,
+                EquipStatus      = entity.EquipStatus,
+                ResponsibleUser  = entity.ResponsibleUser,
+                ResponsibleExt   = entity.ResponsibleExt,
+                AcquireCost      = entity.AcquireCost,
+                AcquireDate      = entity.AcquireDate,
+                DepreYears       = entity.DepreYears,
+                NetHostname      = entity.NetHostname,
+                NetInDomain      = entity.NetInDomain,
+                NetEnabled       = entity.NetEnabled,
+                NetIp            = entity.NetIp,
+                NetType          = entity.NetType,
             };
             await PopulateSelectLists(vm);
             return View(vm);
@@ -376,38 +415,70 @@ namespace EDInventory.Controllers
             if (entity == null) return NotFound();
 
             bool locationChanged =
-                entity.SiteCode != vm.SiteCode ||
-                entity.HospCode != vm.HospCode ||
-                entity.HospDepCode != vm.HospDepCode ||
-                entity.ItequipHospPos != vm.ItequipHospPos ||
-                entity.WareCode != vm.WareCode ||
-                entity.WareRack != vm.WareRack ||
-                entity.WareEstante != vm.WareEstante ||
-                entity.WareCaja != vm.WareCaja;
+                entity.SiteCode        != vm.SiteCode        ||
+                entity.HospCode        != vm.HospCode        ||
+                entity.HospDepCode     != vm.HospDepCode     ||
+                entity.ItequipHospPos  != vm.ItequipHospPos  ||
+                entity.WareCode        != vm.WareCode        ||
+                entity.WareRack        != vm.WareRack        ||
+                entity.WareEstante     != vm.WareEstante     ||
+                entity.WareCaja        != vm.WareCaja;
 
-            entity.ItequipDesc = vm.ItequipDesc;
-            entity.SiteCode = vm.SiteCode;
-            entity.HospCode = vm.HospCode;
-            entity.HospDepCode = vm.HospDepCode;
+            string? newNetIp   = vm.NetEnabled ? vm.NetIp   : null;
+            string? newNetType = vm.NetEnabled ? vm.NetType : null;
+
+            bool netChanged =
+                entity.NetHostname  != vm.NetHostname  ||
+                entity.NetInDomain  != vm.NetInDomain  ||
+                entity.NetEnabled   != vm.NetEnabled   ||
+                entity.NetIp        != newNetIp        ||
+                entity.NetType      != newNetType;
+
+            bool dataChanged =
+                entity.ModelCode      != vm.ModelCode      ||
+                entity.ItequipSn      != vm.ItequipSn      ||
+                entity.ItequipNum     != vm.ItequipNum     ||
+                entity.ItequipGnum    != vm.ItequipGnum    ||
+                entity.ItequipAddata  != vm.ItequipAddata;
+
+            entity.ItequipDesc    = vm.ItequipDesc;
+            entity.SiteCode       = vm.SiteCode;
+            entity.HospCode       = vm.HospCode;
+            entity.HospDepCode    = vm.HospDepCode;
             entity.ItequipHospPos = vm.ItequipHospPos;
-            entity.WareCode = vm.WareCode;
-            entity.WareRack = vm.WareRack;
-            entity.WareEstante = vm.WareEstante;
-            entity.WareCaja = vm.WareCaja;
-            entity.ModelCode = vm.ModelCode;
-            entity.ItequipSn = vm.ItequipSn;
-            entity.LicCode = vm.LicCode;
-            entity.ItequipNum = vm.ItequipNum;
-            entity.ItequipDslic = vm.ItequipDslic;
-            entity.ItequipDelic = vm.ItequipDelic;
-            entity.ItequipGnum = vm.ItequipGnum;
+            entity.WareCode       = vm.WareCode;
+            entity.WareRack       = vm.WareRack;
+            entity.WareEstante    = vm.WareEstante;
+            entity.WareCaja       = vm.WareCaja;
+            entity.ModelCode      = vm.ModelCode;
+            entity.ItequipSn      = vm.ItequipSn;
+            entity.LicCode        = vm.LicCode;
+            entity.ItequipNum     = vm.ItequipNum;
+            entity.ItequipDslic   = vm.ItequipDslic;
+            entity.ItequipDelic   = vm.ItequipDelic;
+            entity.ItequipGnum    = vm.ItequipGnum;
             entity.ItequipDjequip = vm.ItequipDjequip;
-            entity.ItequipAddata = vm.ItequipAddata;
-            entity.ItequipDmod = DateOnly.FromDateTime(DateTime.Today);
-            entity.Active = vm.Active;
+            entity.ItequipAddata  = vm.ItequipAddata;
+            entity.ItequipDmod    = DateOnly.FromDateTime(DateTime.Today);
+            entity.Active         = vm.Active;
+            entity.EquipStatus    = vm.EquipStatus;
+            entity.ResponsibleUser = vm.ResponsibleUser;
+            entity.ResponsibleExt  = vm.ResponsibleExt;
+            entity.AcquireCost     = vm.AcquireCost;
+            entity.AcquireDate     = vm.AcquireDate;
+            entity.DepreYears      = vm.DepreYears;
+            entity.NetHostname    = vm.NetHostname;
+            entity.NetInDomain    = vm.NetInDomain;
+            entity.NetEnabled     = vm.NetEnabled;
+            entity.NetIp          = newNetIp;
+            entity.NetType        = newNetType;
 
             if (locationChanged)
-                await RegisterHistory(entity, vm.HistNotes, GetCurrentUserId());
+                await RegisterHistory(entity, vm.HistNotes, GetCurrentUserId(), "UBICACION");
+            else if (netChanged)
+                await RegisterHistory(entity, vm.HistNotes, GetCurrentUserId(), "RED");
+            else if (dataChanged)
+                await RegisterHistory(entity, vm.HistNotes, GetCurrentUserId(), "DATOS");
 
             await _context.SaveChangesAsync();
             TempData["Success"] = "Equipo actualizado correctamente.";
@@ -680,7 +751,7 @@ namespace EDInventory.Controllers
                 await using var txImp = await _context.Database.BeginTransactionAsync();
                 _context.ItEquips.Add(equip);
                 await _context.SaveChangesAsync();
-                await RegisterHistory(equip, "Importado desde Excel", GetCurrentUserId());
+                await RegisterHistory(equip, "Importado desde Excel", GetCurrentUserId(), "CREACION");
                 await txImp.CommitAsync();
 
                 importados++;
@@ -881,7 +952,7 @@ namespace EDInventory.Controllers
             }
         }
 
-        private async Task RegisterHistory(ItEquip equip, string? notes, int? userId)
+        private async Task RegisterHistory(ItEquip equip, string? notes, int? userId, string histType = "UBICACION")
         {
             string locType = equip.HospCode.HasValue ? "HOSPITAL"
                            : equip.WareCode.HasValue ? "BODEGA"
@@ -900,20 +971,26 @@ namespace EDInventory.Controllers
 
             _context.ItEquipHistories.Add(new ItEquipHistory
             {
-                ItequipCode = equip.ItequipCode,
-                HistDate = DateTime.Now,
-                UserCode = userId,
-                EmpCode = empCode,
-                LocType = locType,
-                WareCode = equip.WareCode,
-                WareRack = equip.WareRack,
-                WareEstante = equip.WareEstante,
-                WareCaja = equip.WareCaja,
-                HospCode = equip.HospCode,
-                HospDepCode = equip.HospDepCode,
+                ItequipCode    = equip.ItequipCode,
+                HistDate       = DateTime.Now,
+                UserCode       = userId,
+                EmpCode        = empCode,
+                LocType        = locType,
+                WareCode       = equip.WareCode,
+                WareRack       = equip.WareRack,
+                WareEstante    = equip.WareEstante,
+                WareCaja       = equip.WareCaja,
+                HospCode       = equip.HospCode,
+                HospDepCode    = equip.HospDepCode,
                 ItequipHospPos = equip.ItequipHospPos,
-                SiteCode = equip.SiteCode,
-                HistNotes = notes
+                SiteCode       = equip.SiteCode,
+                HistNotes      = notes,
+                HistType       = histType,
+                NetHostname    = equip.NetHostname,
+                NetInDomain    = equip.NetInDomain,
+                NetEnabled     = equip.NetEnabled,
+                NetIp          = equip.NetIp,
+                NetType        = equip.NetType,
             });
             await _context.SaveChangesAsync();
         }
@@ -1127,6 +1204,15 @@ namespace EDInventory.Controllers
 
             vm.Licitaciones = (await _context.Licitaciones.Where(l => l.Active).OrderBy(l => l.LicNum).ToListAsync())
                 .Select(l => new SelectListItem($"{l.LicNum} - {l.LicDesc}", l.LicCode.ToString()));
+
+            vm.TechUsers = (await _context.Users
+                .Include(u => u.Employee)
+                .Where(u => u.Active)
+                .OrderBy(u => u.Employee!.EmpSurname)
+                .ToListAsync())
+                .Select(u => new SelectListItem(
+                    u.Employee != null ? $"{u.Employee.EmpName} {u.Employee.EmpSurname}" : u.UserLogin,
+                    u.UserCode.ToString()));
         }
     }
 }

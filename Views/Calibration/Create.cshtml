@@ -1,0 +1,88 @@
+@model EDInventory.Models.ViewModels.CalibrationViewModel
+@{
+    ViewData["Title"] = "Registrar Calibracion";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="mb-0"><i class="bi bi-rulers me-2"></i>Registrar Calibracion</h4>
+    @if (Model.AssetCode > 0)
+    {
+        <a asp-controller="Engineering" asp-action="AssetDetail" asp-route-id="@Model.AssetCode"
+           class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-arrow-left me-1"></i>Activo
+        </a>
+    }
+</div>
+
+<form asp-action="Create" method="post">
+    @Html.AntiForgeryToken()
+    <input type="hidden" asp-for="AssetCode" />
+    <div class="row g-3">
+        <div class="col-md-6">
+            <div class="card shadow-sm">
+                <div class="card-header fw-bold">Datos de la Calibracion</div>
+                <div class="card-body">
+                    @if (Model.AssetCode == 0)
+                    {
+                        <div class="mb-3">
+                            <label asp-for="AssetCode" class="form-label fw-semibold">Activo Clinico *</label>
+                            <select asp-for="AssetCode" asp-items="Model.Assets" class="form-select">
+                                <option value="">— Seleccione —</option>
+                            </select>
+                            <span asp-validation-for="AssetCode" class="text-danger small"></span>
+                        </div>
+                    }
+                    <div class="mb-3">
+                        <label asp-for="CalibDate" class="form-label fw-semibold">Fecha de Calibracion *</label>
+                        <input asp-for="CalibDate" type="date" class="form-control" />
+                        <span asp-validation-for="CalibDate" class="text-danger small"></span>
+                    </div>
+                    <div class="mb-3">
+                        <label asp-for="CalibNextDate" class="form-label">Proxima Calibracion</label>
+                        <input asp-for="CalibNextDate" type="date" class="form-control" />
+                    </div>
+                    <div class="mb-3">
+                        <label asp-for="CalibResult" class="form-label fw-semibold">Resultado *</label>
+                        <select asp-for="CalibResult" class="form-select">
+                            <option value="APROBADO">Aprobado</option>
+                            <option value="CONDICIONAL">Condicional</option>
+                            <option value="RECHAZADO">Rechazado</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card shadow-sm">
+                <div class="card-header fw-bold">Certificado y Laboratorio</div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label asp-for="CalibLab" class="form-label">Laboratorio</label>
+                        <input asp-for="CalibLab" class="form-control" maxlength="100"
+                               placeholder="Nombre del laboratorio acreditado" />
+                    </div>
+                    <div class="mb-3">
+                        <label asp-for="CalibCertNum" class="form-label">Numero de Certificado</label>
+                        <input asp-for="CalibCertNum" class="form-control" maxlength="40" />
+                    </div>
+                    <div class="mb-3">
+                        <label asp-for="CalibType" class="form-label">Tipo de Calibracion</label>
+                        <input asp-for="CalibType" class="form-control" maxlength="60"
+                               placeholder="ej. Electrica, Presion, Temperatura..." />
+                    </div>
+                    <div class="mb-3">
+                        <label asp-for="CalibNotes" class="form-label">Notas</label>
+                        <textarea asp-for="CalibNotes" class="form-control" rows="3" maxlength="300"></textarea>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-12 d-flex gap-2 justify-content-end">
+            <a asp-controller="Engineering" asp-action="AssetDetail" asp-route-id="@Model.AssetCode"
+               class="btn btn-outline-secondary">Cancelar</a>
+            <button type="submit" class="btn btn-primary">
+                <i class="bi bi-check-lg me-1"></i>Registrar Calibracion
+            </button>
+        </div>
+    </div>
+</form>

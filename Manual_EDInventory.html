@@ -121,7 +121,7 @@
   <div style="margin-top:2.5cm; font-size:28pt; font-weight:700; color:#343a40;">MANUAL DE SOFTWARE</div>
   <div style="font-size:13pt; color:#6c757d; margin-top:8px;">Manual de Usuario &nbsp;·&nbsp; Manual de Administrador &nbsp;·&nbsp; Manual Técnico</div>
   <div class="edition">
-    <strong>Versión 1.1</strong> &nbsp;—&nbsp; Mayo 2026
+    <strong>Versión 1.2</strong> &nbsp;—&nbsp; Junio 2026
   </div>
   <div class="company">
     <strong>Diagnostika</strong><br>
@@ -148,28 +148,36 @@
     <li><a href="#usuario">PARTE I — MANUAL DE USUARIO</a>
       <ul>
         <li><a href="#u-acceso">2. Acceso al Sistema</a></li>
-        <li><a href="#u-dashboard">3. Panel de Control (Dashboard)</a></li>
+        <li><a href="#u-dashboard">3. Panel de Control (Dashboard)</a>
+          <ul>
+            <li><a href="#u-busqueda">3.4 Búsqueda Global</a></li>
+            <li><a href="#u-workload">3.5 Carga de Trabajo por Técnico</a></li>
+            <li><a href="#u-pdf">3.6 Exportar PDF de Inventario</a></li>
+          </ul>
+        </li>
         <li><a href="#u-ti">4. Módulo TI — Inventario de Equipos</a></li>
         <li><a href="#u-ti-mantenimiento">5. Mantenimientos TI</a></li>
-        <li><a href="#u-servicio">6. Módulo Servicio — Ingeniería</a></li>
-        <li><a href="#u-activos">7. Activos Clínicos</a></li>
-        <li><a href="#u-hospital">8. Hospitales y Contactos</a></li>
+        <li><a href="#u-incidentes">6. Incidentes</a></li>
+        <li><a href="#u-servicio">7. Módulo Servicio — Ingeniería (Repuestos)</a></li>
+        <li><a href="#u-activos">8. Activos Clínicos</a></li>
+        <li><a href="#u-calibraciones">9. Calibraciones</a></li>
+        <li><a href="#u-hospital">10. Hospitales y Contactos</a></li>
       </ul>
     </li>
     <li><a href="#admin">PARTE II — MANUAL DE ADMINISTRADOR</a>
       <ul>
-        <li><a href="#a-usuarios">9. Gestión de Usuarios y Roles</a></li>
-        <li><a href="#a-catalogos">10. Catálogos del Sistema</a></li>
-        <li><a href="#a-gestion">11. Licitaciones y Bodegas</a></li>
+        <li><a href="#a-usuarios">11. Gestión de Usuarios y Roles</a></li>
+        <li><a href="#a-catalogos">12. Catálogos del Sistema</a></li>
+        <li><a href="#a-gestion">13. Licitaciones y Bodegas</a></li>
       </ul>
     </li>
     <li><a href="#tecnico">PARTE III — MANUAL TÉCNICO</a>
       <ul>
-        <li><a href="#t-arquitectura">12. Arquitectura del Sistema</a></li>
-        <li><a href="#t-bd">13. Base de Datos</a></li>
-        <li><a href="#t-instalacion">14. Instalación y Configuración</a></li>
-        <li><a href="#t-seguridad">15. Seguridad y Autenticación</a></li>
-        <li><a href="#t-estructura">16. Estructura del Proyecto</a></li>
+        <li><a href="#t-arquitectura">14. Arquitectura del Sistema</a></li>
+        <li><a href="#t-bd">15. Base de Datos</a></li>
+        <li><a href="#t-instalacion">16. Instalación y Configuración</a></li>
+        <li><a href="#t-seguridad">17. Seguridad y Autenticación</a></li>
+        <li><a href="#t-estructura">18. Estructura del Proyecto</a></li>
       </ul>
     </li>
   </ul>
@@ -197,14 +205,19 @@
   <table>
     <tr><th>Módulo</th><th>División</th><th>Descripción</th></tr>
     <tr><td><strong>Dashboard</strong></td><td>Ambas</td><td>Panel de control con KPIs, alertas de mantenimientos y licitaciones por vencer.</td></tr>
-    <tr><td><strong>Inventario TI</strong></td><td>TI</td><td>Registro y seguimiento de equipos IT con historial de ubicaciones.</td></tr>
+    <tr><td><strong>Búsqueda Global</strong></td><td>Ambas</td><td>Busca simultáneamente en equipos, activos, repuestos, incidentes y hospitales.</td></tr>
+    <tr><td><strong>Carga de Técnicos</strong></td><td>Ambas</td><td>Vista de distribución de carga por técnico activo (incidentes + mantenimientos).</td></tr>
+    <tr><td><strong>Inventario TI</strong></td><td>TI</td><td>Registro y seguimiento de equipos IT con historial de ubicaciones, incidentes y documentos.</td></tr>
     <tr><td><strong>Ingeniería</strong></td><td>Servicio</td><td>Cajas de repuestos con control de stock y movimientos por hospital.</td></tr>
-    <tr><td><strong>Activos Clínicos</strong></td><td>Servicio</td><td>Equipos médicos con historial de ubicación y mantenimientos.</td></tr>
+    <tr><td><strong>Activos Clínicos</strong></td><td>Servicio</td><td>Equipos médicos con historial de ubicación, mantenimientos, calibraciones e incidentes.</td></tr>
+    <tr><td><strong>Incidentes</strong></td><td>Ambas</td><td>Gestión de averías y casos de soporte para equipos TI y activos clínicos.</td></tr>
+    <tr><td><strong>Calibraciones</strong></td><td>Servicio</td><td>Historial de calibraciones de activos clínicos con resultado y próxima fecha.</td></tr>
     <tr><td><strong>Hospitales</strong></td><td>Ambas</td><td>Directorio de hospitales, departamentos, cargos y contactos clínicos.</td></tr>
     <tr><td><strong>Licitaciones</strong></td><td>Ambas</td><td>Contratos de mantenimiento con alertas de vencimiento configurables.</td></tr>
     <tr><td><strong>Bodegas</strong></td><td>Ambas</td><td>Almacenes con ubicación detallada por rack y estante.</td></tr>
     <tr><td><strong>Administración</strong></td><td>Admin</td><td>Usuarios, roles, empleados, catálogos (marcas, modelos, tipos de activo).</td></tr>
     <tr><td><strong>Reporte General</strong></td><td>Ambas</td><td>Informe completo del inventario visible/imprimible.</td></tr>
+    <tr><td><strong>Exportar PDF</strong></td><td>Ambas</td><td>Genera un PDF formal A4 con todos los equipos IT y activos clínicos.</td></tr>
   </table>
 
   <h2 id="intro-roles">1.3 Roles de Acceso</h2>
@@ -316,6 +329,34 @@
   del inventario con tablas detalladas de equipos IT y activos clínicos. Esta vista es apta para imprimir
   directamente desde el navegador (<kbd>Ctrl</kbd>+<kbd>P</kbd>).</p>
 
+  <h2 id="u-busqueda">3.4 Búsqueda Global</h2>
+  <p>El ícono <strong><code>🔍</code> (lupa)</strong> en la barra de navegación superior abre la Búsqueda Global.</p>
+  <ul>
+    <li>Permite buscar simultáneamente en <strong>Equipos TI, Activos Clínicos, Repuestos, Incidentes y Hospitales</strong>.</li>
+    <li>Busca por nombre, número de serie, hostname, IP, referencia de repuesto o nombre de hospital.</li>
+    <li>Los resultados se agrupan por tipo de entidad, con un contador de coincidencias por sección.</li>
+    <li>Cada resultado tiene un botón para ir directamente al <strong>detalle</strong> del registro.</li>
+  </ul>
+  <div class="tip">💡 Use la búsqueda global cuando necesite localizar rápidamente un activo y no recuerde en qué módulo buscarlo.</div>
+
+  <h2 id="u-workload">3.5 Carga de Trabajo por Técnico</h2>
+  <p>El ícono <strong><code>👤</code> (persona en escritorio)</strong> en la barra de navegación abre la vista de Carga de Trabajo.</p>
+  <ul>
+    <li>Muestra una tabla con todos los técnicos activos del sistema.</li>
+    <li>Por cada técnico: cantidad de <strong>incidentes abiertos</strong> (ABIERTA + EN_PROCESO), incidentes de <strong>alta prioridad</strong>, mantenimientos TI y SVC pendientes, y vencidos.</li>
+    <li>La columna <strong>Carga</strong> muestra una barra de progreso: verde (baja), amarillo (media), rojo (alta).</li>
+    <li>Filas en <span style="background:#f8d7da;padding:1px 4px;">rojo</span> indican técnicos con 10 o más tareas pendientes.</li>
+  </ul>
+  <div class="tip">💡 Use esta vista para redistribuir tareas si un técnico tiene sobrecarga de trabajo.</div>
+
+  <h2 id="u-pdf">3.6 Exportar PDF de Inventario</h2>
+  <p>El ícono <strong><code>PDF</code></strong> en la barra de navegación genera y descarga automáticamente un reporte PDF formal.</p>
+  <ul>
+    <li>Formato A4 horizontal, con tablas de <strong>Equipos TI</strong> y <strong>Activos Clínicos</strong>.</li>
+    <li>Incluye: descripción, tipo, marca/línea, serie, ubicación y estado de cada activo.</li>
+    <li>Ideal para imprimir o archivar un informe formal en papel firmado.</li>
+  </ul>
+
 
   <!-- ──────────────────────────────────────────────────────── -->
   <h1 id="u-ti">4. Módulo TI — Inventario de Equipos</h1>
@@ -363,6 +404,9 @@
     <li>Historial de cambios de ubicación.</li>
     <li>Registros de movimientos (retiros y devoluciones).</li>
     <li>Mantenimientos programados y completados.</li>
+    <li><strong>Incidentes</strong> vinculados al equipo (averías, casos de soporte).</li>
+    <li><strong>Documentos</strong> adjuntos (garantías, manuales, actas).</li>
+    <li><strong>Responsable y Costo:</strong> técnico asignado, costo de adquisición y depreciación lineal estimada.</li>
   </ul>
 
   <h2>4.4 Editar un Equipo</h2>
@@ -416,6 +460,18 @@
   <h2>4.9 Registrar Retiro o Devolución</h2>
   <p>En la vista de detalle de un equipo, haga clic en <strong>"Registrar Movimiento"</strong>. Seleccione el tipo (<strong>Retiro</strong> o <strong>Devolución</strong>), el hospital correspondiente y agregue notas. Esto registra el movimiento sin cambiar la ubicación del equipo (es una bitácora operativa separada del historial de ubicación).</p>
 
+  <h2>4.10 Responsable y Costo de un Equipo</h2>
+  <p>En el formulario de creación o edición de un equipo hay una sección <strong>"Responsable y Costo"</strong> con los siguientes campos:</p>
+  <table>
+    <tr><th>Campo</th><th>Descripción</th></tr>
+    <tr><td>Técnico responsable</td><td>Usuario del sistema responsable del equipo (seleccionable de la lista de técnicos activos).</td></tr>
+    <tr><td>Responsable externo</td><td>Nombre libre de un responsable externo (proveedor, contratista).</td></tr>
+    <tr><td>Costo de adquisición</td><td>Costo de compra del equipo en moneda local.</td></tr>
+    <tr><td>Fecha de adquisición</td><td>Fecha de compra del equipo.</td></tr>
+    <tr><td>Vida útil (años)</td><td>Años estimados de vida útil para el cálculo de depreciación lineal.</td></tr>
+  </table>
+  <p>En la vista de detalle, si se ha ingresado costo y vida útil, se muestra automáticamente el <strong>valor en libros actual</strong> calculado por depreciación lineal.</p>
+
 
   <!-- ──────────────────────────────────────────────────────── -->
   <h1 id="u-ti-mantenimiento">5. Mantenimientos TI</h1>
@@ -444,7 +500,44 @@
 
 
   <!-- ──────────────────────────────────────────────────────── -->
-  <h1 id="u-servicio">6. Módulo Servicio — Ingeniería (Repuestos)</h1>
+  <h1 id="u-incidentes">6. Incidentes</h1>
+  <div class="info">
+    <strong>Lectura:</strong> Todos los roles con acceso TI o Servicio.<br>
+    <strong>Escritura:</strong> <span class="badge badge-blue">TI.Tecnico</span> <span class="badge badge-green">Servicio.Tecnico</span> y superiores.
+  </div>
+  <p>Los incidentes permiten registrar averías, casos de soporte o reparaciones asociadas a equipos TI o activos clínicos. Se accede desde el menú <strong>TI → Incidentes</strong> o <strong>Servicio → Incidentes</strong> según la división.</p>
+
+  <h2>6.1 Registrar un Nuevo Incidente</h2>
+  <ol class="steps">
+    <li>En el menú correspondiente (TI o Servicio), haga clic en <strong>"Incidentes"</strong> → <strong>"Nuevo Incidente"</strong>.</li>
+    <li>Seleccione el <strong>equipo o activo afectado</strong>.</li>
+    <li>Ingrese el <strong>título</strong> y <strong>descripción</strong> del problema.</li>
+    <li>Asigne la <strong>prioridad</strong>: BAJA, MEDIA, ALTA o CRITICA.</li>
+    <li>Seleccione el <strong>técnico responsable</strong> de la resolución.</li>
+    <li>Haga clic en <strong>"Guardar"</strong>.</li>
+  </ol>
+
+  <h2>6.2 Seguimiento de un Incidente</h2>
+  <p>En la vista de detalle de un incidente puede:</p>
+  <ul>
+    <li>Cambiar el <strong>estado</strong>: ABIERTA → EN_PROCESO → RESUELTA → CERRADA.</li>
+    <li>Agregar <strong>notas de seguimiento</strong> con actualizaciones parciales de la resolución.</li>
+    <li>Ver el historial completo de cambios de estado.</li>
+  </ul>
+  <div class="tip">💡 Al resolver un incidente cuyo equipo estaba EN_REPARACION, actualice también el estado del equipo en el inventario.</div>
+
+  <h2>6.3 Prioridades de Incidentes</h2>
+  <table>
+    <tr><th>Prioridad</th><th>Color</th><th>Criterio</th></tr>
+    <tr><td>CRITICA</td><td><span class="badge badge-red">Rojo</span></td><td>El equipo está fuera de servicio y su inoperabilidad impacta directamente la atención al paciente.</td></tr>
+    <tr><td>ALTA</td><td><span class="badge badge-yellow">Amarillo</span></td><td>Falla significativa que afecta el servicio pero tiene solución temporal.</td></tr>
+    <tr><td>MEDIA</td><td><span class="badge badge-gray">Gris</span></td><td>Problema que debe resolverse pronto pero no impide el funcionamiento básico.</td></tr>
+    <tr><td>BAJA</td><td><span class="badge badge-gray">Gris</span></td><td>Observación o mejora menor que puede programarse.</td></tr>
+  </table>
+
+
+  <!-- ──────────────────────────────────────────────────────── -->
+  <h1 id="u-servicio">7. Módulo Servicio — Ingeniería (Repuestos)</h1>
   <div class="info">
     <strong>Roles requeridos:</strong>
     <span class="badge badge-green">Servicio.Administrador</span>
@@ -517,33 +610,80 @@
 
 
   <!-- ──────────────────────────────────────────────────────── -->
-  <h1 id="u-activos">7. Activos Clínicos (Módulo Servicio)</h1>
+  <h1 id="u-activos">8. Activos Clínicos (Módulo Servicio)</h1>
   <p>Los activos clínicos son los equipos médicos gestionados por el Departamento de Ingeniería de Servicio (monitores de signos vitales, bombas de infusión, ventiladores, etc.).</p>
 
-  <h2>7.1 Ver el Inventario de Activos</h2>
+  <h2>8.1 Ver el Inventario de Activos</h2>
   <p>En el menú Servicio → <strong>"Activos en Sitio"</strong>. Funciona igual que el inventario TI: filtros por línea de servicio, hospital, bodega y estado activo/inactivo.</p>
 
-  <h2>7.2 Exportar Activos a Excel</h2>
+  <h2>8.2 Exportar Activos a Excel</h2>
   <p>En la vista de Activos en Sitio, haga clic en <strong>"Exportar Excel"</strong>. El archivo respeta los filtros activos e incluye estado de licitación con color de fila.</p>
 
-  <h2>7.3 Registrar, Editar y Gestionar Activos</h2>
-  <p>El flujo es idéntico al de equipos IT (sección 4.2 a 4.9), con la diferencia de que debe seleccionar también la <strong>Línea de Servicio</strong> a la que pertenece el activo.</p>
+  <h2>8.3 Registrar, Editar y Gestionar Activos</h2>
+  <p>El flujo es idéntico al de equipos IT (sección 4.2 a 4.10), con la diferencia de que debe seleccionar también la <strong>Línea de Servicio</strong> a la que pertenece el activo.</p>
 
-  <h2>7.4 Mantenimientos de Activos Clínicos</h2>
+  <h2>8.4 Mantenimientos de Activos Clínicos</h2>
   <p>En el menú Servicio → <strong>"Mantenimientos"</strong>. El flujo es idéntico al de mantenimientos TI (sección 5).</p>
+
+  <h2>8.5 Repuestos Compatibles</h2>
+  <p>En la vista de detalle de un activo clínico hay una sección <strong>"Repuestos Compatibles"</strong>:</p>
+  <ul>
+    <li>Muestra los repuestos del inventario de ingeniería vinculados a este activo específico.</li>
+    <li>Indica el stock actual de cada repuesto (color: verde = disponible, amarillo = bajo, rojo = sin stock).</li>
+    <li>Puede agregar nuevos repuestos usando el selector al pie de la sección (con notas opcionales).</li>
+    <li>Puede desvincular repuestos usando el botón <strong>"Desvincular"</strong> en cada fila.</li>
+  </ul>
+  <div class="tip">💡 Vincule los repuestos que son compatibles con un activo para saber qué piezas tiene disponibles al momento de una reparación.</div>
+
+  <h2>8.6 Incidentes y Calibraciones del Activo</h2>
+  <p>La vista de detalle del activo muestra también secciones para <strong>Incidentes</strong> (averías) y <strong>Calibraciones</strong> asociadas directamente al activo. Puede crear nuevos registros desde estas secciones sin salir del detalle del activo.</p>
 
 
   <!-- ──────────────────────────────────────────────────────── -->
-  <h1 id="u-hospital">8. Hospitales y Contactos</h1>
+  <h1 id="u-calibraciones">9. Calibraciones</h1>
+  <div class="info">
+    <strong>Roles requeridos:</strong>
+    <span class="badge badge-green">Servicio.Administrador</span>
+    <span class="badge badge-green">Servicio.Tecnico</span>
+    <span class="badge badge-gray">Servicio.Consulta</span>
+    <span class="badge badge-red">Administrador</span>
+  </div>
+  <p>Las calibraciones son procedimientos de verificación de precisión realizados sobre activos clínicos (ej. balanzas, monitores de presión, equipos de laboratorio). Se accede desde el menú <strong>Servicio → Calibraciones</strong>.</p>
+
+  <h2>9.1 Ver el Historial de Calibraciones</h2>
+  <p>La lista de calibraciones muestra todas las calibraciones registradas con su resultado, fecha de ejecución y próxima fecha programada. Las calibraciones con fecha vencida o próxima a vencer se resaltan en rojo o amarillo.</p>
+
+  <h2>9.2 Registrar una Nueva Calibración</h2>
+  <ol class="steps">
+    <li>En el menú Servicio → <strong>"Calibraciones"</strong> → <strong>"Nueva Calibración"</strong>.</li>
+    <li>Seleccione el <strong>activo clínico</strong> al que se realizó la calibración.</li>
+    <li>Ingrese la <strong>fecha de ejecución</strong> y la <strong>próxima fecha</strong> programada.</li>
+    <li>Seleccione el <strong>resultado</strong>: APROBADA, RECHAZADA o CONDICIONAL.</li>
+    <li>Indique el <strong>laboratorio o empresa</strong> que la realizó (campo libre).</li>
+    <li>Agregue observaciones en el campo de notas si corresponde.</li>
+    <li>Haga clic en <strong>"Guardar"</strong>.</li>
+  </ol>
+
+  <h2>9.3 Resultados de Calibración</h2>
+  <table>
+    <tr><th>Resultado</th><th>Significado</th><th>Acción recomendada</th></tr>
+    <tr><td>APROBADA</td><td>El equipo cumple los estándares de precisión requeridos.</td><td>Continuar operación normal.</td></tr>
+    <tr><td>RECHAZADA</td><td>El equipo no cumple los estándares. Fuera de especificación.</td><td>Suspender uso hasta ajuste o reparación.</td></tr>
+    <tr><td>CONDICIONAL</td><td>El equipo pasa con condiciones o requiere seguimiento.</td><td>Usar con precaución; programar recalibración.</td></tr>
+  </table>
+
+
+  <!-- ──────────────────────────────────────────────────────── -->
+  <h1 id="u-hospital">10. Hospitales y Contactos</h1>
   <div class="info">
     <strong>Lectura:</strong> Todos los roles.<br>
     <strong>Escritura:</strong> <span class="badge badge-blue">TI.Administrador</span> <span class="badge badge-green">Servicio.Administrador</span> <span class="badge badge-red">Administrador</span>
   </div>
 
-  <h2>8.1 Directorio de Hospitales</h2>
+  <h2>10.1 Directorio de Hospitales</h2>
   <p>En el menú principal → <strong>"Hospitales"</strong>. Verá el listado paginado de hospitales con filtros por nombre y unidad programática. Haga clic en un hospital para ver su detalle completo.</p>
 
-  <h2>8.2 Estructura Clínica de un Hospital</h2>
+  <h2>10.2 Estructura Clínica de un Hospital</h2>
   <p>Cada hospital tiene una jerarquía de:</p>
   <ul>
     <li><strong>Departamentos</strong> (ej. Hemodiálisis, UCI, Urgencias).</li>
@@ -566,7 +706,7 @@
 <div id="admin" class="sec-admin">
 
   <!-- ──────────────────────────────────────────────────────── -->
-  <h1 id="a-usuarios">9. Gestión de Usuarios y Roles</h1>
+  <h1 id="a-usuarios">11. Gestión de Usuarios y Roles</h1>
   <div class="danger">🔒 Todos los módulos de esta sección requieren exclusivamente el rol <span class="badge badge-red">Administrador</span>.</div>
 
   <h2>9.1 Crear un Empleado</h2>
@@ -614,7 +754,7 @@
 
 
   <!-- ──────────────────────────────────────────────────────── -->
-  <h1 id="a-catalogos">10. Catálogos del Sistema</h1>
+  <h1 id="a-catalogos">12. Catálogos del Sistema</h1>
   <div class="danger">🔒 Requiere rol <span class="badge badge-red">Administrador</span>.</div>
   <p>Los catálogos definen la jerarquía de clasificación de los activos. Antes de registrar equipos IT o activos clínicos es necesario tener configurados los catálogos.</p>
 
@@ -647,7 +787,7 @@
 
 
   <!-- ──────────────────────────────────────────────────────── -->
-  <h1 id="a-gestion">11. Licitaciones y Bodegas</h1>
+  <h1 id="a-gestion">13. Licitaciones y Bodegas</h1>
   <div class="info">
     <strong>Lectura:</strong> Todos los roles con acceso TI o Servicio.<br>
     <strong>Escritura/Gestión:</strong> <span class="badge badge-blue">TI.Administrador</span> <span class="badge badge-green">Servicio.Administrador</span> <span class="badge badge-red">Administrador</span>
@@ -686,7 +826,7 @@
 <div id="tecnico" class="sec-tech">
 
   <!-- ──────────────────────────────────────────────────────── -->
-  <h1 id="t-arquitectura">12. Arquitectura del Sistema</h1>
+  <h1 id="t-arquitectura">14. Arquitectura del Sistema</h1>
 
   <h2>12.1 Stack Tecnológico</h2>
   <table>
@@ -697,6 +837,7 @@
     <tr><td>Autenticación</td><td>Cookie Authentication (ASP.NET Core)</td><td>Integrado</td></tr>
     <tr><td>Hashing de contraseñas</td><td>BCrypt.Net-Next</td><td>4.x</td></tr>
     <tr><td>Exportación Excel</td><td>ClosedXML</td><td>0.102+</td></tr>
+    <tr><td>Exportación PDF</td><td>QuestPDF</td><td>2025.5.0</td></tr>
     <tr><td>UI / CSS</td><td>Bootstrap 5 + Bootstrap Icons</td><td>5.3.x</td></tr>
     <tr><td>Servidor</td><td>Kestrel / IIS (producción)</td><td>.NET 8</td></tr>
     <tr><td>Plataforma de despliegue</td><td>Windows Server / Linux</td><td>—</td></tr>
@@ -723,7 +864,7 @@
 
 
   <!-- ──────────────────────────────────────────────────────── -->
-  <h1 id="t-bd">13. Base de Datos</h1>
+  <h1 id="t-bd">15. Base de Datos</h1>
 
   <h2>13.1 Configuración de Conexión</h2>
   <table>
@@ -756,6 +897,9 @@
     <tr><td>TB_ENG_ASSET</td><td>EngAsset</td><td>Activos clínicos. Misma estructura de ubicación que TB_ITEQUIP.</td></tr>
     <tr><td>TB_ENG_ASSET_HIST</td><td>EngAssetHistory</td><td>Historial automático de cambios de ubicación de activos clínicos.</td></tr>
     <tr><td>TB_ENG_MAINT</td><td>EngMaintenance</td><td>Mantenimientos de activos clínicos.</td></tr>
+    <tr><td>TB_INCIDENT</td><td>Incident</td><td>Incidentes (averías/casos de soporte) vinculados a equipos IT o activos clínicos.</td></tr>
+    <tr><td>TB_CALIBRATION</td><td>Calibration</td><td>Calibraciones de activos clínicos con resultado y próxima fecha programada.</td></tr>
+    <tr><td>TB_ASSET_PART</td><td>AssetPart</td><td>Relación muchos-a-muchos entre activos clínicos y repuestos compatibles.</td></tr>
     <tr><td>TB_MODEL</td><td>Model</td><td>Modelos de equipo (nivel 4 de la jerarquía de catálogo).</td></tr>
     <tr><td>TB_BRAND</td><td>Brand</td><td>Marcas de fabricante (nivel 3).</td></tr>
     <tr><td>TB_ASSETS_TYPE</td><td>AssetType</td><td>Tipos específicos de activo (nivel 2).</td></tr>
@@ -778,7 +922,7 @@
 
 
   <!-- ──────────────────────────────────────────────────────── -->
-  <h1 id="t-instalacion">14. Instalación y Configuración</h1>
+  <h1 id="t-instalacion">16. Instalación y Configuración</h1>
 
   <h2>14.1 Requisitos del Servidor</h2>
   <table>
@@ -865,7 +1009,7 @@ systemctl start edinventory</pre>
 
 
   <!-- ──────────────────────────────────────────────────────── -->
-  <h1 id="t-seguridad">15. Seguridad y Autenticación</h1>
+  <h1 id="t-seguridad">17. Seguridad y Autenticación</h1>
 
   <h2>15.1 Autenticación por Cookie</h2>
   <p>El sistema usa el esquema <code>CookieAuth</code> de ASP.NET Core Identity:</p>
@@ -900,7 +1044,7 @@ systemctl start edinventory</pre>
 
 
   <!-- ──────────────────────────────────────────────────────── -->
-  <h1 id="t-estructura">16. Estructura del Proyecto</h1>
+  <h1 id="t-estructura">18. Estructura del Proyecto</h1>
 
   <h2>16.1 Árbol de Directorios</h2>
   <pre>EDInventory/
@@ -1006,10 +1150,16 @@ systemctl start edinventory</pre>
     <tr><td>Encontrar un repuesto rápido</td><td>Servicio → "Buscar Repuesto" → escribir nombre o referencia</td></tr>
     <tr><td>Ver historial de ubicación</td><td>Detalle del equipo/activo → sección "Historial"</td></tr>
     <tr><td>Ver alertas actuales</td><td>Dashboard → sección de alertas (banners de color)</td></tr>
+    <tr><td>Buscar en todos los módulos</td><td>Ícono 🔍 en navbar → ingresar término</td></tr>
+    <tr><td>Ver carga de técnicos</td><td>Ícono persona en navbar → tabla de carga por técnico</td></tr>
+    <tr><td>Descargar PDF de inventario</td><td>Ícono PDF en navbar → descarga automática</td></tr>
+    <tr><td>Vincular repuesto a activo</td><td>Detalle del activo → sección "Repuestos Compatibles" → seleccionar + Vincular</td></tr>
+    <tr><td>Registrar calibración</td><td>Servicio → "Calibraciones" → "Nueva Calibración"</td></tr>
+    <tr><td>Ver incidentes de un equipo</td><td>Detalle del equipo/activo → sección "Incidentes"</td></tr>
   </table>
 
   <div class="footer">
-    EDInventory v1.1 &nbsp;—&nbsp; Manual de Software &nbsp;—&nbsp; Mayo 2026<br>
+    EDInventory v1.2 &nbsp;—&nbsp; Manual de Software &nbsp;—&nbsp; Junio 2026<br>
     Diagnostika — Departamento de Tecnología de la Información<br>
     Documento interno. Prohibida su distribución sin autorización.
   </div>

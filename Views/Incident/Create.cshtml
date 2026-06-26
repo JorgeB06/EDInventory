@@ -1,0 +1,133 @@
+@model EDInventory.Models.ViewModels.IncidentViewModel
+@{
+    ViewData["Title"] = "Nuevo Incidente";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="mb-0"><i class="bi bi-tools me-2"></i>Nuevo Incidente</h4>
+    <a asp-action="Index" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-arrow-left me-1"></i>Lista
+    </a>
+</div>
+
+<form asp-action="Create" method="post">
+    @Html.AntiForgeryToken()
+    <div class="row g-3">
+        <div class="col-md-6">
+            <div class="card shadow-sm">
+                <div class="card-header fw-bold">Division y Equipo</div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Division *</label>
+                        <div class="d-flex gap-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="EntityType" value="TI"
+                                       id="divTI" @(Model.EntityType == "TI" ? "checked" : "") onchange="toggleEntitySelects()">
+                                <label class="form-check-label" for="divTI">TI</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="EntityType" value="SVC"
+                                       id="divSVC" @(Model.EntityType == "SVC" ? "checked" : "") onchange="toggleEntitySelects()">
+                                <label class="form-check-label" for="divSVC">Servicio</label>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="divTiEquip" class="mb-3 @(Model.EntityType != "TI" ? "d-none" : "")">
+                        <label asp-for="ItequipCode" class="form-label fw-semibold">Equipo IT *</label>
+                        <select asp-for="ItequipCode" asp-items="Model.ItEquips" class="form-select">
+                            <option value="">— Seleccione —</option>
+                        </select>
+                        <span asp-validation-for="ItequipCode" class="text-danger small"></span>
+                    </div>
+                    <div id="divSvcAsset" class="mb-3 @(Model.EntityType != "SVC" ? "d-none" : "")">
+                        <label asp-for="AssetCode" class="form-label fw-semibold">Activo Clinico *</label>
+                        <select asp-for="AssetCode" asp-items="Model.EngAssets" class="form-select">
+                            <option value="">— Seleccione —</option>
+                        </select>
+                        <span asp-validation-for="AssetCode" class="text-danger small"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card shadow-sm">
+                <div class="card-header fw-bold">Clasificacion</div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label asp-for="IncidentType" class="form-label fw-semibold">Tipo *</label>
+                        <select asp-for="IncidentType" class="form-select">
+                            <option value="CORRECTIVO">Correctivo</option>
+                            <option value="PREVENTIVO">Preventivo</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label asp-for="IncidentPriority" class="form-label fw-semibold">Prioridad *</label>
+                        <select asp-for="IncidentPriority" class="form-select">
+                            <option value="BAJA">Baja</option>
+                            <option value="MEDIA" selected>Media</option>
+                            <option value="ALTA">Alta</option>
+                            <option value="CRITICA">Critica</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label asp-for="IncidentDate" class="form-label fw-semibold">Fecha *</label>
+                        <input asp-for="IncidentDate" type="date" class="form-control" />
+                        <span asp-validation-for="IncidentDate" class="text-danger small"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header fw-bold">Detalle del Incidente</div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label asp-for="IncidentTitle" class="form-label fw-semibold">Titulo *</label>
+                        <input asp-for="IncidentTitle" class="form-control" maxlength="150" placeholder="Resumen corto del problema" />
+                        <span asp-validation-for="IncidentTitle" class="text-danger small"></span>
+                    </div>
+                    <div class="mb-3">
+                        <label asp-for="IncidentDesc" class="form-label">Descripcion detallada</label>
+                        <textarea asp-for="IncidentDesc" class="form-control" rows="4"
+                                  placeholder="Descripcion completa del problema o incidente..."></textarea>
+                    </div>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label asp-for="ReportedUser" class="form-label">Reportado por</label>
+                            <select asp-for="ReportedUser" asp-items="Model.Users" class="form-select">
+                                <option value="">— Seleccione —</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="AssignedUser" class="form-label">Asignado a</label>
+                            <select asp-for="AssignedUser" asp-items="Model.Users" class="form-select">
+                                <option value="">— Sin asignar —</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <label asp-for="IncidentNotes" class="form-label">Notas adicionales</label>
+                        <input asp-for="IncidentNotes" class="form-control" maxlength="300" />
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 d-flex gap-2 justify-content-end">
+            <a asp-action="Index" class="btn btn-outline-secondary">Cancelar</a>
+            <button type="submit" class="btn btn-primary">
+                <i class="bi bi-check-lg me-1"></i>Registrar Incidente
+            </button>
+        </div>
+    </div>
+</form>
+
+<script>
+function toggleEntitySelects() {
+    const ti  = document.querySelector('input[name="EntityType"][value="TI"]').checked;
+    document.getElementById('divTiEquip').classList.toggle('d-none', !ti);
+    document.getElementById('divSvcAsset').classList.toggle('d-none', ti);
+}
+</script>

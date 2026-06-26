@@ -15,6 +15,16 @@
     // Servicio — mantenimientos
     int mantsSvcPendientes = canSeeSvc ? (int)(ViewBag.MantsSvcPendientes ?? 0) : 0;
     int mantsSvcVencidos   = canSeeSvc ? (int)(ViewBag.MantsSvcVencidos   ?? 0) : 0;
+    // Red TI
+    int tiSinHostname = canSeeTI ? (int)(ViewBag.TiSinHostname ?? 0) : 0;
+    int tiConIp       = canSeeTI ? (int)(ViewBag.TiConIp       ?? 0) : 0;
+    int tiEnDominio   = canSeeTI ? (int)(ViewBag.TiEnDominio   ?? 0) : 0;
+    int tiEnRed       = canSeeTI ? (int)(ViewBag.TiEnRed       ?? 0) : 0;
+    // Red Servicio
+    int svcSinHostname = canSeeSvc ? (int)(ViewBag.SvcSinHostname ?? 0) : 0;
+    int svcConIp       = canSeeSvc ? (int)(ViewBag.SvcConIp       ?? 0) : 0;
+    int svcEnDominio   = canSeeSvc ? (int)(ViewBag.SvcEnDominio   ?? 0) : 0;
+    int svcEnRed       = canSeeSvc ? (int)(ViewBag.SvcEnRed       ?? 0) : 0;
 }
 
 <!-- Banner principal -->
@@ -74,6 +84,33 @@
                     <div class="fs-3 fw-bold">@equiposEnHospital</div>
                     <div class="text-muted small">Equipos en Hospitales</div>
                 </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Red TI -->
+<div class="card shadow-sm mb-4">
+    <div class="card-header fw-bold bg-dark text-white">
+        <i class="bi bi-wifi me-1"></i>Conectividad de Red — TI
+    </div>
+    <div class="card-body p-0">
+        <div class="row g-0 text-center">
+            <div class="col-3 border-end py-3">
+                <div class="fs-4 fw-bold text-success">@tiEnRed</div>
+                <div class="text-muted small">En red</div>
+            </div>
+            <div class="col-3 border-end py-3">
+                <div class="fs-4 fw-bold @(tiSinHostname > 0 ? "text-warning" : "text-success")">@tiSinHostname</div>
+                <div class="text-muted small">Sin hostname</div>
+            </div>
+            <div class="col-3 border-end py-3">
+                <div class="fs-4 fw-bold text-info">@tiConIp</div>
+                <div class="text-muted small">Con IP</div>
+            </div>
+            <div class="col-3 py-3">
+                <div class="fs-4 fw-bold text-primary">@tiEnDominio</div>
+                <div class="text-muted small">En dominio</div>
             </div>
         </div>
     </div>
@@ -376,6 +413,33 @@
                     <div class="fs-3 fw-bold">@activosClinicosEnHospital</div>
                     <div class="text-muted small">Activos en Hospitales</div>
                 </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Red Servicio -->
+<div class="card shadow-sm mb-4">
+    <div class="card-header fw-bold bg-dark text-white">
+        <i class="bi bi-wifi me-1"></i>Conectividad de Red — Activos Clinicos
+    </div>
+    <div class="card-body p-0">
+        <div class="row g-0 text-center">
+            <div class="col-3 border-end py-3">
+                <div class="fs-4 fw-bold text-success">@svcEnRed</div>
+                <div class="text-muted small">En red</div>
+            </div>
+            <div class="col-3 border-end py-3">
+                <div class="fs-4 fw-bold @(svcSinHostname > 0 ? "text-warning" : "text-success")">@svcSinHostname</div>
+                <div class="text-muted small">Sin hostname</div>
+            </div>
+            <div class="col-3 border-end py-3">
+                <div class="fs-4 fw-bold text-info">@svcConIp</div>
+                <div class="text-muted small">Con IP</div>
+            </div>
+            <div class="col-3 py-3">
+                <div class="fs-4 fw-bold text-primary">@svcEnDominio</div>
+                <div class="text-muted small">En dominio</div>
             </div>
         </div>
     </div>

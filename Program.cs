@@ -41,6 +41,13 @@ builder.Services.AddAuthentication("CookieAuth")
 
 builder.Services.AddControllersWithViews();
 builder.Services.AddHttpContextAccessor();
+
+// Allow file uploads up to 20 MB
+builder.Services.Configure<Microsoft.AspNetCore.Http.Features.FormOptions>(o =>
+{
+    o.MultipartBodyLengthLimit = 20 * 1024 * 1024;
+});
+builder.WebHost.ConfigureKestrel(k => k.Limits.MaxRequestBodySize = 20 * 1024 * 1024);
 // IMemoryCache: usado por AuthController para bloqueo por intentos fallidos de login
 builder.Services.AddMemoryCache();
 
@@ -79,9 +86,10 @@ using (var scope = app.Services.CreateScope())
 
     if (!db.Users.Any())
     {
-        // Rol de sistema
-        var rol = new UserRole { UroleDesc = "Administrador", Active = true };
-        db.UserRoles.Add(rol);
+        // Reutilizar rol existente o crear uno nuevo
+        var rol = db.UserRoles.FirstOrDefault(r => r.UroleDesc == "Administrador")
+                  ?? new UserRole { UroleDesc = "Administrador", Active = true };
+        if (rol.UroleCode == 0) db.UserRoles.Add(rol);
 
         // Tipo de documento empleado
         var docType = new DocumentTypeEmployee { DoctypeDesEmp = "Cedula", Active = true };

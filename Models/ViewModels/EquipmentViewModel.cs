@@ -117,12 +117,52 @@ namespace EDInventory.Models.ViewModels
         [Display(Name = "Activo")]
         public bool Active { get; set; } = true;
 
+        /// <summary>Estado del ciclo de vida del equipo.</summary>
+        [Display(Name = "Estado")]
+        [StringLength(20)]
+        public string EquipStatus { get; set; } = "EN_SERVICIO";
+
+        // ── Responsable ───────────────────────────────────────
+        [Display(Name = "Tecnico responsable")]
+        public int? ResponsibleUser { get; set; }
+
+        [Display(Name = "Responsable externo")]
+        [StringLength(80)]
+        public string? ResponsibleExt { get; set; }
+
+        // ── Costo / Depreciacion ──────────────────────────────
+        [Display(Name = "Costo de adquisicion")]
+        public decimal? AcquireCost { get; set; }
+
+        [Display(Name = "Fecha de adquisicion")]
+        public DateOnly? AcquireDate { get; set; }
+
+        [Display(Name = "Vida util (años)")]
+        [Range(1, 50)]
+        public int? DepreYears { get; set; }
+
+        // ── Red ───────────────────────────────────────────────
+
+        [Display(Name = "Nombre de Host")]
+        [StringLength(60)]
+        public string? NetHostname { get; set; }
+
+        [Display(Name = "En Dominio")]
+        public bool NetInDomain { get; set; }
+
+        [Display(Name = "Conectado a Red")]
+        public bool NetEnabled { get; set; }
+
+        [Display(Name = "Direccion IP")]
+        [StringLength(45)]
+        public string? NetIp { get; set; }
+
+        [Display(Name = "Tipo IP")]
+        [StringLength(6)]
+        public string? NetType { get; set; }
+
         // ── Historial de ubicación ─────────────────────────────
 
-        /// <summary>
-        /// Notas del cambio de ubicación. Se persiste automáticamente en
-        /// <see cref="EDInventory.Models.Entities.ItEquipHistory"/> al detectar un cambio de ubicación.
-        /// </summary>
         [Display(Name = "Notas del movimiento")]
         [StringLength(200)]
         public string? HistNotes { get; set; }
@@ -146,6 +186,9 @@ namespace EDInventory.Models.ViewModels
 
         /// <summary>Lista de licitaciones para el selector desplegable.</summary>
         public IEnumerable<SelectListItem> Licitaciones { get; set; } = [];
+
+        /// <summary>Lista de tecnicos internos para el selector de responsable.</summary>
+        public IEnumerable<SelectListItem> TechUsers { get; set; } = [];
     }
 
     /// <summary>
@@ -333,10 +376,50 @@ namespace EDInventory.Models.ViewModels
         [Display(Name = "Activo")]
         public bool Active { get; set; } = true;
 
-        /// <summary>
-        /// Notas del cambio de ubicación. Se persiste automáticamente en
-        /// <see cref="EDInventory.Models.Entities.EngAssetHistory"/> al detectar un cambio de ubicación.
-        /// </summary>
+        /// <summary>Estado del ciclo de vida del activo.</summary>
+        [Display(Name = "Estado")]
+        [StringLength(20)]
+        public string AssetStatus { get; set; } = "EN_SERVICIO";
+
+        // ── Responsable ───────────────────────────────────────
+        [Display(Name = "Tecnico responsable")]
+        public int? ResponsibleUser { get; set; }
+
+        [Display(Name = "Responsable externo")]
+        [StringLength(80)]
+        public string? ResponsibleExt { get; set; }
+
+        // ── Costo / Depreciacion ──────────────────────────────
+        [Display(Name = "Costo de adquisicion")]
+        public decimal? AcquireCost { get; set; }
+
+        [Display(Name = "Fecha de adquisicion")]
+        public DateOnly? AcquireDate { get; set; }
+
+        [Display(Name = "Vida util (años)")]
+        [Range(1, 50)]
+        public int? DepreYears { get; set; }
+
+        // ── Red ───────────────────────────────────────────────
+
+        [Display(Name = "Nombre de Host")]
+        [StringLength(60)]
+        public string? NetHostname { get; set; }
+
+        [Display(Name = "En Dominio")]
+        public bool NetInDomain { get; set; }
+
+        [Display(Name = "Conectado a Red")]
+        public bool NetEnabled { get; set; }
+
+        [Display(Name = "Direccion IP")]
+        [StringLength(45)]
+        public string? NetIp { get; set; }
+
+        [Display(Name = "Tipo IP")]
+        [StringLength(6)]
+        public string? NetType { get; set; }
+
         [Display(Name = "Notas del movimiento")]
         [StringLength(200)]
         public string? HistNotes { get; set; }
@@ -363,6 +446,9 @@ namespace EDInventory.Models.ViewModels
 
         /// <summary>Lista de licitaciones para el selector desplegable.</summary>
         public IEnumerable<SelectListItem> Licitaciones { get; set; } = [];
+
+        /// <summary>Lista de tecnicos internos para el selector de responsable.</summary>
+        public IEnumerable<SelectListItem> TechUsers { get; set; } = [];
     }
 
     /// <summary>

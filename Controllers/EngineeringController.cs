@@ -758,7 +758,7 @@ namespace EDInventory.Controllers
         /// Muestra el inventario paginado de activos clínicos con filtros por línea de servicio,
         /// hospital, bodega y estado activo/inactivo.
         /// </summary>
-        public async Task<IActionResult> AssetsOnSite(string? search, int? lineId, int? hospId, int? wareId, bool? active, int page = 1)
+        public async Task<IActionResult> AssetsOnSite(string? search, int? lineId, int? hospId, int? wareId, bool? active, string? status, int page = 1)
         {
             const int pageSize = 20;
 
@@ -771,12 +771,13 @@ namespace EDInventory.Controllers
                 .AsQueryable();
 
             if (!string.IsNullOrWhiteSpace(search))
-                query = query.Where(a => a.AssetDesc!.Contains(search) || a.AssetSN!.Contains(search) || a.AssetNum!.Contains(search));
+                query = query.Where(a => a.AssetDesc!.Contains(search) || a.AssetSN!.Contains(search) || a.AssetNum!.Contains(search) || a.NetHostname!.Contains(search) || a.NetIp!.Contains(search));
 
             if (lineId.HasValue)  query = query.Where(a => a.LineCode == lineId);
             if (hospId.HasValue)  query = query.Where(a => a.HospCode == hospId);
             if (wareId.HasValue)  query = query.Where(a => a.WareCode == wareId);
             if (active.HasValue)  query = query.Where(a => a.Active == active);
+            if (!string.IsNullOrEmpty(status)) query = query.Where(a => a.AssetStatus == status);
 
             var total = await query.CountAsync();
             var totalPages = (int)Math.Ceiling(total / (double)pageSize);
@@ -794,6 +795,7 @@ namespace EDInventory.Controllers
             ViewBag.HospId    = hospId;
             ViewBag.WareId    = wareId;
             ViewBag.Active    = active;
+            ViewBag.Status    = status;
             ViewBag.Page      = page;
             ViewBag.TotalPages = totalPages;
             ViewBag.Total     = total;
@@ -906,6 +908,28 @@ namespace EDInventory.Controllers
                 $"Activos_Clinicos_{DateTime.Today:yyyyMMdd}.xlsx");
         }
 
+        public async Task<IActionResult> AssetLabel(int id)
+        {
+            var asset = await _context.EngAssets
+                .Include(a => a.Line)
+                .Include(a => a.Hospital)
+                .Include(a => a.HospitalDepartment)
+                .Include(a => a.Warehouse)
+                .Include(a => a.Site)
+                .Include(a => a.Model).ThenInclude(m => m!.Brand).ThenInclude(b => b!.AssetType)
+                .FirstOrDefaultAsync(a => a.AssetCode == id);
+
+            if (asset == null) return NotFound();
+
+            var company = await _context.Companies
+                .Where(c => c.Active)
+                .OrderBy(c => c.CompanyCode)
+                .FirstOrDefaultAsync();
+
+            ViewBag.Company = company;
+            return View(asset);
+        }
+
         public async Task<IActionResult> AssetDetail(int id)
         {
             var asset = await _context.EngAssets
@@ -941,6 +965,41 @@ namespace EDInventory.Controllers
                 .Include(m => m.Hospital)
                 .Where(m => m.AssetCode == id)
                 .OrderByDescending(m => m.MovDate)
+                .ToListAsync();
+
+            ViewBag.Incidents = await _context.Incidents
+                .Include(i => i.Reporter).ThenInclude(u => u!.Employee)
+                .Include(i => i.Assignee).ThenInclude(u => u!.Employee)
+                .Where(i => i.AssetCode == id)
+                .OrderByDescending(i => i.IncidentDate)
+                .ToListAsync();
+
+            ViewBag.Calibrations = await _context.Calibrations
+                .Include(c => c.User).ThenInclude(u => u!.Employee)
+                .Where(c => c.AssetCode == id)
+                .OrderByDescending(c => c.CalibDate)
+                .ToListAsync();
+
+            ViewBag.Documents = await _context.Documents
+                .Include(d => d.User).ThenInclude(u => u!.Employee)
+                .Where(d => d.AssetCode == id)
+                .OrderByDescending(d => d.DocUploadDate)
+                .ToListAsync();
+
+            ViewBag.AssetParts = await _context.AssetParts
+                .Include(ap => ap.Part)
+                    .ThenInclude(p => p!.Box)
+                        .ThenInclude(b => b!.Line)
+                .Where(ap => ap.AssetCode == id)
+                .ToListAsync();
+
+            ViewBag.AvailableParts = await _context.EngParts
+                .Include(p => p.Box).ThenInclude(b => b!.Line)
+                .OrderBy(p => p.Box!.Line!.LineName)
+                .ThenBy(p => p.PartName)
+                .Select(p => new SelectListItem(
+                    $"{p.PartName} ({p.PartRef}) - {p.Box!.Line!.LineName}",
+                    p.PartCode.ToString()))
                 .ToListAsync();
 
             return View(asset);
@@ -984,34 +1043,44 @@ namespace EDInventory.Controllers
 
             var asset = new EngAsset
             {
-                AssetDesc     = vm.AssetDesc,
-                LineCode      = vm.LineCode,
-                HospCode      = vm.HospCode,
-                HospDepCode   = vm.HospDepCode,
-                AssetHospPos  = vm.AssetHospPos,
-                WareCode      = vm.WareCode,
-                WareRack      = vm.WareRack,
-                WareEstante   = vm.WareEstante,
-                SiteCode      = vm.SiteCode,
-                ModelCode     = vm.ModelCode,
-                AssetSN       = vm.AssetSN,
-                LicCode       = vm.LicCode,
-                AssetNum      = vm.AssetNum,
-                AssetDslic    = vm.AssetDslic,
-                AssetDelic    = vm.AssetDelic,
-                AssetGnum     = vm.AssetGnum,
-                AssetDjequip  = vm.AssetDjequip,
-                AssetAddata   = vm.AssetAddata,
-                AssetDnew     = DateOnly.FromDateTime(DateTime.Today),
-                AssetDmod     = DateOnly.FromDateTime(DateTime.Today),
-                Active        = vm.Active
+                AssetDesc    = vm.AssetDesc,
+                LineCode     = vm.LineCode,
+                HospCode     = vm.HospCode,
+                HospDepCode  = vm.HospDepCode,
+                AssetHospPos = vm.AssetHospPos,
+                WareCode     = vm.WareCode,
+                WareRack     = vm.WareRack,
+                WareEstante  = vm.WareEstante,
+                SiteCode     = vm.SiteCode,
+                ModelCode    = vm.ModelCode,
+                AssetSN      = vm.AssetSN,
+                LicCode      = vm.LicCode,
+                AssetNum     = vm.AssetNum,
+                AssetDslic   = vm.AssetDslic,
+                AssetDelic   = vm.AssetDelic,
+                AssetGnum    = vm.AssetGnum,
+                AssetDjequip = vm.AssetDjequip,
+                AssetAddata  = vm.AssetAddata,
+                AssetDnew    = DateOnly.FromDateTime(DateTime.Today),
+                AssetDmod    = DateOnly.FromDateTime(DateTime.Today),
+                Active          = vm.Active,
+                AssetStatus     = vm.AssetStatus,
+                ResponsibleUser = vm.ResponsibleUser,
+                ResponsibleExt  = vm.ResponsibleExt,
+                AcquireCost     = vm.AcquireCost,
+                AcquireDate     = vm.AcquireDate,
+                DepreYears      = vm.DepreYears,
+                NetHostname     = vm.NetHostname,
+                NetInDomain     = vm.NetInDomain,
+                NetEnabled      = vm.NetEnabled,
+                NetIp           = vm.NetEnabled ? vm.NetIp  : null,
+                NetType         = vm.NetEnabled ? vm.NetType : null,
             };
 
-            // Transacción: el activo y su historial inicial deben persistir juntos.
             await using var tx = await _context.Database.BeginTransactionAsync();
             _context.EngAssets.Add(asset);
             await _context.SaveChangesAsync();
-            await RegisterAssetHistory(asset, vm.HistNotes, GetSvcCurrentUserId());
+            await RegisterAssetHistory(asset, vm.HistNotes, GetSvcCurrentUserId(), "CREACION");
             await tx.CommitAsync();
 
             TempData["Success"] = "Activo clinico registrado correctamente.";
@@ -1047,7 +1116,18 @@ namespace EDInventory.Controllers
                 AssetAddata  = entity.AssetAddata,
                 AssetDnew    = entity.AssetDnew,
                 AssetDmod    = entity.AssetDmod,
-                Active       = entity.Active
+                Active          = entity.Active,
+                AssetStatus     = entity.AssetStatus,
+                ResponsibleUser = entity.ResponsibleUser,
+                ResponsibleExt  = entity.ResponsibleExt,
+                AcquireCost     = entity.AcquireCost,
+                AcquireDate     = entity.AcquireDate,
+                DepreYears      = entity.DepreYears,
+                NetHostname     = entity.NetHostname,
+                NetInDomain     = entity.NetInDomain,
+                NetEnabled      = entity.NetEnabled,
+                NetIp           = entity.NetIp,
+                NetType         = entity.NetType,
             };
             await PopulateAssetSelectLists(vm);
             ViewBag.LicitacionDates = System.Text.Json.JsonSerializer.Serialize(
@@ -1081,10 +1161,27 @@ namespace EDInventory.Controllers
             if (entity == null) return NotFound();
 
             bool locationChanged =
-                entity.HospCode != vm.HospCode || entity.HospDepCode != vm.HospDepCode ||
+                entity.HospCode     != vm.HospCode     || entity.HospDepCode != vm.HospDepCode ||
                 entity.AssetHospPos != vm.AssetHospPos ||
-                entity.WareCode != vm.WareCode || entity.WareRack != vm.WareRack ||
-                entity.WareEstante != vm.WareEstante || entity.SiteCode != vm.SiteCode;
+                entity.WareCode     != vm.WareCode     || entity.WareRack    != vm.WareRack    ||
+                entity.WareEstante  != vm.WareEstante  || entity.SiteCode    != vm.SiteCode;
+
+            string? newNetIp   = vm.NetEnabled ? vm.NetIp   : null;
+            string? newNetType = vm.NetEnabled ? vm.NetType : null;
+
+            bool netChanged =
+                entity.NetHostname != vm.NetHostname ||
+                entity.NetInDomain != vm.NetInDomain ||
+                entity.NetEnabled  != vm.NetEnabled  ||
+                entity.NetIp       != newNetIp       ||
+                entity.NetType     != newNetType;
+
+            bool dataChanged =
+                entity.ModelCode   != vm.ModelCode  ||
+                entity.AssetSN     != vm.AssetSN    ||
+                entity.AssetNum    != vm.AssetNum    ||
+                entity.AssetGnum   != vm.AssetGnum   ||
+                entity.AssetAddata != vm.AssetAddata;
 
             entity.AssetDesc    = vm.AssetDesc;
             entity.LineCode     = vm.LineCode;
@@ -1104,11 +1201,26 @@ namespace EDInventory.Controllers
             entity.AssetGnum    = vm.AssetGnum;
             entity.AssetDjequip = vm.AssetDjequip;
             entity.AssetAddata  = vm.AssetAddata;
-            entity.AssetDmod    = DateOnly.FromDateTime(DateTime.Today);
-            entity.Active       = vm.Active;
+            entity.AssetDmod        = DateOnly.FromDateTime(DateTime.Today);
+            entity.Active           = vm.Active;
+            entity.AssetStatus      = vm.AssetStatus;
+            entity.ResponsibleUser  = vm.ResponsibleUser;
+            entity.ResponsibleExt   = vm.ResponsibleExt;
+            entity.AcquireCost      = vm.AcquireCost;
+            entity.AcquireDate      = vm.AcquireDate;
+            entity.DepreYears       = vm.DepreYears;
+            entity.NetHostname      = vm.NetHostname;
+            entity.NetInDomain  = vm.NetInDomain;
+            entity.NetEnabled   = vm.NetEnabled;
+            entity.NetIp        = newNetIp;
+            entity.NetType      = newNetType;
 
             if (locationChanged)
-                await RegisterAssetHistory(entity, vm.HistNotes, GetSvcCurrentUserId());
+                await RegisterAssetHistory(entity, vm.HistNotes, GetSvcCurrentUserId(), "UBICACION");
+            else if (netChanged)
+                await RegisterAssetHistory(entity, vm.HistNotes, GetSvcCurrentUserId(), "RED");
+            else if (dataChanged)
+                await RegisterAssetHistory(entity, vm.HistNotes, GetSvcCurrentUserId(), "DATOS");
 
             await _context.SaveChangesAsync();
             TempData["Success"] = "Activo clinico actualizado correctamente.";
@@ -1156,7 +1268,7 @@ namespace EDInventory.Controllers
             }
         }
 
-        private async Task RegisterAssetHistory(EngAsset asset, string? notes, int? userId)
+        private async Task RegisterAssetHistory(EngAsset asset, string? notes, int? userId, string histType = "UBICACION")
         {
             string locType = asset.HospCode.HasValue ? "HOSPITAL"
                            : asset.WareCode.HasValue ? "BODEGA"
@@ -1176,7 +1288,13 @@ namespace EDInventory.Controllers
                 HospDepCode  = asset.HospDepCode,
                 AssetHospPos = asset.AssetHospPos,
                 SiteCode     = asset.SiteCode,
-                HistNotes    = notes
+                HistNotes    = notes,
+                HistType     = histType,
+                NetHostname  = asset.NetHostname,
+                NetInDomain  = asset.NetInDomain,
+                NetEnabled   = asset.NetEnabled,
+                NetIp        = asset.NetIp,
+                NetType      = asset.NetType,
             });
             await _context.SaveChangesAsync();
         }
@@ -1401,6 +1519,57 @@ namespace EDInventory.Controllers
 
             vm.Licitaciones = (await _context.Licitaciones.Where(l => l.Active).OrderBy(l => l.LicNum).ToListAsync())
                 .Select(l => new SelectListItem($"{l.LicNum} - {l.LicDesc}", l.LicCode.ToString()));
+
+            vm.TechUsers = (await _context.Users
+                .Include(u => u.Employee)
+                .Where(u => u.Active)
+                .OrderBy(u => u.Employee!.EmpSurname)
+                .ToListAsync())
+                .Select(u => new SelectListItem(
+                    u.Employee != null ? $"{u.Employee.EmpName} {u.Employee.EmpSurname}" : u.UserLogin,
+                    u.UserCode.ToString()));
+        }
+
+        // ===================== REPUESTOS VINCULADOS A ACTIVO =====================
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [Authorize(Roles = AppRoles.SvcWrite)]
+        public async Task<IActionResult> AssetPartAdd(int assetCode, int partCode, string? notes)
+        {
+            var exists = await _context.AssetParts
+                .AnyAsync(ap => ap.AssetCode == assetCode && ap.PartCode == partCode);
+            if (!exists)
+            {
+                _context.AssetParts.Add(new AssetPart
+                {
+                    AssetCode = assetCode,
+                    PartCode  = partCode,
+                    ApNotes   = notes
+                });
+                await _context.SaveChangesAsync();
+                TempData["Success"] = "Repuesto vinculado al activo.";
+            }
+            else
+            {
+                TempData["Warning"] = "Este repuesto ya estaba vinculado.";
+            }
+            return RedirectToAction(nameof(AssetDetail), new { id = assetCode });
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [Authorize(Roles = AppRoles.SvcWrite)]
+        public async Task<IActionResult> AssetPartRemove(int apCode, int assetCode)
+        {
+            var link = await _context.AssetParts.FindAsync(apCode);
+            if (link != null)
+            {
+                _context.AssetParts.Remove(link);
+                await _context.SaveChangesAsync();
+                TempData["Success"] = "Repuesto desvinculado del activo.";
+            }
+            return RedirectToAction(nameof(AssetDetail), new { id = assetCode });
         }
 
         // ===================== BÚSQUEDA GLOBAL =====================

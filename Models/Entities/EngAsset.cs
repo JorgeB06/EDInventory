@@ -121,6 +121,50 @@ namespace EDInventory.Models.Entities
         [Column("ACTIVE")]
         public bool Active { get; set; } = true;
 
+        /// <summary>Estado del ciclo de vida: EN_SERVICIO | EN_REPARACION | EN_EVALUACION | DADO_DE_BAJA</summary>
+        [Column("ASSET_STATUS")]
+        [StringLength(20)]
+        public string AssetStatus { get; set; } = "EN_SERVICIO";
+
+        // ── Responsable ────────────────────────────────────────
+        [Column("RESPONSIBLE_USER")]
+        public int? ResponsibleUser { get; set; }
+
+        [Column("RESPONSIBLE_EXT")]
+        [StringLength(80)]
+        public string? ResponsibleExt { get; set; }
+
+        // ── Costo / Depreciacion ───────────────────────────────
+        [Column("ACQUIRE_COST")]
+        public decimal? AcquireCost { get; set; }
+
+        [Column("ACQUIRE_DATE")]
+        public DateOnly? AcquireDate { get; set; }
+
+        /// <summary>Vida util en años para depreciacion lineal.</summary>
+        [Column("DEPRE_YEARS")]
+        public int? DepreYears { get; set; }
+
+        // ── Red ────────────────────────────────────────────────
+        [Column("NET_HOSTNAME")]
+        [StringLength(60)]
+        public string? NetHostname { get; set; }
+
+        [Column("NET_IN_DOMAIN")]
+        public bool NetInDomain { get; set; }
+
+        [Column("NET_ENABLED")]
+        public bool NetEnabled { get; set; }
+
+        [Column("NET_IP")]
+        [StringLength(45)]
+        public string? NetIp { get; set; }
+
+        /// <summary>DHCP o STATIC</summary>
+        [Column("NET_TYPE")]
+        [StringLength(6)]
+        public string? NetType { get; set; }
+
         // ── Navegación ─────────────────────────────────────────
 
         /// <summary>Línea de servicio de ingeniería a la que pertenece este activo.</summary>
@@ -159,5 +203,17 @@ namespace EDInventory.Models.Entities
 
         /// <summary>Registros de retiro/devolución del activo.</summary>
         public ICollection<EngAssetMovement> Movements { get; set; } = [];
+
+        /// <summary>Incidentes o reparaciones registrados para este activo.</summary>
+        public ICollection<Incident> Incidents { get; set; } = [];
+
+        /// <summary>Calibraciones registradas para este activo.</summary>
+        public ICollection<Calibration> Calibrations { get; set; } = [];
+
+        /// <summary>Documentos adjuntos a este activo.</summary>
+        public ICollection<Document> Documents { get; set; } = [];
+
+        /// <summary>Repuestos compatibles vinculados a este activo.</summary>
+        public ICollection<AssetPart> AssetParts { get; set; } = [];
     }
 }

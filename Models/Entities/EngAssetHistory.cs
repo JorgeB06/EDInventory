@@ -74,10 +74,34 @@ namespace EDInventory.Models.Entities
         [Column("SITE_CODE")]
         public int? SiteCode { get; set; }
 
-        /// <summary>Notas o justificación del cambio de ubicación (máx. 200 caracteres).</summary>
+        /// <summary>Notas o justificación del cambio (máx. 200 caracteres).</summary>
         [Column("HIST_NOTES")]
         [StringLength(200)]
         public string? HistNotes { get; set; }
+
+        /// <summary>Tipo de cambio: UBICACION | RED | DATOS | CREACION</summary>
+        [Column("HIST_TYPE")]
+        [StringLength(12)]
+        public string? HistType { get; set; }
+
+        // ── Snapshot de red al momento del cambio ─────────────────
+        [Column("NET_HOSTNAME")]
+        [StringLength(60)]
+        public string? NetHostname { get; set; }
+
+        [Column("NET_IN_DOMAIN")]
+        public bool? NetInDomain { get; set; }
+
+        [Column("NET_ENABLED")]
+        public bool? NetEnabled { get; set; }
+
+        [Column("NET_IP")]
+        [StringLength(45)]
+        public string? NetIp { get; set; }
+
+        [Column("NET_TYPE")]
+        [StringLength(6)]
+        public string? NetType { get; set; }
 
         // ── Navegación ────────────────────────────────────────────
 

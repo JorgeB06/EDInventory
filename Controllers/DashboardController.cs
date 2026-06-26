@@ -1,8 +1,13 @@
 using EDInventory.Data;
 using EDInventory.Models;
+using EDInventory.Models.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using QuestPDF.Fluent;
+using QuestPDF.Helpers;
+using QuestPDF.Infrastructure;
+using EntityDocument = EDInventory.Models.Entities.Document;
 
 namespace EDInventory.Controllers
 {
@@ -77,6 +82,12 @@ namespace EDInventory.Controllers
                     .Take(3)
                     .ToListAsync();
 
+                // KPIs de red TI
+                ViewBag.TiSinHostname   = await _context.ItEquips.CountAsync(e => e.Active && string.IsNullOrEmpty(e.NetHostname));
+                ViewBag.TiConIp         = await _context.ItEquips.CountAsync(e => e.Active && e.NetEnabled && !string.IsNullOrEmpty(e.NetIp));
+                ViewBag.TiEnDominio     = await _context.ItEquips.CountAsync(e => e.Active && e.NetInDomain);
+                ViewBag.TiEnRed         = await _context.ItEquips.CountAsync(e => e.Active && e.NetEnabled);
+
                 ViewBag.RecentMovements = await _context.ItEquipHistories
                     .Include(h => h.ItEquip)
                     .Include(h => h.User)
@@ -117,6 +128,12 @@ namespace EDInventory.Controllers
                 // Repuestos con stock bajo (mayor que 0 pero <= 3)
                 ViewBag.PartsBajoStock = await _context.EngParts.CountAsync(p => p.PartQty > 0 && p.PartQty <= 3);
 
+                // KPIs de red Servicio
+                ViewBag.SvcSinHostname = await _context.EngAssets.CountAsync(a => a.Active && string.IsNullOrEmpty(a.NetHostname));
+                ViewBag.SvcConIp       = await _context.EngAssets.CountAsync(a => a.Active && a.NetEnabled && !string.IsNullOrEmpty(a.NetIp));
+                ViewBag.SvcEnDominio   = await _context.EngAssets.CountAsync(a => a.Active && a.NetInDomain);
+                ViewBag.SvcEnRed       = await _context.EngAssets.CountAsync(a => a.Active && a.NetEnabled);
+
                 // Distribución: repuestos por línea (top 8)
                 ViewBag.PartsPorLinea = await _context.EngParts
                     .Include(p => p.Box).ThenInclude(b => b!.Line)
@@ -128,6 +145,328 @@ namespace EDInventory.Controllers
             }
 
             return View();
+        }
+
+        // ===================== CARGA DE TECNICOS =====================
+
+        /// <summary>
+        /// Muestra la carga de trabajo de cada técnico: incidentes abiertos y mantenimientos pendientes.
+        /// Accesible para Administrador y roles TI/Servicio con permisos de lectura.
+        /// </summary>
+        public async Task<IActionResult> Workload()
+        {
+            bool isAdmin   = User.IsInRole(AppRoles.Admin);
+            bool canSeeTI  = isAdmin || User.IsInRole(AppRoles.TiAdmin) || User.IsInRole(AppRoles.TiTecnico) || User.IsInRole(AppRoles.TiConsulta) || User.IsInRole(AppRoles.SvcAdmin);
+            bool canSeeSvc = isAdmin || User.IsInRole(AppRoles.SvcAdmin) || User.IsInRole(AppRoles.SvcTecnico) || User.IsInRole(AppRoles.SvcConsulta) || User.IsInRole(AppRoles.TiAdmin);
+
+            // Incidentes abiertos por técnico asignado (TI + Servicio)
+            var openIncidents = await _context.Incidents
+                .Where(i => i.IncidentStatus == "ABIERTA" || i.IncidentStatus == "EN_PROCESO")
+                .Include(i => i.Assignee).ThenInclude(u => u!.Employee)
+                .ToListAsync();
+
+            // Mantenimientos IT pendientes por técnico
+            var tiMaints = canSeeTI
+                ? await _context.ItEquipMaintenances
+                    .Where(m => m.MaintStatus == "PENDIENTE")
+                    .Include(m => m.User).ThenInclude(u => u!.Employee)
+                    .ToListAsync()
+                : new List<ItEquipMaintenance>();
+
+            // Mantenimientos Servicio pendientes por técnico
+            var svcMaints = canSeeSvc
+                ? await _context.EngMaintenances
+                    .Where(m => m.MaintStatus == "PENDIENTE")
+                    .Include(m => m.User).ThenInclude(u => u!.Employee)
+                    .ToListAsync()
+                : new List<EngMaintenance>();
+
+            // Todos los técnicos activos
+            var technicians = await _context.Users
+                .Include(u => u.Employee)
+                .Where(u => u.Active)
+                .OrderBy(u => u.Employee!.EmpSurname)
+                .ToListAsync();
+
+            var today = DateOnly.FromDateTime(DateTime.Today);
+
+            var workload = technicians.Select(u =>
+            {
+                var uIncidents = openIncidents.Where(i => i.AssignedUser == u.UserCode).ToList();
+                var uTiMaints  = tiMaints.Where(m => m.UserCode == u.UserCode).ToList();
+                var uSvcMaints = svcMaints.Where(m => m.UserCode == u.UserCode).ToList();
+                return new
+                {
+                    User          = u,
+                    Incidents     = uIncidents.Count,
+                    IncidentsHigh = uIncidents.Count(i => i.IncidentPriority == "ALTA" || i.IncidentPriority == "CRITICA"),
+                    TiMaints      = uTiMaints.Count,
+                    TiMaintsOverdue = uTiMaints.Count(m => m.MaintScheduled < today),
+                    SvcMaints     = uSvcMaints.Count,
+                    SvcMaintsOverdue = uSvcMaints.Count(m => m.MaintScheduled < today),
+                    Total         = uIncidents.Count + uTiMaints.Count + uSvcMaints.Count
+                };
+            }).OrderByDescending(w => w.Total).ToList();
+
+            ViewBag.Workload       = workload;
+            ViewBag.CanSeeTI       = canSeeTI;
+            ViewBag.CanSeeSvc      = canSeeSvc;
+            ViewBag.TotalOpen      = openIncidents.Count;
+            ViewBag.TiMaintTotal   = tiMaints.Count;
+            ViewBag.SvcMaintTotal  = svcMaints.Count;
+            return View();
+        }
+
+        // ===================== BUSQUEDA GLOBAL =====================
+
+        /// <summary>
+        /// Busqueda global en tiempo real sobre equipos IT, activos clinicos, incidentes y calibraciones.
+        /// Devuelve resultados agrupados por tipo.
+        /// </summary>
+        public async Task<IActionResult> Search(string? q)
+        {
+            if (string.IsNullOrWhiteSpace(q))
+                return View(new EDInventory.Models.ViewModels.GlobalSearchResult());
+
+            q = q.Trim();
+            bool isAdmin   = User.IsInRole(AppRoles.Admin);
+            bool canSeeTI  = isAdmin || User.IsInRole(AppRoles.TiAdmin) || User.IsInRole(AppRoles.TiTecnico) || User.IsInRole(AppRoles.TiConsulta) || User.IsInRole(AppRoles.SvcAdmin);
+            bool canSeeSvc = isAdmin || User.IsInRole(AppRoles.SvcAdmin) || User.IsInRole(AppRoles.SvcTecnico) || User.IsInRole(AppRoles.SvcConsulta) || User.IsInRole(AppRoles.TiAdmin);
+            bool canSeeAdm = isAdmin || User.IsInRole(AppRoles.TiAdmin) || User.IsInRole(AppRoles.SvcAdmin);
+
+            var result = new EDInventory.Models.ViewModels.GlobalSearchResult { Query = q };
+
+            if (canSeeTI)
+            {
+                result.Equipos = await _context.ItEquips
+                    .Include(e => e.Model).ThenInclude(m => m!.Brand).ThenInclude(b => b!.AssetType)
+                    .Include(e => e.Hospital)
+                    .Include(e => e.Warehouse)
+                    .Include(e => e.Site)
+                    .Where(e => e.ItequipDesc!.Contains(q) || e.ItequipSn!.Contains(q) ||
+                                e.ItequipNum!.Contains(q) || e.NetHostname!.Contains(q) ||
+                                e.NetIp!.Contains(q))
+                    .OrderBy(e => e.ItequipDesc)
+                    .Take(20)
+                    .ToListAsync();
+            }
+
+            if (canSeeSvc)
+            {
+                result.Assets = await _context.EngAssets
+                    .Include(a => a.Model).ThenInclude(m => m!.Brand).ThenInclude(b => b!.AssetType)
+                    .Include(a => a.Hospital)
+                    .Include(a => a.Line)
+                    .Where(a => a.AssetDesc!.Contains(q) || a.AssetSN!.Contains(q) ||
+                                a.AssetNum!.Contains(q)  || a.NetHostname!.Contains(q) ||
+                                a.NetIp!.Contains(q))
+                    .OrderBy(a => a.AssetDesc)
+                    .Take(20)
+                    .ToListAsync();
+
+                result.Parts = await _context.EngParts
+                    .Include(p => p.Box).ThenInclude(b => b!.Line)
+                    .Where(p => p.PartName!.Contains(q) || p.PartRef!.Contains(q) || p.PartMfrRef!.Contains(q))
+                    .OrderBy(p => p.PartName)
+                    .Take(20)
+                    .ToListAsync();
+            }
+
+            if (canSeeTI || canSeeSvc)
+            {
+                result.Incidents = await _context.Incidents
+                    .Include(i => i.Assignee).ThenInclude(u => u!.Employee)
+                    .Include(i => i.ItEquip)
+                    .Include(i => i.EngAsset)
+                    .Where(i => i.IncidentTitle.Contains(q) || i.IncidentDesc!.Contains(q))
+                    .OrderByDescending(i => i.IncidentDate)
+                    .Take(10)
+                    .ToListAsync();
+            }
+
+            if (canSeeSvc)
+            {
+                result.Hospitals = await _context.Hospitals
+                    .Where(h => h.HospName!.Contains(q) || h.HospAddress!.Contains(q))
+                    .OrderBy(h => h.HospName)
+                    .Take(10)
+                    .ToListAsync();
+            }
+
+            ViewBag.Query = q;
+            return View(result);
+        }
+
+        // ===================== PDF EXPORT =====================
+
+        /// <summary>
+        /// Genera y descarga un reporte PDF del inventario. Incluye equipos IT (si rol TI) y activos
+        /// clinicos (si rol Servicio).
+        /// </summary>
+        public async Task<IActionResult> ExportPdf()
+        {
+            QuestPDF.Settings.License = LicenseType.Community;
+
+            bool isAdmin   = User.IsInRole(AppRoles.Admin);
+            bool canSeeTI  = isAdmin || User.IsInRole(AppRoles.TiAdmin) || User.IsInRole(AppRoles.TiTecnico) || User.IsInRole(AppRoles.TiConsulta) || User.IsInRole(AppRoles.SvcAdmin);
+            bool canSeeSvc = isAdmin || User.IsInRole(AppRoles.SvcAdmin) || User.IsInRole(AppRoles.SvcTecnico) || User.IsInRole(AppRoles.SvcConsulta) || User.IsInRole(AppRoles.TiAdmin);
+
+            var today = DateOnly.FromDateTime(DateTime.Today);
+
+            var equipos = canSeeTI
+                ? await _context.ItEquips
+                    .Include(e => e.Model).ThenInclude(m => m!.Brand).ThenInclude(b => b!.AssetType)
+                    .Include(e => e.Hospital)
+                    .Include(e => e.Warehouse)
+                    .Include(e => e.Site)
+                    .Where(e => e.Active)
+                    .OrderBy(e => e.Model!.Brand!.AssetType!.AssetsDesc).ThenBy(e => e.ItequipDesc)
+                    .ToListAsync()
+                : new List<ItEquip>();
+
+            var activos = canSeeSvc
+                ? await _context.EngAssets
+                    .Include(a => a.Line)
+                    .Include(a => a.Hospital)
+                    .Include(a => a.Warehouse)
+                    .Include(a => a.Model).ThenInclude(m => m!.Brand).ThenInclude(b => b!.AssetType)
+                    .Where(a => a.Active)
+                    .OrderBy(a => a.Line!.LineName).ThenBy(a => a.AssetDesc)
+                    .ToListAsync()
+                : new List<EngAsset>();
+
+            var company = await _context.Companies
+                .Where(c => c.Active).OrderBy(c => c.CompanyCode).FirstOrDefaultAsync();
+
+            var doc = QuestPDF.Fluent.Document.Create(container =>
+            {
+                container.Page(page =>
+                {
+                    page.Size(PageSizes.A4.Landscape());
+                    page.Margin(1.5f, Unit.Centimetre);
+                    page.DefaultTextStyle(x => x.FontSize(8));
+
+                    page.Header().Element(header =>
+                    {
+                        header.Row(row =>
+                        {
+                            row.RelativeItem().Column(col =>
+                            {
+                                col.Item().Text(company?.CompanyName ?? "EDInventory").FontSize(14).Bold();
+                                col.Item().Text("Reporte de Inventario").FontSize(11).SemiBold();
+                                col.Item().Text($"Generado: {DateTime.Now:dd/MM/yyyy HH:mm}").FontSize(7).FontColor(Colors.Grey.Medium);
+                            });
+                        });
+                    });
+
+                    page.Content().Column(col =>
+                    {
+                        if (canSeeTI && equipos.Any())
+                        {
+                            col.Item().PaddingTop(10).Text("Inventario TI").FontSize(11).Bold();
+                            col.Item().PaddingTop(4).Table(table =>
+                            {
+                                table.ColumnsDefinition(cols =>
+                                {
+                                    cols.RelativeColumn(3);
+                                    cols.RelativeColumn(2);
+                                    cols.RelativeColumn(2);
+                                    cols.RelativeColumn(2);
+                                    cols.RelativeColumn(2);
+                                    cols.RelativeColumn(2);
+                                });
+
+                                table.Header(hdr =>
+                                {
+                                    void HdrCell(string txt) =>
+                                        hdr.Cell().Background(Colors.Grey.Darken3)
+                                           .Padding(3).Text(txt).FontColor(Colors.White).Bold().FontSize(7);
+                                    HdrCell("Descripcion"); HdrCell("Tipo"); HdrCell("Serie");
+                                    HdrCell("Num. Equipo"); HdrCell("Ubicacion"); HdrCell("Estado");
+                                });
+
+                                bool altRow = false;
+                                foreach (var e in equipos)
+                                {
+                                    altRow = !altRow;
+                                    var bg = altRow ? Colors.Grey.Lighten4 : Colors.White;
+                                    string ubi = e.WareCode.HasValue ? $"Bodega: {e.Warehouse?.WareName}"
+                                        : e.HospCode.HasValue ? $"Hospital: {e.Hospital?.HospName}"
+                                        : e.SiteCode.HasValue ? $"Sede" : "—";
+
+                                    void Cell(string txt) =>
+                                        table.Cell().Background(bg).Padding(2).Text(txt ?? "—").FontSize(7);
+
+                                    Cell(e.ItequipDesc ?? "—");
+                                    Cell(e.Model?.Brand?.AssetType?.AssetsDesc ?? "—");
+                                    Cell(e.ItequipSn ?? "—");
+                                    Cell(e.ItequipNum ?? "—");
+                                    Cell(ubi);
+                                    Cell(e.EquipStatus.Replace("_", " "));
+                                }
+                            });
+                        }
+
+                        if (canSeeSvc && activos.Any())
+                        {
+                            col.Item().PaddingTop(16).Text("Activos Clinicos").FontSize(11).Bold();
+                            col.Item().PaddingTop(4).Table(table =>
+                            {
+                                table.ColumnsDefinition(cols =>
+                                {
+                                    cols.RelativeColumn(3);
+                                    cols.RelativeColumn(2);
+                                    cols.RelativeColumn(2);
+                                    cols.RelativeColumn(2);
+                                    cols.RelativeColumn(2);
+                                    cols.RelativeColumn(2);
+                                });
+
+                                table.Header(hdr =>
+                                {
+                                    void HdrCell(string txt) =>
+                                        hdr.Cell().Background(Colors.Orange.Darken3)
+                                           .Padding(3).Text(txt).FontColor(Colors.White).Bold().FontSize(7);
+                                    HdrCell("Descripcion"); HdrCell("Linea"); HdrCell("Serie");
+                                    HdrCell("Num. Activo"); HdrCell("Ubicacion"); HdrCell("Estado");
+                                });
+
+                                bool altRow = false;
+                                foreach (var a in activos)
+                                {
+                                    altRow = !altRow;
+                                    var bg = altRow ? Colors.Orange.Lighten5 : Colors.White;
+                                    string ubi = a.WareCode.HasValue ? $"Bodega: {a.Warehouse?.WareName}"
+                                        : a.HospCode.HasValue ? $"Hospital: {a.Hospital?.HospName}"
+                                        : "—";
+
+                                    void Cell(string txt) =>
+                                        table.Cell().Background(bg).Padding(2).Text(txt ?? "—").FontSize(7);
+
+                                    Cell(a.AssetDesc ?? "—");
+                                    Cell(a.Line?.LineName ?? "—");
+                                    Cell(a.AssetSN ?? "—");
+                                    Cell(a.AssetNum ?? "—");
+                                    Cell(ubi);
+                                    Cell(a.AssetStatus.Replace("_", " "));
+                                }
+                            });
+                        }
+                    });
+
+                    page.Footer().AlignCenter().Text(x =>
+                    {
+                        x.Span("Pagina ").FontSize(7).FontColor(Colors.Grey.Medium);
+                        x.CurrentPageNumber().FontSize(7).FontColor(Colors.Grey.Medium);
+                        x.Span(" de ").FontSize(7).FontColor(Colors.Grey.Medium);
+                        x.TotalPages().FontSize(7).FontColor(Colors.Grey.Medium);
+                    });
+                });
+            });
+
+            var bytes = doc.GeneratePdf();
+            var filename = $"Inventario_{DateTime.Today:yyyyMMdd}.pdf";
+            return File(bytes, "application/pdf", filename);
         }
 
         /// <summary>

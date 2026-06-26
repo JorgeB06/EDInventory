@@ -52,6 +52,7 @@
                                 <ul class="dropdown-menu">
                                     <li><a class="dropdown-item" asp-controller="Equipment" asp-action="Index"><i class="bi bi-list-ul me-1"></i>Inventario</a></li>
                                     <li><a class="dropdown-item" asp-controller="Equipment" asp-action="MaintenanceDue"><i class="bi bi-wrench-adjustable me-1"></i>Mantenimientos</a></li>
+                                    <li><a class="dropdown-item" asp-controller="Incident" asp-action="Index" asp-route-entityType="TI"><i class="bi bi-tools me-1"></i>Incidentes</a></li>
                                     @if (isTiWrite)
                                     {
                                         <li><a class="dropdown-item" asp-controller="Equipment" asp-action="MovementStation"><i class="bi bi-upc-scan me-1"></i>Estación de Movimiento</a></li>
@@ -76,6 +77,8 @@
                                     <li><a class="dropdown-item" asp-controller="Engineering" asp-action="Search"><i class="bi bi-search me-1"></i>Buscar Repuesto</a></li>
                                     <li><a class="dropdown-item" asp-controller="Engineering" asp-action="AssetsOnSite"><i class="bi bi-hospital me-1"></i>Activos en Sitio</a></li>
                                     <li><a class="dropdown-item" asp-controller="Engineering" asp-action="MaintenanceDue"><i class="bi bi-wrench-adjustable me-1"></i>Mantenimientos</a></li>
+                                    <li><a class="dropdown-item" asp-controller="Incident" asp-action="Index" asp-route-entityType="SVC"><i class="bi bi-tools me-1"></i>Incidentes</a></li>
+                                    <li><a class="dropdown-item" asp-controller="Calibration" asp-action="Index"><i class="bi bi-rulers me-1"></i>Calibraciones</a></li>
                                     @if (isSvcWrite)
                                     {
                                         <li><hr class="dropdown-divider"></li>
@@ -126,6 +129,24 @@
                         }
                     </ul>
                     <ul class="navbar-nav align-items-center">
+                        @if (isTiAny || canSeeSvc)
+                        {
+                            <li class="nav-item me-1">
+                                <a class="nav-link" asp-controller="Dashboard" asp-action="Search" title="Busqueda Global">
+                                    <i class="bi bi-search" style="font-size:1.15rem;"></i>
+                                </a>
+                            </li>
+                            <li class="nav-item me-1">
+                                <a class="nav-link" asp-controller="Dashboard" asp-action="Workload" title="Carga de Tecnicos">
+                                    <i class="bi bi-person-workspace" style="font-size:1.15rem;"></i>
+                                </a>
+                            </li>
+                            <li class="nav-item me-1">
+                                <a class="nav-link" asp-controller="Dashboard" asp-action="ExportPdf" title="Descargar PDF" target="_blank">
+                                    <i class="bi bi-file-earmark-pdf" style="font-size:1.15rem;"></i>
+                                </a>
+                            </li>
+                        }
                         <li class="nav-item me-1">
                             <button type="button" class="nav-link btn btn-link px-2 py-1"
                                     data-bs-toggle="modal" data-bs-target="#helpModal"
@@ -285,7 +306,10 @@
                       '<li class="mb-2"><i class="bi bi-geo-alt-fill text-primary me-2"></i>Asigne a <b>Hospital</b> (con departamento + posición), <b>Bodega</b> o <b>Sede</b>. Solo una a la vez.</li>' +
                       '<li class="mb-2"><i class="bi bi-clock-history text-info me-2"></i>El <b>historial de movimientos</b> se registra automáticamente al guardar cambios de ubicación.</li>' +
                       '<li class="mb-2"><i class="bi bi-box-arrow-right text-warning me-2"></i>Use <b>Retiro</b> para registrar la salida temporal del equipo.</li>' +
-                      '<li class="mb-2"><i class="bi bi-wrench-adjustable text-secondary me-2"></i>Vea y cree mantenimientos desde esta misma vista.</li>' +
+                      '<li class="mb-2"><i class="bi bi-wrench-adjustable text-secondary me-2"></i>Vea y cree <b>mantenimientos</b> desde esta misma vista.</li>' +
+                      '<li class="mb-2"><i class="bi bi-exclamation-triangle-fill text-danger me-2"></i><b>Incidentes:</b> registre y consulte reparaciones o fallas del equipo.</li>' +
+                      '<li class="mb-2"><i class="bi bi-file-earmark-text text-info me-2"></i><b>Documentos:</b> adjunte garantías, manuales o actas relacionadas.</li>' +
+                      '<li class="mb-2"><i class="bi bi-person-badge text-success me-2"></i><b>Responsable y Costo:</b> técnico asignado, costo de adquisición y depreciación estimada.</li>' +
                       '</ul>' +
                       '<div class="alert alert-warning py-2 mb-0 small"><i class="bi bi-exclamation-triangle me-1"></i>Los técnicos deben confirmar al guardar cambios en equipos existentes.</div>'
             },
@@ -363,6 +387,10 @@
                       '<li class="mb-2"><i class="bi bi-geo-alt-fill text-primary me-2"></i>Vea y cambie la <b>ubicación</b>: hospital + departamento, bodega o sede.</li>' +
                       '<li class="mb-2"><i class="bi bi-clock-history text-info me-2"></i>Historial de movimientos generado automáticamente al cambiar ubicación.</li>' +
                       '<li class="mb-2"><i class="bi bi-wrench-adjustable text-warning me-2"></i>Mantenimientos programados y ejecutados del activo.</li>' +
+                      '<li class="mb-2"><i class="bi bi-exclamation-triangle-fill text-danger me-2"></i><b>Incidentes:</b> registre y consulte reparaciones o incidencias del activo.</li>' +
+                      '<li class="mb-2"><i class="bi bi-rulers text-info me-2"></i><b>Calibraciones:</b> historial de calibraciones con resultado y próxima fecha.</li>' +
+                      '<li class="mb-2"><i class="bi bi-tools text-success me-2"></i><b>Repuestos compatibles:</b> vincule repuestos del inventario a este activo.</li>' +
+                      '<li class="mb-2"><i class="bi bi-person-badge text-secondary me-2"></i><b>Responsable y Costo:</b> técnico asignado, costo y depreciación lineal estimada.</li>' +
                       '</ul>'
             },
             'engineering/search': {
@@ -530,6 +558,95 @@
                 body: '<p class="text-muted mb-3">Tipos de identificación personal usados para empleados y contactos.</p>' +
                       '<ul class="list-unstyled">' +
                       '<li class="mb-2"><i class="bi bi-card-text text-primary me-2"></i>Ejemplos: Cédula, Pasaporte, DIMEX, etc.</li>' +
+                      '</ul>'
+            },
+            'incident/index': {
+                title: 'Incidentes',
+                body: '<p class="text-muted mb-3">Listado de incidentes (averías, reparaciones, casos) de equipos TI o activos clínicos.</p>' +
+                      '<ul class="list-unstyled">' +
+                      '<li class="mb-2"><i class="bi bi-funnel-fill text-primary me-2"></i>Filtre por <b>estado, prioridad, técnico asignado</b> o rango de fechas.</li>' +
+                      '<li class="mb-2"><i class="bi bi-exclamation-triangle-fill text-danger me-2"></i>Prioridad <b>CRITICA</b> en rojo — atención inmediata requerida.</li>' +
+                      '<li class="mb-2"><i class="bi bi-cursor-fill text-success me-2"></i>Haga clic en el título del incidente para ver su <b>detalle y seguimiento</b>.</li>' +
+                      '<li class="mb-2"><i class="bi bi-plus-circle text-info me-2"></i>Use <b>Nuevo Incidente</b> para registrar una nueva avería o caso de soporte.</li>' +
+                      '</ul>'
+            },
+            'incident/detail': {
+                title: 'Detalle de Incidente',
+                body: '<p class="text-muted mb-3">Registro completo de un incidente con seguimiento de estado y notas.</p>' +
+                      '<ul class="list-unstyled">' +
+                      '<li class="mb-2"><i class="bi bi-info-circle-fill text-primary me-2"></i>Datos del incidente: título, descripción, equipo/activo afectado, prioridad y técnico asignado.</li>' +
+                      '<li class="mb-2"><i class="bi bi-arrow-repeat text-warning me-2"></i><b>Cambiar estado:</b> ABIERTA → EN_PROCESO → RESUELTA → CERRADA.</li>' +
+                      '<li class="mb-2"><i class="bi bi-chat-left-text-fill text-info me-2"></i><b>Notas de seguimiento:</b> agregue actualizaciones y observaciones a medida que avanza la resolución.</li>' +
+                      '<li class="mb-2"><i class="bi bi-calendar-event text-success me-2"></i>Se registra la <b>fecha de resolución</b> automáticamente al cerrar el incidente.</li>' +
+                      '</ul>' +
+                      '<div class="alert alert-info py-2 mb-0 small"><i class="bi bi-lightbulb me-1"></i>Al resolver un incidente, si el equipo estaba EN_REPARACION, actualice también su estado en el inventario.</div>'
+            },
+            'incident/create': {
+                title: 'Nuevo Incidente',
+                body: '<p class="text-muted mb-3">Registre una nueva avería, caso de soporte o reparación.</p>' +
+                      '<ul class="list-unstyled">' +
+                      '<li class="mb-2"><i class="bi bi-laptop text-primary me-2"></i>Seleccione el <b>equipo TI</b> o <b>activo clínico</b> afectado (según el módulo).</li>' +
+                      '<li class="mb-2"><i class="bi bi-exclamation-triangle-fill text-danger me-2"></i>Asigne la <b>prioridad</b> correcta: BAJA / MEDIA / ALTA / CRITICA.</li>' +
+                      '<li class="mb-2"><i class="bi bi-person-fill text-success me-2"></i>Asigne un <b>técnico responsable</b> de la resolución.</li>' +
+                      '<li class="mb-2"><i class="bi bi-text-paragraph text-info me-2"></i>Incluya en la descripción toda la información disponible sobre la falla.</li>' +
+                      '</ul>'
+            },
+            'incident/edit': {
+                title: 'Editar Incidente',
+                body: '<p class="text-muted mb-3">Modifique los datos de un incidente existente.</p>' +
+                      '<ul class="list-unstyled">' +
+                      '<li class="mb-2"><i class="bi bi-pencil-fill text-primary me-2"></i>Actualice título, descripción, técnico asignado o prioridad.</li>' +
+                      '<li class="mb-2"><i class="bi bi-arrow-repeat text-warning me-2"></i>Para cambiar el <b>estado</b> del incidente, use el botón correspondiente en la vista de detalle.</li>' +
+                      '<li class="mb-2"><i class="bi bi-shield-lock text-danger me-2"></i>Requiere rol <b>Técnico</b> o superior de la división correspondiente.</li>' +
+                      '</ul>'
+            },
+            'calibration/index': {
+                title: 'Calibraciones',
+                body: '<p class="text-muted mb-3">Historial y programación de calibraciones de activos clínicos.</p>' +
+                      '<ul class="list-unstyled">' +
+                      '<li class="mb-2"><i class="bi bi-rulers text-primary me-2"></i>Muestra todas las calibraciones registradas con su resultado y próxima fecha.</li>' +
+                      '<li class="mb-2"><i class="bi bi-exclamation-triangle-fill text-danger me-2"></i>Calibraciones <b>vencidas o próximas a vencer</b> se resaltan en rojo/amarillo.</li>' +
+                      '<li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i>Resultado <b>APROBADA</b>: el activo cumple con los estándares de precisión.</li>' +
+                      '<li class="mb-2"><i class="bi bi-x-circle-fill text-warning me-2"></i>Resultado <b>RECHAZADA</b>: requiere ajuste o reparación antes del próximo uso.</li>' +
+                      '</ul>'
+            },
+            'calibration/create': {
+                title: 'Nueva Calibración',
+                body: '<p class="text-muted mb-3">Registre una calibración ejecutada sobre un activo clínico.</p>' +
+                      '<ul class="list-unstyled">' +
+                      '<li class="mb-2"><i class="bi bi-hospital text-primary me-2"></i>Seleccione el <b>activo clínico</b> al que se realizó la calibración.</li>' +
+                      '<li class="mb-2"><i class="bi bi-calendar-date text-info me-2"></i>Ingrese la <b>fecha de ejecución</b> y la <b>próxima fecha</b> programada.</li>' +
+                      '<li class="mb-2"><i class="bi bi-check2-all text-success me-2"></i>Registre el <b>resultado</b>: APROBADA, RECHAZADA o CONDICIONAL.</li>' +
+                      '<li class="mb-2"><i class="bi bi-building text-secondary me-2"></i>Indique el <b>laboratorio o empresa</b> que realizó la calibración si aplica.</li>' +
+                      '</ul>'
+            },
+            'calibration/edit': {
+                title: 'Editar Calibración',
+                body: '<p class="text-muted mb-3">Corrija o complete los datos de una calibración registrada.</p>' +
+                      '<ul class="list-unstyled">' +
+                      '<li class="mb-2"><i class="bi bi-pencil-fill text-primary me-2"></i>Actualice fechas, resultado u observaciones según sea necesario.</li>' +
+                      '<li class="mb-2"><i class="bi bi-shield-lock text-danger me-2"></i>Requiere rol <b>Servicio.Técnico</b> o superior.</li>' +
+                      '</ul>'
+            },
+            'dashboard/workload': {
+                title: 'Carga de Trabajo por Técnico',
+                body: '<p class="text-muted mb-3">Resumen de la carga activa de cada técnico según incidentes abiertos y mantenimientos pendientes.</p>' +
+                      '<ul class="list-unstyled">' +
+                      '<li class="mb-2"><i class="bi bi-person-workspace text-primary me-2"></i>Cada fila representa un <b>técnico activo</b> del sistema.</li>' +
+                      '<li class="mb-2"><i class="bi bi-exclamation-triangle-fill text-danger me-2"></i><b>Incidentes abiertos</b> (ABIERTA + EN_PROCESO) y cantidad de <b>alta prioridad</b>.</li>' +
+                      '<li class="mb-2"><i class="bi bi-wrench-adjustable text-warning me-2"></i>Mantenimientos <b>PENDIENTES</b> de TI y Servicio, con conteo de vencidos en rojo.</li>' +
+                      '<li class="mb-2"><i class="bi bi-bar-chart-fill text-success me-2"></i>La barra de <b>Carga</b> colorea verde (baja), amarillo (media) o rojo (alta).</li>' +
+                      '</ul>' +
+                      '<div class="alert alert-info py-2 mb-0 small"><i class="bi bi-lightbulb me-1"></i>Use esta vista para distribuir tareas equitativamente entre el equipo técnico.</div>'
+            },
+            'dashboard/search': {
+                title: 'Búsqueda Global',
+                body: '<p class="text-muted mb-3">Busque simultáneamente en todos los módulos del sistema con un solo término.</p>' +
+                      '<ul class="list-unstyled">' +
+                      '<li class="mb-2"><i class="bi bi-search text-primary me-2"></i>Busca en: <b>Equipos TI, Activos Clínicos, Repuestos, Incidentes y Hospitales</b>.</li>' +
+                      '<li class="mb-2"><i class="bi bi-upc-scan text-info me-2"></i>Puede buscar por <b>nombre, número de serie, hostname, IP o referencia</b>.</li>' +
+                      '<li class="mb-2"><i class="bi bi-layers-fill text-success me-2"></i>Los resultados se agrupan por tipo de entidad con un <b>contador por sección</b>.</li>' +
+                      '<li class="mb-2"><i class="bi bi-cursor-fill text-secondary me-2"></i>Cada resultado tiene un botón <i class="bi bi-eye"></i> para ir directamente al <b>detalle</b>.</li>' +
                       '</ul>'
             },
             '_default': {

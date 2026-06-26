@@ -1,0 +1,147 @@
+@model EDInventory.Models.Entities.Incident
+@{
+    ViewData["Title"] = $"Incidente #{Model.IncidentCode}";
+    bool canWrite = User.IsInRole(AppRoles.Admin) || User.IsInRole(AppRoles.TiAdmin) || User.IsInRole(AppRoles.SvcAdmin);
+    bool isOpen   = Model.IncidentStatus == "ABIERTA" || Model.IncidentStatus == "EN_PROCESO";
+
+    string PriBadge(string p) => p switch {
+        "CRITICA" => "bg-danger",
+        "ALTA"    => "bg-warning text-dark",
+        "MEDIA"   => "bg-info text-dark",
+        _         => "bg-secondary"
+    };
+    string StBadge(string s) => s switch {
+        "CERRADA"    => "bg-success",
+        "CANCELADA"  => "bg-secondary",
+        "EN_PROCESO" => "bg-warning text-dark",
+        _            => "bg-primary"
+    };
+
+    var reporterName = Model.Reporter?.Employee != null
+        ? $"{Model.Reporter.Employee.EmpName} {Model.Reporter.Employee.EmpSurname}"
+        : Model.Reporter?.UserLogin ?? "—";
+    var assigneeName = Model.Assignee?.Employee != null
+        ? $"{Model.Assignee.Employee.EmpName} {Model.Assignee.Employee.EmpSurname}"
+        : Model.Assignee?.UserLogin ?? "—";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="mb-0">
+        <i class="bi bi-tools me-2"></i>Incidente #@Model.IncidentCode
+        <span class="badge @StBadge(Model.IncidentStatus) ms-2">@Model.IncidentStatus</span>
+        <span class="badge @PriBadge(Model.IncidentPriority) ms-1">@Model.IncidentPriority</span>
+    </h4>
+    <div class="d-flex gap-2">
+        <a asp-action="Index" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-arrow-left me-1"></i>Lista
+        </a>
+        @if (canWrite && isOpen)
+        {
+            <a asp-action="Edit" asp-route-id="@Model.IncidentCode" class="btn btn-outline-primary btn-sm">
+                <i class="bi bi-pencil me-1"></i>Editar
+            </a>
+        }
+    </div>
+</div>
+
+<div class="row g-3">
+    <div class="col-md-8">
+        <div class="card shadow-sm">
+            <div class="card-header fw-bold">Descripcion del Incidente</div>
+            <div class="card-body">
+                <h5>@Model.IncidentTitle</h5>
+                <p class="text-muted">@(Model.IncidentDesc ?? "Sin descripcion.")</p>
+
+                @if (!string.IsNullOrEmpty(Model.IncidentResolution))
+                {
+                    <hr />
+                    <h6 class="text-success"><i class="bi bi-check-circle me-1"></i>Resolucion</h6>
+                    <p>@Model.IncidentResolution</p>
+                }
+
+                @if (!string.IsNullOrEmpty(Model.IncidentNotes))
+                {
+                    <hr />
+                    <h6 class="text-muted">Notas</h6>
+                    <p class="small text-muted">@Model.IncidentNotes</p>
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card shadow-sm mb-3">
+            <div class="card-header fw-bold">Datos del Incidente</div>
+            <div class="card-body p-0">
+                <table class="table table-sm mb-0">
+                    <tbody>
+                        <tr><th class="ps-3">Division</th><td><span class="badge @(Model.EntityType == "TI" ? "bg-primary" : "bg-success")">@Model.EntityType</span></td></tr>
+                        <tr><th class="ps-3">Tipo</th><td>@Model.IncidentType</td></tr>
+                        <tr><th class="ps-3">Prioridad</th><td><span class="badge @PriBadge(Model.IncidentPriority)">@Model.IncidentPriority</span></td></tr>
+                        <tr><th class="ps-3">Estado</th><td><span class="badge @StBadge(Model.IncidentStatus)">@Model.IncidentStatus</span></td></tr>
+                        <tr><th class="ps-3">Fecha</th><td>@Model.IncidentDate.ToString("dd/MM/yyyy")</td></tr>
+                        @if (Model.ClosedDate.HasValue)
+                        {
+                            <tr><th class="ps-3">Cerrado</th><td>@Model.ClosedDate.Value.ToString("dd/MM/yyyy")</td></tr>
+                        }
+                        <tr><th class="ps-3">Reportado por</th><td>@reporterName</td></tr>
+                        <tr><th class="ps-3">Asignado a</th><td>@assigneeName</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="card shadow-sm mb-3">
+            <div class="card-header fw-bold">Equipo / Activo</div>
+            <div class="card-body">
+                @if (Model.EntityType == "TI" && Model.ItEquip != null)
+                {
+                    <a asp-controller="Equipment" asp-action="Detail" asp-route-id="@Model.ItequipCode">
+                        @Model.ItEquip.ItequipDesc
+                    </a>
+                    <div class="small text-muted">
+                        @Model.ItEquip.Model?.Brand?.AssetType?.AssetsDesc — @(Model.ItEquip.Hospital?.HospName ?? "Sin ubicacion")
+                    </div>
+                }
+                else if (Model.EntityType == "SVC" && Model.EngAsset != null)
+                {
+                    <a asp-controller="Engineering" asp-action="AssetDetail" asp-route-id="@Model.AssetCode">
+                        @Model.EngAsset.AssetDesc
+                    </a>
+                    <div class="small text-muted">
+                        @Model.EngAsset.Line?.LineName — @(Model.EngAsset.Hospital?.HospName ?? "Sin ubicacion")
+                    </div>
+                }
+            </div>
+        </div>
+
+        @if (canWrite && isOpen)
+        {
+            <div class="card shadow-sm border-success">
+                <div class="card-header bg-success text-white fw-bold">Cerrar Incidente</div>
+                <div class="card-body">
+                    <form asp-action="Close" asp-route-id="@Model.IncidentCode" method="post">
+                        @Html.AntiForgeryToken()
+                        <div class="mb-2">
+                            <textarea name="resolution" class="form-control form-control-sm" rows="3"
+                                      placeholder="Descripcion de la resolucion..."></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-success btn-sm w-100">
+                            <i class="bi bi-check-circle me-1"></i>Marcar como Cerrado
+                        </button>
+                    </form>
+                </div>
+            </div>
+            <div class="mt-2">
+                <form asp-action="Cancel" asp-route-id="@Model.IncidentCode" method="post"
+                      onsubmit="return confirm('¿Cancelar este incidente?')">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="notes" value="Cancelado manualmente." />
+                    <button type="submit" class="btn btn-outline-danger btn-sm w-100">
+                        <i class="bi bi-x-circle me-1"></i>Cancelar Incidente
+                    </button>
+                </form>
+            </div>
+        }
+    </div>
+</div>

@@ -1,0 +1,85 @@
+@model EDInventory.Models.ViewModels.IncidentViewModel
+@{
+    ViewData["Title"] = $"Editar Incidente #{Model.IncidentCode}";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="mb-0"><i class="bi bi-tools me-2"></i>Editar Incidente #@Model.IncidentCode</h4>
+    <a asp-action="Detail" asp-route-id="@Model.IncidentCode" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-arrow-left me-1"></i>Detalle
+    </a>
+</div>
+
+<form asp-action="Edit" method="post">
+    @Html.AntiForgeryToken()
+    <input type="hidden" asp-for="IncidentCode" />
+    <div class="row g-3">
+        <div class="col-md-6">
+            <div class="card shadow-sm">
+                <div class="card-header fw-bold">Clasificacion</div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label asp-for="IncidentType" class="form-label fw-semibold">Tipo *</label>
+                        <select asp-for="IncidentType" class="form-select">
+                            <option value="CORRECTIVO">Correctivo</option>
+                            <option value="PREVENTIVO">Preventivo</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label asp-for="IncidentPriority" class="form-label fw-semibold">Prioridad *</label>
+                        <select asp-for="IncidentPriority" class="form-select">
+                            <option value="BAJA">Baja</option>
+                            <option value="MEDIA">Media</option>
+                            <option value="ALTA">Alta</option>
+                            <option value="CRITICA">Critica</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label asp-for="IncidentStatus" class="form-label fw-semibold">Estado</label>
+                        <select asp-for="IncidentStatus" class="form-select">
+                            <option value="ABIERTA">Abierta</option>
+                            <option value="EN_PROCESO">En Proceso</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label asp-for="AssignedUser" class="form-label">Asignado a</label>
+                        <select asp-for="AssignedUser" asp-items="Model.Users" class="form-select">
+                            <option value="">— Sin asignar —</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card shadow-sm h-100">
+                <div class="card-header fw-bold">Descripcion</div>
+                <div class="card-body d-flex flex-column gap-3">
+                    <div>
+                        <label asp-for="IncidentTitle" class="form-label fw-semibold">Titulo *</label>
+                        <input asp-for="IncidentTitle" class="form-control" maxlength="150" />
+                        <span asp-validation-for="IncidentTitle" class="text-danger small"></span>
+                    </div>
+                    <div>
+                        <label asp-for="IncidentDesc" class="form-label">Descripcion</label>
+                        <textarea asp-for="IncidentDesc" class="form-control" rows="3"></textarea>
+                    </div>
+                    <div>
+                        <label asp-for="IncidentResolution" class="form-label">Resolucion parcial</label>
+                        <textarea asp-for="IncidentResolution" class="form-control" rows="3"
+                                  placeholder="Avances o resolucion parcial..."></textarea>
+                    </div>
+                    <div>
+                        <label asp-for="IncidentNotes" class="form-label">Notas</label>
+                        <input asp-for="IncidentNotes" class="form-control" maxlength="300" />
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-12 d-flex gap-2 justify-content-end">
+            <a asp-action="Detail" asp-route-id="@Model.IncidentCode" class="btn btn-outline-secondary">Cancelar</a>
+            <button type="submit" class="btn btn-primary">
+                <i class="bi bi-check-lg me-1"></i>Guardar Cambios
+            </button>
+        </div>
+    </div>
+</form>

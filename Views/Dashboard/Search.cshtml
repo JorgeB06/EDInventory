@@ -1,0 +1,219 @@
+@model EDInventory.Models.ViewModels.GlobalSearchResult
+@{
+    ViewData["Title"] = "Busqueda Global";
+    string q = Model.Query ?? "";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="mb-0"><i class="bi bi-search me-2"></i>Busqueda Global</h4>
+</div>
+
+<form method="get" class="mb-4">
+    <div class="input-group input-group-lg">
+        <input name="q" type="search" class="form-control" placeholder="Buscar equipos, activos, repuestos, incidentes..." value="@q" autofocus />
+        <button type="submit" class="btn btn-primary">
+            <i class="bi bi-search me-1"></i>Buscar
+        </button>
+    </div>
+</form>
+
+@if (!string.IsNullOrEmpty(q))
+{
+    <div class="text-muted small mb-3">
+        @Model.TotalCount resultado(s) para <strong>"@q"</strong>
+    </div>
+
+    @if (Model.TotalCount == 0)
+    {
+        <div class="text-center py-5 text-muted">
+            <i class="bi bi-search fs-1 d-block mb-2"></i>
+            Sin resultados para "@q". Intente con otra palabra clave.
+        </div>
+    }
+    else
+    {
+        <!-- Equipos IT -->
+        @if (Model.Equipos.Any())
+        {
+            <div class="card shadow-sm mb-3">
+                <div class="card-header fw-bold bg-dark text-white">
+                    <i class="bi bi-laptop me-1"></i>Equipos IT <span class="badge bg-secondary ms-2">@Model.Equipos.Count</span>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover mb-0 small">
+                        <thead class="table-light">
+                            <tr><th>Descripcion</th><th>Tipo</th><th>Serie</th><th>Ubicacion</th><th>Estado</th><th></th></tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var e in Model.Equipos)
+                            {
+                                string ubi = e.WareCode.HasValue ? $"Bodega: {e.Warehouse?.WareName}"
+                                    : e.HospCode.HasValue ? $"Hospital: {e.Hospital?.HospName}"
+                                    : e.SiteCode.HasValue ? "Sede" : "—";
+                                string stClass = e.EquipStatus switch {
+                                    "EN_REPARACION" => "bg-danger", "EN_EVALUACION" => "bg-warning text-dark",
+                                    "DADO_DE_BAJA" => "bg-secondary", _ => "bg-success" };
+                                <tr>
+                                    <td class="fw-semibold">@e.ItequipDesc</td>
+                                    <td class="text-muted">@(e.Model?.Brand?.AssetType?.AssetsDesc ?? "—")</td>
+                                    <td class="font-monospace small">@(e.ItequipSn ?? "—")</td>
+                                    <td>@ubi</td>
+                                    <td><span class="badge @stClass small">@e.EquipStatus.Replace("_"," ")</span></td>
+                                    <td>
+                                        <a asp-controller="Equipment" asp-action="Detail" asp-route-id="@e.ItequipCode"
+                                           class="btn btn-outline-secondary btn-sm py-0 px-1">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        }
+
+        <!-- Activos Clinicos -->
+        @if (Model.Assets.Any())
+        {
+            <div class="card shadow-sm mb-3">
+                <div class="card-header fw-bold" style="background:#5a2d00;color:white;">
+                    <i class="bi bi-hospital me-1"></i>Activos Clinicos <span class="badge bg-secondary ms-2">@Model.Assets.Count</span>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover mb-0 small">
+                        <thead class="table-light">
+                            <tr><th>Descripcion</th><th>Linea</th><th>Serie</th><th>Ubicacion</th><th>Estado</th><th></th></tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var a in Model.Assets)
+                            {
+                                string ubi = a.WareCode.HasValue ? $"Bodega: {a.Warehouse?.WareName}"
+                                    : a.HospCode.HasValue ? $"Hospital: {a.Hospital?.HospName}" : "—";
+                                string stClass = a.AssetStatus switch {
+                                    "EN_REPARACION" => "bg-danger", "EN_EVALUACION" => "bg-warning text-dark",
+                                    "DADO_DE_BAJA" => "bg-secondary", _ => "bg-success" };
+                                <tr>
+                                    <td class="fw-semibold">@a.AssetDesc</td>
+                                    <td><span class="badge bg-warning text-dark">@(a.Line?.LineName ?? "—")</span></td>
+                                    <td class="font-monospace small">@(a.AssetSN ?? "—")</td>
+                                    <td>@ubi</td>
+                                    <td><span class="badge @stClass small">@a.AssetStatus.Replace("_"," ")</span></td>
+                                    <td>
+                                        <a asp-controller="Engineering" asp-action="AssetDetail" asp-route-id="@a.AssetCode"
+                                           class="btn btn-outline-secondary btn-sm py-0 px-1">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        }
+
+        <!-- Repuestos -->
+        @if (Model.Parts.Any())
+        {
+            <div class="card shadow-sm mb-3">
+                <div class="card-header fw-bold bg-dark text-white">
+                    <i class="bi bi-tools me-1"></i>Repuestos <span class="badge bg-secondary ms-2">@Model.Parts.Count</span>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover mb-0 small">
+                        <thead class="table-light">
+                            <tr><th>Repuesto</th><th>Ref. Interna</th><th>Linea</th><th>Caja</th><th>Stock</th><th></th></tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var p in Model.Parts)
+                            {
+                                var qtyClass = p.PartQty == 0 ? "text-danger" : p.PartQty <= 2 ? "text-warning" : "text-success";
+                                <tr>
+                                    <td class="fw-semibold">@p.PartName</td>
+                                    <td class="font-monospace small">@(p.PartRef ?? "—")</td>
+                                    <td><span class="badge bg-warning text-dark">@(p.Box?.Line?.LineName ?? "—")</span></td>
+                                    <td>Caja @p.Box?.BoxNumber</td>
+                                    <td><span class="fw-bold @qtyClass">@p.PartQty</span></td>
+                                    <td>
+                                        <a asp-controller="Engineering" asp-action="BoxDetail" asp-route-id="@p.BoxCode"
+                                           class="btn btn-outline-secondary btn-sm py-0 px-1">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        }
+
+        <!-- Incidentes -->
+        @if (Model.Incidents.Any())
+        {
+            <div class="card shadow-sm mb-3">
+                <div class="card-header fw-bold bg-danger text-white">
+                    <i class="bi bi-exclamation-triangle me-1"></i>Incidentes <span class="badge bg-secondary ms-2">@Model.Incidents.Count</span>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover mb-0 small">
+                        <thead class="table-light">
+                            <tr><th>Titulo</th><th>Equipo/Activo</th><th>Prioridad</th><th>Estado</th><th>Fecha</th><th></th></tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var i in Model.Incidents)
+                            {
+                                string prClass = i.IncidentPriority == "CRITICA" ? "bg-danger" : i.IncidentPriority == "ALTA" ? "bg-warning text-dark" : "bg-secondary";
+                                string stClass2 = i.IncidentStatus == "ABIERTA" ? "bg-danger" : i.IncidentStatus == "EN_PROCESO" ? "bg-warning text-dark" : "bg-success";
+                                <tr>
+                                    <td class="fw-semibold">@i.IncidentTitle</td>
+                                    <td class="text-muted">@(i.ItEquip?.ItequipDesc ?? i.EngAsset?.AssetDesc ?? "—")</td>
+                                    <td><span class="badge @prClass small">@i.IncidentPriority</span></td>
+                                    <td><span class="badge @stClass2 small">@i.IncidentStatus.Replace("_"," ")</span></td>
+                                    <td>@i.IncidentDate.ToString("dd/MM/yyyy")</td>
+                                    <td>
+                                        <a asp-controller="Incident" asp-action="Detail" asp-route-id="@i.IncidentCode"
+                                           class="btn btn-outline-secondary btn-sm py-0 px-1">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        }
+
+        <!-- Hospitales -->
+        @if (Model.Hospitals.Any())
+        {
+            <div class="card shadow-sm mb-3">
+                <div class="card-header fw-bold bg-info text-dark">
+                    <i class="bi bi-hospital me-1"></i>Hospitales <span class="badge bg-secondary ms-2">@Model.Hospitals.Count</span>
+                </div>
+                <ul class="list-group list-group-flush">
+                    @foreach (var h in Model.Hospitals)
+                    {
+                        <li class="list-group-item small d-flex justify-content-between align-items-center">
+                            <span><i class="bi bi-hospital me-1 text-muted"></i>@h.HospName <span class="text-muted">— @h.HospAddress</span></span>
+                            <a asp-controller="Hospital" asp-action="Detail" asp-route-id="@h.HospCode"
+                               class="btn btn-outline-secondary btn-sm py-0 px-1">
+                                <i class="bi bi-eye"></i>
+                            </a>
+                        </li>
+                    }
+                </ul>
+            </div>
+        }
+    }
+}
+else
+{
+    <div class="text-center py-5 text-muted">
+        <i class="bi bi-search fs-1 d-block mb-2"></i>
+        Ingrese un término para buscar en todo el inventario.
+        <div class="mt-2 small">Puede buscar por nombre, número de serie, hostname o IP.</div>
+    </div>
+}

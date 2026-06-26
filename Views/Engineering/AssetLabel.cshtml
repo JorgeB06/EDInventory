@@ -1,10 +1,9 @@
-@model EDInventory.Models.Entities.ItEquip
+@model EDInventory.Models.Entities.EngAsset
 @{
-    ViewData["Title"] = "Etiqueta - " + Model.ItequipDesc;
+    ViewData["Title"] = "Etiqueta - " + Model.AssetDesc;
     Layout = null;
 
-    var company      = ViewBag.Company as EDInventory.Models.Entities.Company;
-    var lastHospMove = ViewBag.LastHospMove as EDInventory.Models.Entities.ItEquipHistory;
+    var company = ViewBag.Company as EDInventory.Models.Entities.Company;
 
     string ubicacion = Model.HospCode.HasValue
         ? $"{Model.Hospital?.HospName} — {Model.HospitalDepartment?.HospDepName ?? ""}"
@@ -16,12 +15,11 @@
 <html lang="es">
 <head>
     <meta charset="utf-8" />
-    <title>Etiqueta — @Model.ItequipDesc</title>
+    <title>Etiqueta — @Model.AssetDesc</title>
     <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
-        /* ── Pagina de impresion: 4x4 pulgadas, sin margenes ── */
         @@page {
             size: 4in 4in;
             margin: 0;
@@ -37,7 +35,6 @@
             gap: 16px;
         }
 
-        /* ── Controles (solo pantalla) ── */
         .controls {
             display: flex;
             gap: 10px;
@@ -56,11 +53,10 @@
             font-size: 14px;
             font-weight: bold;
         }
-        .btn-print { background: #0d6efd; color: white; }
+        .btn-print { background: #8a4800; color: white; }
         .btn-back  { background: #6c757d; color: white; }
         .controls span { font-size: 12px; color: #666; }
 
-        /* ── Contenedor de preview ── */
         .label-preview {
             background: white;
             border-radius: 6px;
@@ -68,7 +64,6 @@
             padding: 6px;
         }
 
-        /* ── Etiqueta 4x4 pulgadas ── */
         .label {
             width: 4in;
             height: 4in;
@@ -80,7 +75,6 @@
             overflow: hidden;
         }
 
-        /* Encabezado: empresa + tag TI */
         .lbl-header {
             display: flex;
             justify-content: space-between;
@@ -97,7 +91,7 @@
             line-height: 1.2;
         }
         .lbl-tag {
-            background: #111;
+            background: #8a4800;
             color: white;
             font-size: 8pt;
             font-weight: bold;
@@ -106,7 +100,6 @@
             white-space: nowrap;
         }
 
-        /* Descripcion del equipo */
         .lbl-desc {
             font-size: 10pt;
             font-weight: bold;
@@ -116,7 +109,6 @@
             text-overflow: ellipsis;
         }
 
-        /* Grid de campos */
         .lbl-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -139,14 +131,12 @@
         }
         .lbl-field.span2 .f-val { font-size: 9pt; }
 
-        /* Separador antes del barcode */
         .lbl-divider {
             border: none;
             border-top: 2px solid #888;
             margin: 3mm 0 2mm;
         }
 
-        /* Codigo de barras */
         .lbl-barcode {
             display: flex;
             flex-direction: column;
@@ -165,7 +155,6 @@
             margin-top: 1mm;
         }
 
-        /* ── Impresion ── */
         @@media print {
             body       { background: white; padding: 0; gap: 0; }
             .controls  { display: none !important; }
@@ -177,37 +166,32 @@
 </head>
 <body>
 
-<!-- Controles -->
 <div class="controls">
     <button class="btn-print" onclick="window.print()">&#128438;&nbsp; Imprimir etiqueta</button>
     <button class="btn-back"  onclick="window.close()">&#8592;&nbsp; Cerrar</button>
     <span>Formato: 4 &times; 4 pulgadas &mdash; Zebra GK420D</span>
 </div>
 
-<!-- Preview de la etiqueta -->
 <div class="label-preview">
 <div class="label">
 
-    <!-- Encabezado -->
     <div class="lbl-header">
-        <div class="lbl-company">@(company?.CompanyName ?? "Departamento TI")</div>
-        <div class="lbl-tag">TI &nbsp;/&nbsp; Inventario</div>
+        <div class="lbl-company">@(company?.CompanyName ?? "Ingenieria")</div>
+        <div class="lbl-tag">ACTIVO CLINICO</div>
     </div>
 
-    <!-- Descripcion del equipo -->
-    <div class="lbl-desc" title="@Model.ItequipDesc">@Model.ItequipDesc</div>
+    <div class="lbl-desc" title="@Model.AssetDesc">@Model.AssetDesc</div>
 
-    <!-- Campos en grid -->
     <div class="lbl-grid">
 
         <div class="lbl-field">
-            <div class="f-lbl">Tipo de Activo</div>
-            <div class="f-val">@(Model.Model?.Brand?.AssetType?.AssetsDesc ?? "—")</div>
+            <div class="f-lbl">Linea de Servicio</div>
+            <div class="f-val">@(Model.Line?.LineName ?? "—")</div>
         </div>
 
         <div class="lbl-field">
-            <div class="f-lbl">Num. Equipo</div>
-            <div class="f-val">@(Model.ItequipNum ?? "—")</div>
+            <div class="f-lbl">Num. Activo</div>
+            <div class="f-val">@(Model.AssetNum ?? "—")</div>
         </div>
 
         <div class="lbl-field">
@@ -221,15 +205,13 @@
         </div>
 
         <div class="lbl-field">
-            <div class="f-lbl">Fecha salida de bodega</div>
-            <div class="f-val">
-                @(lastHospMove != null ? lastHospMove.HistDate.ToString("dd/MM/yyyy") : "—")
-            </div>
+            <div class="f-lbl">Garantia</div>
+            <div class="f-val">@(Model.AssetGnum ?? "—")</div>
         </div>
 
         <div class="lbl-field">
-            <div class="f-lbl">Garantia</div>
-            <div class="f-val">@(Model.ItequipGnum ?? "—")</div>
+            <div class="f-lbl">Tipo</div>
+            <div class="f-val">@(Model.Model?.Brand?.AssetType?.AssetsDesc ?? "—")</div>
         </div>
 
         @if (!string.IsNullOrWhiteSpace(Model.NetHostname))
@@ -240,21 +222,6 @@
             </div>
         }
 
-        @if (lastHospMove != null)
-        {
-            <div class="lbl-field span2">
-                <div class="f-lbl">Último movimiento</div>
-                <div class="f-val">
-                    @(lastHospMove.Hospital?.HospName ?? "—")
-                    @if (lastHospMove.HospitalDepartment != null)
-                    {
-                        <span style="font-weight:500"> — @lastHospMove.HospitalDepartment.HospDepName</span>
-                    }
-                    <span style="font-size:8pt; font-weight:400; color:#555"> (@lastHospMove.HistDate.ToString("dd/MM/yyyy"))</span>
-                </div>
-            </div>
-        }
-
         <div class="lbl-field span2">
             <div class="f-lbl">Ubicacion actual</div>
             <div class="f-val">@ubicacion</div>
@@ -262,13 +229,17 @@
 
     </div>
 
-    <!-- Barcode -->
     <hr class="lbl-divider" />
     <div class="lbl-barcode">
-        @if (!string.IsNullOrWhiteSpace(Model.ItequipSn))
+        @if (!string.IsNullOrWhiteSpace(Model.AssetSN))
         {
             <svg id="barcode"></svg>
-            <div class="sn">S/N: @Model.ItequipSn</div>
+            <div class="sn">S/N: @Model.AssetSN</div>
+        }
+        else if (!string.IsNullOrWhiteSpace(Model.AssetNum))
+        {
+            <svg id="barcode"></svg>
+            <div class="sn">Num: @Model.AssetNum</div>
         }
         else
         {
@@ -279,10 +250,13 @@
 </div>
 </div>
 
-@if (!string.IsNullOrWhiteSpace(Model.ItequipSn))
+@{
+    string? barcodeVal = !string.IsNullOrWhiteSpace(Model.AssetSN) ? Model.AssetSN : Model.AssetNum;
+}
+@if (!string.IsNullOrWhiteSpace(barcodeVal))
 {
     <script>
-        JsBarcode("#barcode", "@Model.ItequipSn", {
+        JsBarcode("#barcode", "@barcodeVal", {
             format: "CODE128",
             width: 2.2,
             height: 55,

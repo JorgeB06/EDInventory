@@ -77,6 +77,15 @@
                     <option value="true" selected="@(ViewBag.SinLicitacion == true)">Sin licitacion</option>
                 </select>
             </div>
+            <div class="col-md-2">
+                <select name="status" class="form-select form-select-sm">
+                    <option value="">-- Estado Equipo --</option>
+                    <option value="EN_SERVICIO"   selected="@(ViewBag.Status == "EN_SERVICIO")">En Servicio</option>
+                    <option value="EN_REPARACION" selected="@(ViewBag.Status == "EN_REPARACION")">En Reparacion</option>
+                    <option value="EN_EVALUACION" selected="@(ViewBag.Status == "EN_EVALUACION")">En Evaluacion</option>
+                    <option value="DADO_DE_BAJA"  selected="@(ViewBag.Status == "DADO_DE_BAJA")">Dado de Baja</option>
+                </select>
+            </div>
             <div class="col-md-2 d-flex gap-1">
                 <button type="submit" class="btn btn-primary btn-sm">
                     <i class="bi bi-search"></i>
@@ -115,7 +124,17 @@
                                   eq.Licitacion.LicEnd <= DateOnly.FromDateTime(DateTime.Today.AddDays(eq.Licitacion.LicWarnDays));
                     <tr class="@(licPostponed ? "table-warning" : licExpired ? "table-danger" : licSoon ? "table-warning" : "")">
                         <td>@eq.ItequipCode</td>
-                        <td class="fw-semibold">@eq.ItequipDesc</td>
+                        <td class="fw-semibold">
+                            @eq.ItequipDesc
+                            @if (eq.NetEnabled)
+                            {
+                                <i class="bi bi-wifi text-success ms-1" title="En red@(!string.IsNullOrEmpty(eq.NetHostname) ? " — " + eq.NetHostname : "")@(!string.IsNullOrEmpty(eq.NetIp) ? " | " + eq.NetIp : "")"></i>
+                            }
+                            @if (eq.NetInDomain)
+                            {
+                                <i class="bi bi-building-check text-info ms-1" title="En dominio"></i>
+                            }
+                        </td>
                         <td>
                             <span class="text-muted">@eq.Model?.Brand?.AssetType?.AssetsDesc</span><br />
                             @eq.Model?.Brand?.BrandDesc — @eq.Model?.ModelDesc
@@ -163,6 +182,12 @@
                             <span class="badge @(eq.Active ? "bg-success" : "bg-secondary")">
                                 @(eq.Active ? "Activo" : "Inactivo")
                             </span>
+                            @{
+                                var stBadge = eq.EquipStatus switch { "EN_REPARACION" => "bg-danger", "EN_EVALUACION" => "bg-warning text-dark", "DADO_DE_BAJA" => "bg-secondary", _ => "" };
+                                if (!string.IsNullOrEmpty(stBadge)) {
+                                    <br /><span class="badge @stBadge mt-1">@eq.EquipStatus.Replace("_", " ")</span>
+                                }
+                            }
                         </td>
                         <td class="text-center">
                             <a asp-action="Detail" asp-route-id="@eq.ItequipCode"

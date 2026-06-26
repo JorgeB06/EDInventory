@@ -1,0 +1,103 @@
+@{
+    ViewData["Title"] = "Carga de Técnicos";
+    var workload = ViewBag.Workload as dynamic ?? new List<dynamic>();
+    bool canSeeTI  = ViewBag.CanSeeTI  == true;
+    bool canSeeSvc = ViewBag.CanSeeSvc == true;
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="mb-0"><i class="bi bi-person-workspace me-2"></i>Carga de Trabajo por Técnico</h4>
+    <div class="d-flex gap-2">
+        <span class="badge bg-danger fs-6">@ViewBag.TotalOpen incidentes abiertos</span>
+        @if (canSeeTI)  { <span class="badge bg-primary fs-6">@ViewBag.TiMaintTotal mantenimientos TI</span> }
+        @if (canSeeSvc) { <span class="badge bg-warning text-dark fs-6">@ViewBag.SvcMaintTotal mantenimientos SVC</span> }
+    </div>
+</div>
+
+<div class="table-responsive">
+    <table class="table table-hover table-sm">
+        <thead class="table-dark">
+            <tr>
+                <th>Técnico</th>
+                <th class="text-center">Incidentes Abiertos</th>
+                <th class="text-center">Alta Prioridad</th>
+                @if (canSeeTI)  { <th class="text-center">Mantenimientos TI</th><th class="text-center">Vencidos TI</th> }
+                @if (canSeeSvc) { <th class="text-center">Mantenimientos SVC</th><th class="text-center">Vencidos SVC</th> }
+                <th class="text-center">Total</th>
+                <th class="text-center">Carga</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var w in workload)
+            {
+                string rowClass = (int)w.Total == 0 ? "" : (int)w.Total >= 10 ? "table-danger" : (int)w.Total >= 5 ? "table-warning" : "";
+                int pct = (int)w.Total == 0 ? 0 : Math.Min(100, (int)w.Total * 10);
+                string barClass = pct >= 80 ? "bg-danger" : pct >= 50 ? "bg-warning" : "bg-success";
+                <tr class="@rowClass">
+                    <td class="fw-semibold">
+                        <i class="bi bi-person-circle me-1 text-secondary"></i>
+                        @(w.User?.Employee != null
+                            ? $"{w.User.Employee.EmpName} {w.User.Employee.EmpSurname}"
+                            : w.User?.UserLogin ?? "—")
+                    </td>
+                    <td class="text-center">
+                        @if ((int)w.Incidents > 0)
+                        {
+                            <span class="badge bg-danger">@w.Incidents</span>
+                        }
+                        else
+                        {
+                            <span class="text-muted">0</span>
+                        }
+                    </td>
+                    <td class="text-center">
+                        @if ((int)w.IncidentsHigh > 0)
+                        {
+                            <span class="badge bg-danger"><i class="bi bi-exclamation-triangle-fill me-1"></i>@w.IncidentsHigh</span>
+                        }
+                        else
+                        {
+                            <span class="text-muted">0</span>
+                        }
+                    </td>
+                    @if (canSeeTI)
+                    {
+                        <td class="text-center">@((int)w.TiMaints > 0 ? $"{w.TiMaints}" : "—")</td>
+                        <td class="text-center">
+                            @if ((int)w.TiMaintsOverdue > 0)
+                            {
+                                <span class="badge bg-danger">@w.TiMaintsOverdue</span>
+                            }
+                            else { <span class="text-muted">0</span> }
+                        </td>
+                    }
+                    @if (canSeeSvc)
+                    {
+                        <td class="text-center">@((int)w.SvcMaints > 0 ? $"{w.SvcMaints}" : "—")</td>
+                        <td class="text-center">
+                            @if ((int)w.SvcMaintsOverdue > 0)
+                            {
+                                <span class="badge bg-warning text-dark">@w.SvcMaintsOverdue</span>
+                            }
+                            else { <span class="text-muted">0</span> }
+                        </td>
+                    }
+                    <td class="text-center fw-bold">@w.Total</td>
+                    <td style="min-width:100px;">
+                        <div class="progress" style="height:14px;">
+                            <div class="progress-bar @barClass" style="width:@(pct)%">
+                                @if (pct > 20) { <span class="small">@w.Total</span> }
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+<div class="mt-3 small text-muted">
+    <i class="bi bi-info-circle me-1"></i>
+    Se muestran todos los técnicos activos. Incidentes en estados <strong>ABIERTA</strong> y <strong>EN_PROCESO</strong>.
+    Mantenimientos en estado <strong>PENDIENTE</strong>.
+</div>

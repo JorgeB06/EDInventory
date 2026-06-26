@@ -127,6 +127,20 @@ namespace EDInventory.Data
         /// <summary>Mantenimientos programados de activos clínicos (TB_ENG_MAINT).</summary>
         public DbSet<EngMaintenance> EngMaintenances { get; set; }
 
+        // ── Características de alta prioridad ─────────────────────────────────
+
+        /// <summary>Incidentes y reparaciones de equipos/activos (TB_INCIDENT).</summary>
+        public DbSet<Incident> Incidents { get; set; }
+
+        /// <summary>Calibraciones de activos clínicos (TB_CALIBRATION).</summary>
+        public DbSet<Calibration> Calibrations { get; set; }
+
+        /// <summary>Documentos adjuntos a equipos o activos (TB_DOCUMENT).</summary>
+        public DbSet<Document> Documents { get; set; }
+
+        /// <summary>Repuestos compatibles vinculados a activos clinicos (TB_ASSET_PART).</summary>
+        public DbSet<AssetPart> AssetParts { get; set; }
+
         /// <summary>
         /// Aplica configuraciones de modelo adicionales:
         /// clave primaria de <see cref="DetailGat"/> y longitud máxima del hash BCrypt en <see cref="User"/>.
