@@ -2,16 +2,28 @@
 @{ ViewData["Title"] = "Programar Mantenimiento"; }
 
 <div class="d-flex align-items-center mb-3 gap-2">
-    <a asp-action="AssetDetail" asp-route-id="@Model.AssetCode" class="btn btn-outline-secondary btn-sm">
-        <i class="bi bi-arrow-left"></i>
-    </a>
+    @if (Model.AssetCode > 0)
+    {
+        <a asp-action="AssetDetail" asp-route-id="@Model.AssetCode" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-arrow-left"></i>
+        </a>
+    }
+    else
+    {
+        <a asp-action="MaintenanceDue" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-arrow-left"></i>
+        </a>
+    }
     <h4 class="mb-0"><i class="bi bi-wrench-adjustable me-2 text-primary"></i>Programar Mantenimiento</h4>
 </div>
 
-<div class="alert alert-light border mb-3">
-    <i class="bi bi-hospital me-1 text-primary"></i>
-    <strong>Equipo:</strong> @Model.AssetDesc
-</div>
+@if (Model.AssetCode > 0)
+{
+    <div class="alert alert-light border mb-3">
+        <i class="bi bi-hospital me-1 text-primary"></i>
+        <strong>Activo:</strong> @Model.AssetDesc
+    </div>
+}
 
 <div class="row justify-content-center">
     <div class="col-md-7 col-lg-6">
@@ -19,7 +31,20 @@
             <div class="card-body">
                 <form asp-action="MaintCreate" method="post">
                     @Html.AntiForgeryToken()
-                    <input type="hidden" asp-for="AssetCode" />
+                    @if (Model.AssetCode > 0)
+                    {
+                        <input type="hidden" asp-for="AssetCode" />
+                    }
+                    else
+                    {
+                        <div class="mb-3">
+                            <label asp-for="AssetCode" class="form-label fw-semibold">Activo Clinico *</label>
+                            <select asp-for="AssetCode" asp-items="Model.Assets" class="form-select">
+                                <option value="">— Seleccione un activo —</option>
+                            </select>
+                            <span asp-validation-for="AssetCode" class="text-danger small"></span>
+                        </div>
+                    }
 
                     <div class="mb-3">
                         <label class="form-label fw-semibold">Tipo de mantenimiento</label>
@@ -70,7 +95,14 @@
                         <button type="submit" class="btn btn-primary flex-grow-1">
                             <i class="bi bi-calendar-check me-1"></i>Programar
                         </button>
-                        <a asp-action="AssetDetail" asp-route-id="@Model.AssetCode" class="btn btn-outline-secondary">Cancelar</a>
+                        @if (Model.AssetCode > 0)
+                        {
+                            <a asp-action="AssetDetail" asp-route-id="@Model.AssetCode" class="btn btn-outline-secondary">Cancelar</a>
+                        }
+                        else
+                        {
+                            <a asp-action="MaintenanceDue" class="btn btn-outline-secondary">Cancelar</a>
+                        }
                     </div>
                 </form>
             </div>

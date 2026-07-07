@@ -1,0 +1,118 @@
+@{
+    ViewData["Title"] = "Mantenimientos y Calibraciones";
+    bool canSeeTI  = (bool)(ViewBag.CanSeeTI  ?? false);
+    bool canSeeSvc = (bool)(ViewBag.CanSeeSvc ?? false);
+    int mantsTIPendientes  = canSeeTI  ? (int)(ViewBag.MantsTIPendientes  ?? 0) : 0;
+    int mantsTIVencidos    = canSeeTI  ? (int)(ViewBag.MantsTIVencidos    ?? 0) : 0;
+    int mantsSvcPendientes = canSeeSvc ? (int)(ViewBag.MantsSvcPendientes ?? 0) : 0;
+    int mantsSvcVencidos   = canSeeSvc ? (int)(ViewBag.MantsSvcVencidos   ?? 0) : 0;
+    int calibPendientes    = canSeeSvc ? (int)(ViewBag.CalibPendientes    ?? 0) : 0;
+    int calibVencidas      = canSeeSvc ? (int)(ViewBag.CalibVencidas      ?? 0) : 0;
+}
+
+<h4 class="mb-4"><i class="bi bi-wrench-adjustable-circle me-2"></i>Mantenimientos y Calibraciones</h4>
+
+<div class="row g-3">
+    @if (canSeeTI)
+    {
+        <div class="col-md-4">
+            <a asp-controller="Equipment" asp-action="MaintenanceDue" class="text-decoration-none">
+                <div class="card shadow-sm h-100 border-0" style="border-left:4px solid #4d8fff !important;">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center gap-3 mb-3">
+                            <div class="bg-primary bg-opacity-10 rounded p-3">
+                                <i class="bi bi-laptop text-primary fs-3"></i>
+                            </div>
+                            <div>
+                                <div class="fw-bold fs-5 text-dark">Mantenimientos TI</div>
+                                <div class="text-muted small">Equipos de tecnología</div>
+                            </div>
+                        </div>
+                        @if (mantsTIVencidos > 0)
+                        {
+                            <span class="badge bg-danger">@mantsTIVencidos vencido(s)</span>
+                        }
+                        else if (mantsTIPendientes > 0)
+                        {
+                            <span class="badge bg-warning text-dark">@mantsTIPendientes pendiente(s)</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-success">Al día</span>
+                        }
+                    </div>
+                </div>
+            </a>
+        </div>
+    }
+    @if (canSeeSvc)
+    {
+        <div class="col-md-4">
+            <a asp-controller="Engineering" asp-action="MaintenanceDue" class="text-decoration-none">
+                <div class="card shadow-sm h-100 border-0" style="border-left:4px solid #ffc107 !important;">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center gap-3 mb-3">
+                            <div class="bg-warning bg-opacity-10 rounded p-3">
+                                <i class="bi bi-heart-pulse text-warning fs-3"></i>
+                            </div>
+                            <div>
+                                <div class="fw-bold fs-5 text-dark">Mantenimientos Servicio</div>
+                                <div class="text-muted small">Activos clínicos</div>
+                            </div>
+                        </div>
+                        @if (mantsSvcVencidos > 0)
+                        {
+                            <span class="badge bg-danger">@mantsSvcVencidos vencido(s)</span>
+                        }
+                        else if (mantsSvcPendientes > 0)
+                        {
+                            <span class="badge bg-warning text-dark">@mantsSvcPendientes pendiente(s)</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-success">Al día</span>
+                        }
+                    </div>
+                </div>
+            </a>
+        </div>
+
+        <div class="col-md-4">
+            <a asp-controller="Calibration" asp-action="Index" class="text-decoration-none">
+                <div class="card shadow-sm h-100 border-0" style="border-left:4px solid #0dcaf0 !important;">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center gap-3 mb-3">
+                            <div class="bg-info bg-opacity-10 rounded p-3">
+                                <i class="bi bi-rulers text-info fs-3"></i>
+                            </div>
+                            <div>
+                                <div class="fw-bold fs-5 text-dark">Calibraciones</div>
+                                <div class="text-muted small">Activos clínicos</div>
+                            </div>
+                        </div>
+                        @if (calibVencidas > 0)
+                        {
+                            <span class="badge bg-danger">@calibVencidas vencida(s)</span>
+                        }
+                        else if (calibPendientes > 0)
+                        {
+                            <span class="badge bg-warning text-dark">@calibPendientes próxima(s)</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-success">Al día</span>
+                        }
+                    </div>
+                </div>
+            </a>
+        </div>
+    }
+</div>
+
+@if (!canSeeTI && !canSeeSvc)
+{
+    <div class="text-center text-muted py-5">
+        <i class="bi bi-lock fs-1 d-block mb-2"></i>
+        No tiene acceso a ningún módulo de mantenimientos.
+    </div>
+}

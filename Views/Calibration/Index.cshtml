@@ -1,15 +1,83 @@
 @model IEnumerable<EDInventory.Models.Entities.Calibration>
 @{
     ViewData["Title"] = "Calibraciones";
-    int page       = ViewBag.Page;
-    int totalPages = ViewBag.TotalPages;
-    int total      = ViewBag.Total;
-    string? result = ViewBag.Result as string;
+    int page           = ViewBag.Page;
+    int totalPages     = ViewBag.TotalPages;
+    int total          = ViewBag.Total;
+    string? result     = ViewBag.Result as string;
+    int? currentUserId = ViewBag.CurrentUserId as int?;
+    bool isAdmin       = User.IsInRole(AppRoles.Admin) || User.IsInRole(AppRoles.SvcAdmin);
+
+    var misCalibrations = currentUserId.HasValue
+        ? Model.Where(c => c.TechCode == currentUserId.Value).ToList()
+        : new List<EDInventory.Models.Entities.Calibration>();
 }
 
 <div class="d-flex justify-content-between align-items-center mb-3">
     <h4 class="mb-0"><i class="bi bi-rulers me-2"></i>Calibraciones</h4>
+    <div class="d-flex gap-2 flex-wrap">
+        <a asp-action="History" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-clock-history me-1"></i>Historial
+        </a>
+        @if (isAdmin)
+        {
+            <a asp-action="BulkCreate" class="btn btn-outline-success btn-sm">
+                <i class="bi bi-building me-1"></i>Masivo
+            </a>
+            <a asp-action="Create" class="btn btn-primary btn-sm">
+                <i class="bi bi-plus-lg me-1"></i>Nueva Calibracion
+            </a>
+        }
+    </div>
 </div>
+
+@* F2: Mis calibraciones asignadas *@
+@if (misCalibrations.Any())
+{
+    var hoy = DateOnly.FromDateTime(DateTime.Today);
+    <div class="card shadow-sm border-info mb-4">
+        <div class="card-header fw-bold bg-info text-dark">
+            <i class="bi bi-person-check-fill me-1"></i>Mis Calibraciones Asignadas (@misCalibrations.Count)
+        </div>
+        <div class="table-responsive">
+            <table class="table table-sm table-hover mb-0">
+                <thead class="table-light">
+                    <tr><th>Activo</th><th>Linea</th><th>Hospital</th><th>Fecha</th><th>Proxima</th><th>Resultado</th><th></th></tr>
+                </thead>
+                <tbody>
+                    @foreach (var c in misCalibrations)
+                    {
+                        bool vencida = c.CalibNextDate.HasValue && c.CalibNextDate < hoy;
+                        bool pronto  = c.CalibNextDate.HasValue && !vencida && c.CalibNextDate <= hoy.AddDays(30);
+                        string resBadge = c.CalibResult switch { "RECHAZADO" => "bg-danger", "CONDICIONAL" => "bg-warning text-dark", _ => "bg-success" };
+                        <tr class="@(vencida ? "table-danger" : pronto ? "table-warning" : "")">
+                            <td class="fw-semibold small"><a asp-controller="Engineering" asp-action="AssetDetail" asp-route-id="@c.AssetCode" class="text-decoration-none">@c.Asset?.AssetDesc</a></td>
+                            <td><span class="badge bg-warning text-dark">@(c.Asset?.Line?.LineName ?? "—")</span></td>
+                            <td class="small text-muted">@(c.Asset?.Hospital?.HospName ?? "—")</td>
+                            <td class="text-nowrap small">@c.CalibDate.ToString("dd/MM/yyyy")</td>
+                            <td class="text-nowrap small">
+                                @if (c.CalibNextDate.HasValue)
+                                {
+                                    @c.CalibNextDate.Value.ToString("dd/MM/yyyy")
+                                    @if (vencida) { <span class="badge bg-danger ms-1">Vencida</span> }
+                                    else if (pronto) { <span class="badge bg-warning text-dark ms-1">Pronto</span> }
+                                }
+                                else { <span class="text-muted">—</span> }
+                            </td>
+                            <td><span class="badge @resBadge">@c.CalibResult</span></td>
+                            <td>
+                                @if (isAdmin)
+                                {
+                                    <a asp-action="Edit" asp-route-id="@c.CalibCode" class="btn btn-outline-primary btn-sm py-0 px-1" title="Editar"><i class="bi bi-pencil"></i></a>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}
 
 <form method="get" class="row g-2 mb-3">
     <div class="col-auto">
@@ -73,10 +141,13 @@ else
                         <td class="small">@(c.CalibCertNum ?? "—")</td>
                         <td><span class="badge @resBadge">@c.CalibResult</span></td>
                         <td>
-                            <a asp-action="Edit" asp-route-id="@c.CalibCode"
-                               class="btn btn-outline-primary btn-sm py-0 px-1" title="Editar">
-                                <i class="bi bi-pencil"></i>
-                            </a>
+                            @if (isAdmin)
+                            {
+                                <a asp-action="Edit" asp-route-id="@c.CalibCode"
+                                   class="btn btn-outline-primary btn-sm py-0 px-1" title="Editar">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                            }
                         </td>
                     </tr>
                 }

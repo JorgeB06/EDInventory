@@ -4,6 +4,12 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"] - AssetCore</title>
+    <script>
+        // Aplica el tema guardado ANTES de pintar la página (evita parpadeo claro→oscuro)
+        (function () {
+            document.documentElement.setAttribute('data-bs-theme', localStorage.getItem('theme') || 'light');
+        })();
+    </script>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
@@ -51,7 +57,6 @@
                                 </a>
                                 <ul class="dropdown-menu">
                                     <li><a class="dropdown-item" asp-controller="Equipment" asp-action="Index"><i class="bi bi-list-ul me-1"></i>Inventario</a></li>
-                                    <li><a class="dropdown-item" asp-controller="Equipment" asp-action="MaintenanceDue"><i class="bi bi-wrench-adjustable me-1"></i>Mantenimientos</a></li>
                                     <li><a class="dropdown-item" asp-controller="Incident" asp-action="Index" asp-route-entityType="TI"><i class="bi bi-tools me-1"></i>Incidentes</a></li>
                                     @if (isTiWrite)
                                     {
@@ -76,15 +81,35 @@
                                     <li><a class="dropdown-item" asp-controller="Engineering" asp-action="ScanBox"><i class="bi bi-upc-scan me-1"></i>Escanear Caja</a></li>
                                     <li><a class="dropdown-item" asp-controller="Engineering" asp-action="Search"><i class="bi bi-search me-1"></i>Buscar Repuesto</a></li>
                                     <li><a class="dropdown-item" asp-controller="Engineering" asp-action="AssetsOnSite"><i class="bi bi-hospital me-1"></i>Activos en Sitio</a></li>
-                                    <li><a class="dropdown-item" asp-controller="Engineering" asp-action="MaintenanceDue"><i class="bi bi-wrench-adjustable me-1"></i>Mantenimientos</a></li>
                                     <li><a class="dropdown-item" asp-controller="Incident" asp-action="Index" asp-route-entityType="SVC"><i class="bi bi-tools me-1"></i>Incidentes</a></li>
-                                    <li><a class="dropdown-item" asp-controller="Calibration" asp-action="Index"><i class="bi bi-rulers me-1"></i>Calibraciones</a></li>
                                     @if (isSvcWrite)
                                     {
                                         <li><hr class="dropdown-divider"></li>
                                         <li><a class="dropdown-item" asp-controller="Engineering" asp-action="LineCreate"><i class="bi bi-plus-circle me-1"></i>Nueva Línea</a></li>
                                     }
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li><a class="dropdown-item" asp-controller="Movil" asp-action="Index"><i class="bi bi-phone me-1"></i>Módulo Móvil</a></li>
                                 </ul>
+                            </li>
+                        }
+
+                        @* ── MANTENIMIENTOS Y CALIBRACIONES (unificado TI + Servicio) ── *@
+                        @if (canSeeTI || canSeeSvc)
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link" asp-controller="Maintenance" asp-action="Index">
+                                    <i class="bi bi-wrench-adjustable-circle me-1"></i>Mantenimientos
+                                </a>
+                            </li>
+                        }
+
+                        @* ── AUDITORÍA DE INVENTARIO ───────────────── *@
+                        @if (canSeeSvc)
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link" asp-controller="InventoryAudit" asp-action="Index">
+                                    <i class="bi bi-clipboard2-check me-1"></i>Auditoría de Inventario
+                                </a>
                             </li>
                         }
 
@@ -114,6 +139,7 @@
                                     <li><a class="dropdown-item" asp-controller="Catalog" asp-action="DocumentTypes">Tipos de Documento</a></li>
                                     <li><a class="dropdown-item" asp-controller="Catalog" asp-action="Companies">Empresas</a></li>
                                     <li><a class="dropdown-item" asp-controller="Catalog" asp-action="Sites">Sedes</a></li>
+                                    <li><hr class="dropdown-divider"></li>
                                     <li><a class="dropdown-item" asp-controller="Catalog" asp-action="Brands">Marcas y Modelos</a></li>
                                     <li><a class="dropdown-item" asp-controller="Catalog" asp-action="AssetTypes">Tipos de Activo</a></li>
                                     <li><hr class="dropdown-divider"></li>
@@ -147,6 +173,13 @@
                                 </a>
                             </li>
                         }
+                        <li class="nav-item me-1">
+                            <button type="button" class="nav-link btn btn-link px-2 py-1" id="themeToggleBtn"
+                                    title="Cambiar modo claro/oscuro"
+                                    style="opacity:.8; line-height:1;">
+                                <i class="bi bi-moon-stars-fill" id="themeToggleIcon" style="font-size:1.15rem;"></i>
+                            </button>
+                        </li>
                         <li class="nav-item me-1">
                             <button type="button" class="nav-link btn btn-link px-2 py-1"
                                     data-bs-toggle="modal" data-bs-target="#helpModal"
@@ -234,6 +267,7 @@
         @RenderBody()
     }
 
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         // Rol del usuario actual (evaluado en servidor)
@@ -255,6 +289,23 @@
                             e.preventDefault();
                         }
                     });
+                });
+            }
+
+            // Modo claro/oscuro (Bootstrap 5.3 data-bs-theme), persistido en localStorage
+            var themeBtn  = document.getElementById('themeToggleBtn');
+            var themeIcon = document.getElementById('themeToggleIcon');
+            if (themeBtn && themeIcon) {
+                function applyThemeIcon(theme) {
+                    themeIcon.className = theme === 'dark' ? 'bi bi-sun-fill' : 'bi bi-moon-stars-fill';
+                }
+                applyThemeIcon(document.documentElement.getAttribute('data-bs-theme') || 'light');
+
+                themeBtn.addEventListener('click', function () {
+                    var newTheme = document.documentElement.getAttribute('data-bs-theme') === 'dark' ? 'light' : 'dark';
+                    document.documentElement.setAttribute('data-bs-theme', newTheme);
+                    localStorage.setItem('theme', newTheme);
+                    applyThemeIcon(newTheme);
                 });
             }
         });

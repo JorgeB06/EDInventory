@@ -1,0 +1,42 @@
+@model EDInventory.Models.ViewModels.MaintReassignVM
+@{
+    ViewData["Title"] = "Reasignar Mantenimiento — Servicio";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="mb-0"><i class="bi bi-person-fill-gear me-2"></i>Reasignar Mantenimiento</h4>
+    <a asp-action="MaintenanceDue" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-arrow-left me-1"></i>Volver
+    </a>
+</div>
+
+<div class="card shadow-sm" style="max-width:500px;">
+    <div class="card-header fw-bold">Datos del Mantenimiento</div>
+    <div class="card-body">
+        <dl class="row mb-3">
+            <dt class="col-sm-4">Activo</dt>
+            <dd class="col-sm-8">@Model.AssetDesc</dd>
+            <dt class="col-sm-4">Tipo</dt>
+            <dd class="col-sm-8">@Model.MaintType</dd>
+            <dt class="col-sm-4">Fecha</dt>
+            <dd class="col-sm-8">@Model.MaintScheduled.ToString("dd/MM/yyyy")</dd>
+        </dl>
+        <form asp-action="MaintReassign" method="post">
+            @Html.AntiForgeryToken()
+            <input type="hidden" asp-for="MaintCode" />
+            <input type="hidden" asp-for="AssetCode" />
+            <div class="mb-3">
+                <label asp-for="UserCode" class="form-label fw-semibold">Técnico Asignado *</label>
+                <select asp-for="UserCode" asp-items="Model.Technicians" class="form-select">
+                    <option value="">— Sin asignar —</option>
+                </select>
+            </div>
+            <div class="d-flex gap-2 justify-content-end">
+                <a asp-action="MaintenanceDue" class="btn btn-outline-secondary">Cancelar</a>
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-check-lg me-1"></i>Guardar
+                </button>
+            </div>
+        </form>
+    </div>
+</div>

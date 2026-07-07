@@ -1,0 +1,68 @@
+@model EDInventory.Models.ViewModels.ContarCajaVM
+@{
+    ViewData["Title"] = $"Contar Caja {Model.BoxNumber}";
+}
+
+<div class="mb-3">
+    <h5 class="mb-1"><i class="bi bi-box-seam me-2"></i>Caja @Model.BoxNumber</h5>
+    <div class="text-muted small">@Model.LineName</div>
+</div>
+
+<div asp-validation-summary="All" class="text-danger small mb-2"></div>
+
+@if (!Model.Parts.Any())
+{
+    <div class="text-center text-muted py-5">
+        <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+        Esta caja no tiene repuestos registrados.
+    </div>
+    <div class="d-grid mt-3">
+        <a asp-action="Auditoria" asp-route-id="@Model.AuditCode" class="btn btn-outline-secondary">Volver</a>
+    </div>
+}
+else
+{
+    <form asp-action="ContarCaja" method="post">
+        @Html.AntiForgeryToken()
+        <input type="hidden" asp-for="AuditBoxCode" />
+        <input type="hidden" asp-for="AuditCode" />
+        <input type="hidden" asp-for="LineName" />
+        <input type="hidden" asp-for="BoxNumber" />
+
+        @for (int i = 0; i < Model.Parts.Count; i++)
+        {
+            <input type="hidden" asp-for="Parts[i].AuditPartCode" />
+            <input type="hidden" asp-for="Parts[i].PartCode" />
+            <input type="hidden" asp-for="Parts[i].PartName" />
+            <input type="hidden" asp-for="Parts[i].PartRef" />
+            <input type="hidden" asp-for="Parts[i].SystemQty" />
+
+            <div class="card shadow-sm mb-2">
+                <div class="card-body py-2">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <div>
+                            <div class="fw-semibold">@Model.Parts[i].PartName</div>
+                            @if (!string.IsNullOrWhiteSpace(Model.Parts[i].PartRef))
+                            {
+                                <div class="text-muted small font-monospace">@Model.Parts[i].PartRef</div>
+                            }
+                        </div>
+                        <span class="badge bg-secondary">Sistema: @Model.Parts[i].SystemQty</span>
+                    </div>
+                    <label class="form-label small fw-semibold mb-1">Cantidad contada *</label>
+                    <input asp-for="Parts[i].CountedQty" type="number" min="0" inputmode="numeric"
+                           class="form-control form-control-lg text-center" />
+                </div>
+            </div>
+        }
+
+        <div class="d-grid mt-3">
+            <button type="submit" class="btn btn-primary btn-lg">
+                <i class="bi bi-check-lg me-2"></i>Guardar Conteo
+            </button>
+        </div>
+        <div class="d-grid mt-2">
+            <a asp-action="Auditoria" asp-route-id="@Model.AuditCode" class="btn btn-outline-secondary">Cancelar</a>
+        </div>
+    </form>
+}

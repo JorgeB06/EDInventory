@@ -60,6 +60,12 @@
                         <label asp-for="CalibNotes" class="form-label">Notas</label>
                         <textarea asp-for="CalibNotes" class="form-control" rows="3" maxlength="300"></textarea>
                     </div>
+                    <div class="mb-3">
+                        <label asp-for="TechCode" class="form-label fw-semibold">Técnico Responsable</label>
+                        <select asp-for="TechCode" asp-items="Model.TechUsers" class="form-select">
+                            <option value="">— Sin asignar —</option>
+                        </select>
+                    </div>
                 </div>
             </div>
         </div>

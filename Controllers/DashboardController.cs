@@ -7,6 +7,7 @@ using Microsoft.EntityFrameworkCore;
 using QuestPDF.Fluent;
 using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
+using System.Security.Claims;
 using EntityDocument = EDInventory.Models.Entities.Document;
 
 namespace EDInventory.Controllers
@@ -27,6 +28,12 @@ namespace EDInventory.Controllers
             _context = context;
         }
 
+        private int? GetCurrentUserId()
+        {
+            var claim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            return int.TryParse(claim, out var id) ? id : null;
+        }
+
         /// <summary>
         /// Muestra el Dashboard principal con tarjetas de KPIs y alertas de mantenimientos
         /// y licitaciones vencidas o por vencer, según el rol del usuario autenticado.
@@ -42,6 +49,7 @@ namespace EDInventory.Controllers
             ViewBag.CanSeeSvc = canSeeSvc;
 
             var hoy = DateOnly.FromDateTime(DateTime.Today);
+            var currentUserId = GetCurrentUserId();
 
             // ── DATOS MÓDULO TI ───────────────────────────────────────────────
             if (canSeeTI)
@@ -142,6 +150,26 @@ namespace EDInventory.Controllers
                     .OrderByDescending(g => g.Total)
                     .Take(8)
                     .ToListAsync();
+            }
+
+            // ── BANNER PERSONAL: mis asignaciones pendientes ──────────────────
+            if (currentUserId.HasValue)
+            {
+                ViewBag.MyTiMaints = canSeeTI
+                    ? await _context.ItEquipMaintenances.CountAsync(m => m.MaintStatus == "PENDIENTE" && m.UserCode == currentUserId)
+                    : 0;
+                ViewBag.MySvcMaints = canSeeSvc
+                    ? await _context.EngMaintenances.CountAsync(m => m.MaintStatus == "PENDIENTE" && m.UserCode == currentUserId)
+                    : 0;
+                ViewBag.MyCalibrations = canSeeSvc
+                    ? await _context.Calibrations.CountAsync(c => c.TechCode == currentUserId && c.CalibNextDate.HasValue && c.CalibNextDate <= DateOnly.FromDateTime(DateTime.Today.AddDays(30)))
+                    : 0;
+            }
+            else
+            {
+                ViewBag.MyTiMaints     = 0;
+                ViewBag.MySvcMaints    = 0;
+                ViewBag.MyCalibrations = 0;
             }
 
             return View();

@@ -1,0 +1,115 @@
+@using EDInventory.Models.Entities
+@model IEnumerable<EDInventory.Models.Entities.Calibration>
+@{
+    ViewData["Title"] = "Historial de Calibraciones";
+    var notes = (ViewBag.Notes as List<CalibNote>) ?? new List<CalibNote>();
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="mb-0"><i class="bi bi-clock-history me-2"></i>Historial de Calibraciones</h4>
+    <div class="d-flex gap-2">
+        <a asp-action="ExportHistoryPdf" asp-route-assetId="@ViewBag.AssetId" class="btn btn-outline-danger btn-sm" target="_blank">
+            <i class="bi bi-file-earmark-pdf me-1"></i>Exportar PDF
+        </a>
+        <a asp-action="Index" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-arrow-left me-1"></i>Calibraciones
+        </a>
+    </div>
+</div>
+
+@if (!Model.Any())
+{
+    <div class="text-center text-muted py-5">
+        <i class="bi bi-rulers fs-1 d-block mb-2"></i>
+        No hay calibraciones registradas.
+    </div>
+}
+else
+{
+    <div class="table-responsive">
+        <table class="table table-sm table-hover align-middle">
+            <thead class="table-dark">
+                <tr>
+                    <th></th>
+                    <th>Activo</th>
+                    <th>Linea</th>
+                    <th>Hospital</th>
+                    <th>Fecha</th>
+                    <th>Proxima</th>
+                    <th>Técnico</th>
+                    <th>Resultado</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var c in Model)
+                {
+                    var rowNotes  = notes.Where(n => n.CalibCode == c.CalibCode).ToList();
+                    var today     = DateOnly.FromDateTime(DateTime.Today);
+                    bool vencida  = c.CalibNextDate.HasValue && c.CalibNextDate < today;
+                    string resBadge = c.CalibResult switch { "RECHAZADO" => "bg-danger", "CONDICIONAL" => "bg-warning text-dark", _ => "bg-success" };
+                    <tr data-bs-toggle="collapse" data-bs-target="#notes-calib-@c.CalibCode"
+                        style="cursor:pointer;" class="@(vencida ? "table-danger" : "")">
+                        <td class="text-muted small">
+                            <i class="bi @(rowNotes.Any() ? "bi-chat-fill text-primary" : "bi-chat") "></i>
+                            @if (rowNotes.Any()) { <span class="badge bg-primary rounded-pill">@rowNotes.Count</span> }
+                        </td>
+                        <td class="fw-semibold small">
+                            <a asp-controller="Engineering" asp-action="AssetDetail" asp-route-id="@c.AssetCode"
+                               class="text-decoration-none text-dark" onclick="event.stopPropagation()">
+                                @c.Asset?.AssetDesc
+                            </a>
+                        </td>
+                        <td><span class="badge bg-warning text-dark">@(c.Asset?.Line?.LineName ?? "—")</span></td>
+                        <td class="small text-muted">@(c.Asset?.Hospital?.HospName ?? "—")</td>
+                        <td class="small text-nowrap">@c.CalibDate.ToString("dd/MM/yyyy")</td>
+                        <td class="small text-nowrap">
+                            @if (c.CalibNextDate.HasValue)
+                            {
+                                @c.CalibNextDate.Value.ToString("dd/MM/yyyy")
+                                @if (vencida) { <span class="badge bg-danger ms-1">Vencida</span> }
+                            }
+                            else { <span class="text-muted">—</span> }
+                        </td>
+                        <td class="small">@(c.TechUser?.Employee != null ? $"{c.TechUser.Employee.EmpName} {c.TechUser.Employee.EmpSurname}" : c.TechUser?.UserLogin ?? "—")</td>
+                        <td><span class="badge @resBadge">@c.CalibResult</span></td>
+                    </tr>
+                    <tr class="collapse" id="notes-calib-@c.CalibCode">
+                        <td colspan="8" class="bg-light p-3">
+                            @if (rowNotes.Any())
+                            {
+                                <div class="mb-2">
+                                    @foreach (var note in rowNotes)
+                                    {
+                                        <div class="d-flex gap-2 mb-1">
+                                            <span class="badge bg-secondary text-nowrap">
+                                                @note.NoteDate.ToString("dd/MM/yy HH:mm")
+                                            </span>
+                                            <span class="small fw-semibold">@(note.User?.Employee != null ? $"{note.User.Employee.EmpName} {note.User.Employee.EmpSurname}" : note.User?.UserLogin ?? "Sistema")</span>
+                                            <span class="small">@note.NoteText</span>
+                                        </div>
+                                    }
+                                </div>
+                            }
+                            else
+                            {
+                                <p class="text-muted small mb-2">Sin notas.</p>
+                            }
+                            <form asp-action="AddCalibNote" method="post" class="d-flex gap-2 align-items-end"
+                                  onclick="event.stopPropagation()">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="calibCode" value="@c.CalibCode" />
+                                <div class="flex-grow-1">
+                                    <textarea name="noteText" class="form-control form-control-sm" rows="2"
+                                              placeholder="Agregar nota..." maxlength="1000"></textarea>
+                                </div>
+                                <button type="submit" class="btn btn-sm btn-primary">
+                                    <i class="bi bi-send"></i>
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}

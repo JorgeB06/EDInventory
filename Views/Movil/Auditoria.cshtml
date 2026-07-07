@@ -1,0 +1,100 @@
+@model EDInventory.Models.Entities.EngAuditSession
+@{
+    ViewData["Title"] = $"Auditoría #{Model.AuditCode}";
+    string scope = Model.AuditScope == "LINEA"
+        ? $"Línea — {Model.Line?.LineName}"
+        : $"Caja {Model.Box?.BoxNumber} — {Model.Box?.Line?.LineName}";
+    var pendientes = Model.AuditBoxes.Where(b => b.Status != "CONTADA").ToList();
+    var contadas   = Model.AuditBoxes.Where(b => b.Status == "CONTADA").ToList();
+}
+
+<div class="mb-3">
+    <h5 class="mb-1"><i class="bi bi-clipboard2-check me-2"></i>Auditoría #@Model.AuditCode</h5>
+    <div class="text-muted small">@scope</div>
+</div>
+
+<div class="d-grid mb-3">
+    <a asp-action="Scan" asp-route-auditCode="@Model.AuditCode" class="btn btn-primary btn-lg">
+        <i class="bi bi-camera-fill me-2"></i>Escanear siguiente caja
+    </a>
+</div>
+
+@if (pendientes.Any())
+{
+    <h6 class="text-muted small text-uppercase mt-3">Pendientes (@pendientes.Count)</h6>
+    @foreach (var ab in pendientes.OrderBy(b => b.Box?.BoxNumber))
+    {
+        var collapseId = $"itemsBox{ab.AuditBoxCode}";
+        <div class="card shadow-sm mb-2">
+            <div class="card-body py-2">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="fw-semibold">Caja @ab.Box?.BoxNumber</div>
+                        <div class="text-muted small">@ab.Box?.Line?.LineName · @(ab.Box?.Parts.Count ?? 0) ítem(s)</div>
+                    </div>
+                    <a asp-action="ContarCaja" asp-route-auditBoxCode="@ab.AuditBoxCode" class="btn btn-outline-primary btn-sm">
+                        Contar
+                    </a>
+                </div>
+                @if (ab.Box?.Parts.Any() ?? false)
+                {
+                    <button class="btn btn-link btn-sm px-0 mt-1" type="button" data-bs-toggle="collapse" data-bs-target="#@collapseId">
+                        Ver repuestos
+                    </button>
+                    <div id="@collapseId" class="collapse small">
+                        <ul class="list-unstyled mb-0 border-top pt-2">
+                            @foreach (var part in ab.Box.Parts.OrderBy(p => p.PartName))
+                            {
+                                <li class="d-flex justify-content-between py-1 border-bottom">
+                                    <span>@part.PartName <span class="text-muted font-monospace">(@part.PartRef)</span></span>
+                                    <span class="text-muted">stock: @part.PartQty</span>
+                                </li>
+                            }
+                        </ul>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+}
+
+@if (contadas.Any())
+{
+    <h6 class="text-muted small text-uppercase mt-3">Contadas (@contadas.Count)</h6>
+    @foreach (var ab in contadas.OrderBy(b => b.Box?.BoxNumber))
+    {
+        var collapseId = $"itemsBox{ab.AuditBoxCode}";
+        <div class="card shadow-sm mb-2 border-success">
+            <div class="card-body py-2">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="fw-semibold">Caja @ab.Box?.BoxNumber</div>
+                        <div class="text-muted small">@ab.CountedDate?.ToString("dd/MM HH:mm")</div>
+                    </div>
+                    <span class="badge bg-success"><i class="bi bi-check-lg"></i></span>
+                </div>
+                @if (ab.AuditParts.Any())
+                {
+                    <button class="btn btn-link btn-sm px-0 mt-1" type="button" data-bs-toggle="collapse" data-bs-target="#@collapseId">
+                        Ver conteo
+                    </button>
+                    <div id="@collapseId" class="collapse small">
+                        <ul class="list-unstyled mb-0 border-top pt-2">
+                            @foreach (var ap in ab.AuditParts.OrderBy(p => p.Part?.PartName))
+                            {
+                                <li class="d-flex justify-content-between py-1 border-bottom @(ap.Variance != 0 ? "text-warning-emphasis" : "")">
+                                    <span>@ap.Part?.PartName <span class="text-muted font-monospace">(@ap.Part?.PartRef)</span></span>
+                                    <span>@ap.SystemQty → @ap.CountedQty @(ap.Variance != 0 ? $"({(ap.Variance > 0 ? "+" : "")}{ap.Variance})" : "")</span>
+                                </li>
+                            }
+                        </ul>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+}
+
+<div class="d-grid mt-3">
+    <a asp-action="MisAuditorias" class="btn btn-outline-secondary">Volver a Mis Auditorías</a>
+</div>

@@ -1,0 +1,75 @@
+@{
+    ViewData["Title"] = "Escanear Caja";
+    int? auditCode = ViewBag.AuditCode as int?;
+}
+
+<div class="text-center mb-3 mt-2">
+    <div style="width:64px;height:64px;border-radius:50%;background:#e8f4fd;display:inline-flex;align-items:center;justify-content:center;margin-bottom:.5rem;">
+        <i class="bi bi-upc-scan" style="font-size:1.75rem;color:#0d6efd;"></i>
+    </div>
+    <h5 class="fw-bold mb-1">Escanear caja</h5>
+    <p class="text-muted small mb-0">Use la cámara o un lector conectado.</p>
+</div>
+
+<form asp-action="BoxByScan" method="get" id="scanForm">
+    <input type="hidden" name="auditCode" value="@auditCode" />
+    <div class="input-group mb-3">
+        <span class="input-group-text"><i class="bi bi-upc"></i></span>
+        <input type="text" name="code" id="scanInput" class="form-control form-control-lg font-monospace"
+               placeholder="ENG-3-12" autocomplete="off" autofocus />
+    </div>
+    <div class="d-grid mb-2">
+        <button type="submit" class="btn btn-primary btn-lg"><i class="bi bi-search me-2"></i>Buscar</button>
+    </div>
+</form>
+
+<div class="d-grid mb-2">
+    <button type="button" class="btn btn-outline-primary btn-lg" id="btnCamera">
+        <i class="bi bi-camera-fill me-2"></i>Escanear con cámara
+    </button>
+</div>
+<div id="reader" style="width:100%;display:none;"></div>
+
+@if (auditCode.HasValue)
+{
+    <div class="d-grid mt-2">
+        <a asp-action="Auditoria" asp-route-id="@auditCode" class="btn btn-outline-secondary">Volver a la auditoría</a>
+    </div>
+}
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+    <script>
+        document.getElementById('scanInput')?.focus();
+
+        var auditCodeParam = @Html.Raw(auditCode.HasValue ? $"'&auditCode={auditCode}'" : "''");
+        var scanUrl = '@Url.Action("BoxByScan")';
+
+        document.getElementById('btnCamera').addEventListener('click', function () {
+            var readerDiv = document.getElementById('reader');
+            var btn = this;
+            readerDiv.style.display = 'block';
+            btn.style.display = 'none';
+
+            var html5QrCode = new Html5Qrcode("reader", {
+                formatsToSupport: [Html5QrcodeSupportedFormats.CODE_128]
+            });
+            var handled = false;
+            html5QrCode.start(
+                { facingMode: "environment" },
+                { fps: 10, qrbox: 220 },
+                function (decodedText) {
+                    if (handled) return;
+                    handled = true;
+                    html5QrCode.stop().finally(function () {
+                        window.location.href = scanUrl + '?code=' + encodeURIComponent(decodedText) + auditCodeParam;
+                    });
+                }
+            ).catch(function (err) {
+                alert('No se pudo iniciar la cámara: ' + err);
+                readerDiv.style.display = 'none';
+                btn.style.display = 'block';
+            });
+        });
+    </script>
+}

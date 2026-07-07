@@ -7,6 +7,9 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
+using QuestPDF.Fluent;
+using QuestPDF.Helpers;
+using QuestPDF.Infrastructure;
 using System.Security.Claims;
 
 namespace EDInventory.Controllers
@@ -1067,34 +1070,64 @@ namespace EDInventory.Controllers
                 .OrderBy(m => m.MaintScheduled)
                 .ToListAsync();
 
-            ViewBag.Today = today;
+            ViewBag.Today         = today;
+            ViewBag.CurrentUserId = GetCurrentUserId();
             return View(pending);
         }
 
-        [Authorize(Roles = AppRoles.TiWrite)]
-        public async Task<IActionResult> MaintCreate(int equipCode)
+        [Authorize(Roles = AppRoles.TiManage)]
+        public async Task<IActionResult> MaintCreate(int? equipCode)
         {
-            var equip = await _context.ItEquips.FindAsync(equipCode);
-            if (equip == null) return NotFound();
-
-            return View(new EDInventory.Models.ViewModels.MaintCreateVM
+            var vm = new EDInventory.Models.ViewModels.MaintCreateVM
             {
-                AssetCode   = equipCode,
-                AssetDesc   = equip.ItequipDesc,
                 Technicians = await GetTechnicianList()
-            });
+            };
+
+            if (equipCode.HasValue && equipCode.Value > 0)
+            {
+                var equip = await _context.ItEquips.FindAsync(equipCode.Value);
+                if (equip == null) return NotFound();
+                vm.AssetCode = equipCode.Value;
+                vm.AssetDesc = equip.ItequipDesc;
+            }
+            else
+            {
+                vm.Assets = await _context.ItEquips
+                    .Where(e => e.Active)
+                    .Include(e => e.Hospital)
+                    .OrderBy(e => e.Hospital!.HospName).ThenBy(e => e.ItequipDesc)
+                    .Select(e => new Microsoft.AspNetCore.Mvc.Rendering.SelectListItem(
+                        $"{e.ItequipDesc} — {(e.Hospital != null ? e.Hospital.HospName : "Sin hospital")}",
+                        e.ItequipCode.ToString()))
+                    .ToListAsync();
+            }
+
+            return View(vm);
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [Authorize(Roles = AppRoles.TiWrite)]
+        [Authorize(Roles = AppRoles.TiManage)]
         public async Task<IActionResult> MaintCreate(EDInventory.Models.ViewModels.MaintCreateVM vm)
         {
             if (!ModelState.IsValid)
             {
-                var equip = await _context.ItEquips.FindAsync(vm.AssetCode);
-                vm.AssetDesc   = equip?.ItequipDesc;
                 vm.Technicians = await GetTechnicianList();
+                if (vm.AssetCode > 0)
+                {
+                    var equip = await _context.ItEquips.FindAsync(vm.AssetCode);
+                    vm.AssetDesc = equip?.ItequipDesc;
+                }
+                else
+                {
+                    vm.Assets = await _context.ItEquips
+                        .Where(e => e.Active).Include(e => e.Hospital)
+                        .OrderBy(e => e.Hospital!.HospName).ThenBy(e => e.ItequipDesc)
+                        .Select(e => new Microsoft.AspNetCore.Mvc.Rendering.SelectListItem(
+                            $"{e.ItequipDesc} — {(e.Hospital != null ? e.Hospital.HospName : "Sin hospital")}",
+                            e.ItequipCode.ToString()))
+                        .ToListAsync();
+                }
                 return View(vm);
             }
 
@@ -1115,7 +1148,7 @@ namespace EDInventory.Controllers
             return RedirectToAction(nameof(Detail), new { id = vm.AssetCode });
         }
 
-        [Authorize(Roles = AppRoles.TiWrite)]
+        [Authorize(Roles = AppRoles.TiRead)]
         public async Task<IActionResult> MaintComplete(int id)
         {
             var maint = await _context.ItEquipMaintenances
@@ -1135,7 +1168,7 @@ namespace EDInventory.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [Authorize(Roles = AppRoles.TiWrite)]
+        [Authorize(Roles = AppRoles.TiRead)]
         public async Task<IActionResult> MaintComplete(EDInventory.Models.ViewModels.MaintCompleteVM vm)
         {
             var maint = await _context.ItEquipMaintenances.FindAsync(vm.MaintCode);
@@ -1153,7 +1186,7 @@ namespace EDInventory.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [Authorize(Roles = AppRoles.TiWrite)]
+        [Authorize(Roles = AppRoles.TiManage)]
         public async Task<IActionResult> MaintCancel(int id)
         {
             var maint = await _context.ItEquipMaintenances.FindAsync(id);
@@ -1166,6 +1199,235 @@ namespace EDInventory.Controllers
             TempData["Success"] = "Mantenimiento cancelado.";
             return RedirectToAction(nameof(Detail), new { id = maint.ItequipCode });
         }
+
+        // ── F3: Reasignación de técnico (solo admins) ─────────────────────────
+
+        [Authorize(Roles = AppRoles.TiManage)]
+        public async Task<IActionResult> MaintReassign(int id)
+        {
+            var maint = await _context.ItEquipMaintenances
+                .Include(m => m.ItEquip)
+                .FirstOrDefaultAsync(m => m.MaintCode == id);
+            if (maint == null) return NotFound();
+
+            return View(new MaintReassignVM
+            {
+                MaintCode      = maint.MaintCode,
+                AssetCode      = maint.ItequipCode,
+                AssetDesc      = maint.ItEquip?.ItequipDesc,
+                MaintType      = maint.MaintType,
+                MaintScheduled = maint.MaintScheduled,
+                UserCode       = maint.UserCode,
+                Technicians    = await GetTechnicianList()
+            });
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [Authorize(Roles = AppRoles.TiManage)]
+        public async Task<IActionResult> MaintReassign(MaintReassignVM vm)
+        {
+            var maint = await _context.ItEquipMaintenances.FindAsync(vm.MaintCode);
+            if (maint == null) return NotFound();
+
+            maint.UserCode = vm.UserCode;
+            _context.ItEquipMaintenances.Update(maint);
+            await _context.SaveChangesAsync();
+
+            TempData["Success"] = "Mantenimiento reasignado correctamente.";
+            return RedirectToAction(nameof(MaintenanceDue));
+        }
+
+        // ── F4: Historial completo + notas ────────────────────────────────────
+
+        public async Task<IActionResult> MaintHistory()
+        {
+            var history = await _context.ItEquipMaintenances
+                .Include(m => m.ItEquip).ThenInclude(e => e!.Hospital)
+                .Include(m => m.User).ThenInclude(u => u!.Employee)
+                .OrderByDescending(m => m.MaintScheduled)
+                .ToListAsync();
+
+            var notes = await _context.MaintNotes
+                .Where(n => n.EntityType == "TI")
+                .Include(n => n.User).ThenInclude(u => u!.Employee)
+                .OrderBy(n => n.NoteDate)
+                .ToListAsync();
+
+            ViewBag.Notes = notes;
+            return View(history);
+        }
+
+        /// <summary>Exporta el historial completo de mantenimientos de TI a un PDF imprimible.</summary>
+        public async Task<IActionResult> ExportMaintHistoryPdf()
+        {
+            QuestPDF.Settings.License = LicenseType.Community;
+
+            var history = await _context.ItEquipMaintenances
+                .Include(m => m.ItEquip).ThenInclude(e => e!.Hospital)
+                .Include(m => m.User).ThenInclude(u => u!.Employee)
+                .OrderByDescending(m => m.MaintScheduled)
+                .ToListAsync();
+
+            var doc = QuestPDF.Fluent.Document.Create(container =>
+            {
+                container.Page(page =>
+                {
+                    page.Size(PageSizes.A4.Landscape());
+                    page.Margin(1.5f, Unit.Centimetre);
+                    page.DefaultTextStyle(x => x.FontSize(8));
+
+                    page.Header().Element(header =>
+                    {
+                        header.Row(row =>
+                        {
+                            row.RelativeItem().Column(col =>
+                            {
+                                col.Item().Text("Historial de Mantenimientos — TI").FontSize(14).Bold();
+                                col.Item().Text($"Generado: {DateTime.Now:dd/MM/yyyy HH:mm}").FontSize(7).FontColor(Colors.Grey.Medium);
+                            });
+                        });
+                    });
+
+                    page.Content().Column(col =>
+                    {
+                        col.Item().PaddingTop(6).Table(table =>
+                        {
+                            table.ColumnsDefinition(cols =>
+                            {
+                                cols.RelativeColumn(2);
+                                cols.RelativeColumn(3);
+                                cols.RelativeColumn(2);
+                                cols.RelativeColumn(2);
+                                cols.RelativeColumn(2);
+                                cols.RelativeColumn(2);
+                                cols.RelativeColumn(2);
+                                cols.RelativeColumn(3);
+                            });
+
+                            table.Header(hdr =>
+                            {
+                                void HdrCell(string txt) =>
+                                    hdr.Cell().Background(Colors.Grey.Darken3).Padding(3).Text(txt).FontColor(Colors.White).Bold().FontSize(7);
+                                HdrCell("Fecha Prog."); HdrCell("Equipo"); HdrCell("Hospital"); HdrCell("Tipo");
+                                HdrCell("Estado"); HdrCell("Fecha Compl."); HdrCell("Técnico"); HdrCell("Resultado");
+                            });
+
+                            bool altRow = false;
+                            foreach (var m in history)
+                            {
+                                altRow = !altRow;
+                                var bg = altRow ? Colors.Grey.Lighten4 : Colors.White;
+                                void Cell(string txt) => table.Cell().Background(bg).Padding(2).Text(txt ?? "—").FontSize(7);
+
+                                Cell(m.MaintScheduled.ToString("dd/MM/yyyy"));
+                                Cell(m.ItEquip?.ItequipDesc ?? "—");
+                                Cell(m.ItEquip?.Hospital?.HospName ?? "—");
+                                Cell(m.MaintType);
+                                Cell(m.MaintStatus.Replace("_", " "));
+                                Cell(m.MaintCompleted?.ToString("dd/MM/yyyy") ?? "—");
+                                Cell(m.User?.Employee != null ? $"{m.User.Employee.EmpName} {m.User.Employee.EmpSurname}" : m.User?.UserLogin ?? "—");
+                                Cell(m.MaintResult ?? "—");
+                            }
+                        });
+                    });
+
+                    page.Footer().AlignCenter().Text(x =>
+                    {
+                        x.Span("Pagina ").FontSize(7).FontColor(Colors.Grey.Medium);
+                        x.CurrentPageNumber().FontSize(7).FontColor(Colors.Grey.Medium);
+                        x.Span(" de ").FontSize(7).FontColor(Colors.Grey.Medium);
+                        x.TotalPages().FontSize(7).FontColor(Colors.Grey.Medium);
+                    });
+                });
+            });
+
+            var bytes = doc.GeneratePdf();
+            return File(bytes, "application/pdf", $"Historial_Mantenimientos_TI_{DateTime.Today:yyyyMMdd}.pdf");
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> AddMaintNote(int maintCode, string noteText)
+        {
+            if (!string.IsNullOrWhiteSpace(noteText))
+            {
+                _context.MaintNotes.Add(new MaintNote
+                {
+                    EntityType = "TI",
+                    MaintCode  = maintCode,
+                    NoteText   = noteText.Trim(),
+                    UserCode   = GetCurrentUserId(),
+                    NoteDate   = DateTime.Now
+                });
+                await _context.SaveChangesAsync();
+            }
+            return RedirectToAction(nameof(MaintHistory));
+        }
+
+        // ── F5: Creación masiva por hospital ──────────────────────────────────
+
+        [Authorize(Roles = AppRoles.TiManage)]
+        public async Task<IActionResult> MaintBulkCreate()
+        {
+            var vm = new MaintBulkCreateVM
+            {
+                Hospitals    = await GetHospitalSelectList(),
+                Technicians  = await GetTechnicianList()
+            };
+            return View(vm);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [Authorize(Roles = AppRoles.TiManage)]
+        public async Task<IActionResult> MaintBulkCreate(MaintBulkCreateVM vm)
+        {
+            if (!vm.HospCode.HasValue || !vm.UserCode.HasValue)
+                ModelState.AddModelError("", "Hospital y técnico son obligatorios.");
+
+            if (!ModelState.IsValid)
+            {
+                vm.Hospitals   = await GetHospitalSelectList();
+                vm.Technicians = await GetTechnicianList();
+                return View(vm);
+            }
+
+            var equips = await _context.ItEquips
+                .Where(e => e.Active && e.HospCode == vm.HospCode)
+                .ToListAsync();
+
+            var hosp        = await _context.Hospitals.FindAsync(vm.HospCode);
+            var now         = DateTime.Now;
+            var currentUser = GetCurrentUserId();
+
+            foreach (var e in equips)
+            {
+                _context.ItEquipMaintenances.Add(new ItEquipMaintenance
+                {
+                    ItequipCode    = e.ItequipCode,
+                    UserCode       = vm.UserCode,
+                    MaintType      = vm.MaintType,
+                    MaintStatus    = "PENDIENTE",
+                    MaintScheduled = vm.MaintScheduled,
+                    MaintNotes     = vm.MaintNotes,
+                    CreatedDate    = now,
+                    CreatedBy      = currentUser
+                });
+            }
+
+            await _context.SaveChangesAsync();
+
+            TempData["Success"] = $"{equips.Count} mantenimiento(s) creados para {hosp?.HospName ?? "el hospital"}.";
+            return RedirectToAction(nameof(MaintenanceDue));
+        }
+
+        private async Task<IEnumerable<SelectListItem>> GetHospitalSelectList() =>
+            await _context.Hospitals
+                .Where(h => h.Active)
+                .OrderBy(h => h.HospName)
+                .Select(h => new SelectListItem(h.HospName, h.HospCode.ToString()))
+                .ToListAsync();
 
         private async Task<IEnumerable<SelectListItem>> GetTechnicianList() =>
             await _context.Users

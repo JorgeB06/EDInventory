@@ -1,0 +1,114 @@
+@using EDInventory.Models.Entities
+@model IEnumerable<EDInventory.Models.Entities.ItEquipMaintenance>
+@{
+    ViewData["Title"] = "Historial Mantenimientos — TI";
+    var notes = (ViewBag.Notes as List<MaintNote>) ?? new List<MaintNote>();
+    var today = DateOnly.FromDateTime(DateTime.Today);
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="mb-0"><i class="bi bi-clock-history me-2"></i>Historial Mantenimientos — TI</h4>
+    <div class="d-flex gap-2">
+        <a asp-action="ExportMaintHistoryPdf" class="btn btn-outline-danger btn-sm" target="_blank">
+            <i class="bi bi-file-earmark-pdf me-1"></i>Exportar PDF
+        </a>
+        <a asp-action="MaintenanceDue" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-arrow-left me-1"></i>Pendientes
+        </a>
+    </div>
+</div>
+
+@if (!Model.Any())
+{
+    <div class="text-center text-muted py-5">
+        <i class="bi bi-clock-history fs-1 d-block mb-2"></i>
+        No hay mantenimientos registrados.
+    </div>
+}
+else
+{
+    <div class="table-responsive">
+        <table class="table table-sm table-hover align-middle">
+            <thead class="table-dark">
+                <tr>
+                    <th></th>
+                    <th>Equipo</th>
+                    <th>Hospital</th>
+                    <th>Tipo</th>
+                    <th>Fecha</th>
+                    <th>Técnico</th>
+                    <th>Estado</th>
+                    <th>Resultado</th>
+                    <th>Notas</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var m in Model)
+                {
+                    var rowNotes = notes.Where(n => n.MaintCode == m.MaintCode).ToList();
+                    string statusBadge = m.MaintStatus switch
+                    {
+                        "COMPLETADO" => "bg-success",
+                        "CANCELADO"  => "bg-secondary",
+                        _            => "bg-warning text-dark"
+                    };
+                    <tr data-bs-toggle="collapse" data-bs-target="#notes-ti-@m.MaintCode"
+                        style="cursor:pointer;">
+                        <td class="text-muted small">
+                            <i class="bi @(rowNotes.Any() ? "bi-chat-fill text-primary" : "bi-chat") "></i>
+                            @if (rowNotes.Any()) { <span class="badge bg-primary rounded-pill">@rowNotes.Count</span> }
+                        </td>
+                        <td class="fw-semibold small">
+                            <a asp-action="Detail" asp-route-id="@m.ItequipCode"
+                               class="text-decoration-none text-dark" onclick="event.stopPropagation()">
+                                @m.ItEquip?.ItequipDesc
+                            </a>
+                        </td>
+                        <td class="small text-muted">@(m.ItEquip?.Hospital?.HospName ?? "—")</td>
+                        <td><span class="badge @(m.MaintType == "PREVENTIVO" ? "bg-primary" : "bg-danger")">@m.MaintType</span></td>
+                        <td class="small text-nowrap">@m.MaintScheduled.ToString("dd/MM/yyyy")</td>
+                        <td class="small">@(m.User?.Employee != null ? $"{m.User.Employee.EmpName} {m.User.Employee.EmpSurname}" : m.User?.UserLogin ?? "—")</td>
+                        <td><span class="badge @statusBadge">@m.MaintStatus</span></td>
+                        <td class="small text-muted">@(m.MaintResult ?? "—")</td>
+                        <td class="small text-muted">@(m.MaintNotes ?? "—")</td>
+                    </tr>
+                    <tr class="collapse" id="notes-ti-@m.MaintCode">
+                        <td colspan="9" class="bg-light p-3">
+                            @if (rowNotes.Any())
+                            {
+                                <div class="mb-2">
+                                    @foreach (var note in rowNotes)
+                                    {
+                                        <div class="d-flex gap-2 mb-1">
+                                            <span class="badge bg-secondary text-nowrap">
+                                                @note.NoteDate.ToString("dd/MM/yy HH:mm")
+                                            </span>
+                                            <span class="small fw-semibold">@(note.User?.Employee != null ? $"{note.User.Employee.EmpName} {note.User.Employee.EmpSurname}" : note.User?.UserLogin ?? "Sistema")</span>
+                                            <span class="small">@note.NoteText</span>
+                                        </div>
+                                    }
+                                </div>
+                            }
+                            else
+                            {
+                                <p class="text-muted small mb-2">Sin notas.</p>
+                            }
+                            <form asp-action="AddMaintNote" method="post" class="d-flex gap-2 align-items-end"
+                                  onclick="event.stopPropagation()">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="maintCode" value="@m.MaintCode" />
+                                <div class="flex-grow-1">
+                                    <textarea name="noteText" class="form-control form-control-sm" rows="2"
+                                              placeholder="Agregar nota..." maxlength="1000"></textarea>
+                                </div>
+                                <button type="submit" class="btn btn-sm btn-primary">
+                                    <i class="bi bi-send"></i>
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}

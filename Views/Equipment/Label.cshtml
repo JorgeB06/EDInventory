@@ -289,6 +289,19 @@
             displayValue: false,
             margin: 0
         });
+
+        // JsBarcode no agrega viewBox por defecto: sin esto, seriales largos se
+        // dibujan más anchos que el contenedor y quedan cortados al imprimir.
+        (function () {
+            var svgEl = document.getElementById('barcode');
+            var w = svgEl.getAttribute('width');
+            var h = svgEl.getAttribute('height');
+            if (w && h) {
+                svgEl.setAttribute('viewBox', '0 0 ' + w + ' ' + h);
+                svgEl.removeAttribute('width');
+                svgEl.removeAttribute('height');
+            }
+        })();
     </script>
 }
 

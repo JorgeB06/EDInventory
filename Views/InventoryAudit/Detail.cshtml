@@ -1,0 +1,195 @@
+@model EDInventory.Models.Entities.EngAuditSession
+@{
+    ViewData["Title"] = $"Auditoría #{Model.AuditCode}";
+    bool isManage = (bool)(ViewBag.IsManage ?? false);
+    bool canManageActions = isManage && Model.Status is not ("CERRADA" or "CANCELADA");
+
+    string ScopeLabel = Model.AuditScope == "LINEA"
+        ? $"Línea completa — {Model.Line?.LineName}"
+        : $"Caja {Model.Box?.BoxNumber} — {Model.Box?.Line?.LineName}";
+
+    string StatusBadge(string st) => st switch
+    {
+        "ASIGNADA"              => "bg-secondary",
+        "EN_PROGRESO"           => "bg-primary",
+        "PENDIENTE_APROBACION"  => "bg-warning text-dark",
+        "CERRADA"               => "bg-success",
+        "CANCELADA"             => "bg-danger",
+        _                       => "bg-secondary"
+    };
+
+    var contadas = Model.AuditBoxes.Count(b => b.Status == "CONTADA");
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+    <h4 class="mb-0"><i class="bi bi-clipboard2-check me-2"></i>Auditoría #@Model.AuditCode</h4>
+    <div class="d-flex gap-2 flex-wrap">
+        <a asp-action="ExportPdf" asp-route-id="@Model.AuditCode" class="btn btn-outline-danger btn-sm" target="_blank">
+            <i class="bi bi-file-earmark-pdf me-1"></i>Exportar PDF
+        </a>
+        @if (isManage && Model.Status == "PENDIENTE_APROBACION")
+        {
+            <a asp-action="Review" asp-route-id="@Model.AuditCode" class="btn btn-warning btn-sm">
+                <i class="bi bi-exclamation-triangle me-1"></i>Revisar Discrepancias
+            </a>
+        }
+        @if (canManageActions)
+        {
+            <a asp-action="Reassign" asp-route-id="@Model.AuditCode" class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-person-fill-gear me-1"></i>Reasignar
+            </a>
+            <form asp-action="Cancel" asp-route-id="@Model.AuditCode" method="post" data-confirm="¿Cancelar esta auditoría?">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="btn btn-outline-danger btn-sm">
+                    <i class="bi bi-x-lg me-1"></i>Cancelar
+                </button>
+            </form>
+        }
+        <a asp-action="Index" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-arrow-left me-1"></i>Volver
+        </a>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-6">
+        <div class="card h-100 shadow-sm">
+            <div class="card-body">
+                <h6 class="text-muted mb-3"><i class="bi bi-info-circle me-1"></i>Información</h6>
+                <dl class="row mb-0 small">
+                    <dt class="col-5 text-muted">Alcance</dt>
+                    <dd class="col-7 fw-semibold">@ScopeLabel</dd>
+
+                    <dt class="col-5 text-muted">Asignado a</dt>
+                    <dd class="col-7">@(Model.AssignedUser?.Employee != null ? $"{Model.AssignedUser.Employee.EmpName} {Model.AssignedUser.Employee.EmpSurname}" : Model.AssignedUser?.UserLogin ?? "—")</dd>
+
+                    <dt class="col-5 text-muted">Creado por</dt>
+                    <dd class="col-7">@(Model.CreatedByUser?.Employee != null ? $"{Model.CreatedByUser.Employee.EmpName} {Model.CreatedByUser.Employee.EmpSurname}" : Model.CreatedByUser?.UserLogin ?? "—")</dd>
+
+                    <dt class="col-5 text-muted">Fecha creación</dt>
+                    <dd class="col-7">@Model.CreatedDate.ToString("dd/MM/yyyy HH:mm")</dd>
+
+                    <dt class="col-5 text-muted">Estado</dt>
+                    <dd class="col-7"><span class="badge @StatusBadge(Model.Status)">@Model.Status.Replace("_", " ")</span></dd>
+
+                    @if (!string.IsNullOrWhiteSpace(Model.Notes))
+                    {
+                        <dt class="col-5 text-muted">Notas</dt>
+                        <dd class="col-7">@Model.Notes</dd>
+                    }
+                </dl>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card h-100 shadow-sm">
+            <div class="card-body">
+                <h6 class="text-muted mb-3"><i class="bi bi-graph-up me-1"></i>Progreso</h6>
+                <div class="d-flex gap-4">
+                    <div class="text-center">
+                        <div class="fs-3 fw-bold text-primary">@Model.AuditBoxes.Count</div>
+                        <div class="small text-muted">caja(s)</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="fs-3 fw-bold text-success">@contadas</div>
+                        <div class="small text-muted">contada(s)</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="fs-3 fw-bold text-warning">@(Model.AuditBoxes.Count - contadas)</div>
+                        <div class="small text-muted">pendiente(s)</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-header"><h6 class="mb-0"><i class="bi bi-box-seam me-1"></i>Cajas del alcance</h6></div>
+    <div class="accordion accordion-flush" id="auditBoxAccordion">
+        @foreach (var ab in Model.AuditBoxes.OrderBy(b => b.Box?.BoxNumber))
+        {
+            var collapseId = $"auditBox{ab.AuditBoxCode}";
+            var contada = ab.Status == "CONTADA";
+
+            <div class="accordion-item">
+                <h2 class="accordion-header">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#@collapseId">
+                        <span class="fw-semibold me-2">Caja @ab.Box?.BoxNumber</span>
+                        <span class="text-muted small me-3">@ab.Box?.Line?.LineName</span>
+                        @if (contada)
+                        {
+                            <span class="badge bg-success me-2"><i class="bi bi-check-lg me-1"></i>Contada</span>
+                            <span class="small text-muted">@ab.CountedDate?.ToString("dd/MM/yyyy HH:mm")</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-secondary me-2">Pendiente</span>
+                        }
+                        <span class="badge bg-primary ms-auto">@ab.Box?.Parts.Count ítem(s)</span>
+                    </button>
+                </h2>
+                <div id="@collapseId" class="accordion-collapse collapse">
+                    <div class="accordion-body p-0">
+                        @if (contada)
+                        {
+                            @if (!ab.AuditParts.Any())
+                            {
+                                <p class="text-muted p-3 mb-0">Esta caja no tenía repuestos registrados.</p>
+                            }
+                            else
+                            {
+                                <table class="table table-sm mb-0">
+                                    <thead class="table-light">
+                                        <tr><th>Repuesto</th><th class="text-center">Sistema</th><th class="text-center">Contado</th><th class="text-center">Varianza</th><th>Estado</th></tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var ap in ab.AuditParts.OrderBy(p => p.Part?.PartName))
+                                        {
+                                            <tr class="@(ap.Variance != 0 ? "table-warning" : "")">
+                                                <td class="small">@ap.Part?.PartName <span class="text-muted font-monospace">(@ap.Part?.PartRef)</span></td>
+                                                <td class="text-center">@ap.SystemQty</td>
+                                                <td class="text-center">@(ap.CountedQty?.ToString() ?? "—")</td>
+                                                <td class="text-center">@(ap.Variance is > 0 ? $"+{ap.Variance}" : ap.Variance?.ToString() ?? "—")</td>
+                                                <td class="small">
+                                                    @(ap.ResolutionStatus switch
+                                                    {
+                                                        "SIN_DIFERENCIA"  => "Coincide",
+                                                        "APROBADO_AJUSTE" => "Ajustado",
+                                                        "RECHAZADO"       => "Descartado",
+                                                        _                 => "Pendiente"
+                                                    })
+                                                </td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            }
+                        }
+                        else if (!(ab.Box?.Parts.Any() ?? false))
+                        {
+                            <p class="text-muted p-3 mb-0">Esta caja no tiene repuestos registrados.</p>
+                        }
+                        else
+                        {
+                            <table class="table table-sm mb-0">
+                                <thead class="table-light">
+                                    <tr><th>Repuesto</th><th class="text-center">Cantidad en sistema</th></tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var part in ab.Box!.Parts.OrderBy(p => p.PartName))
+                                    {
+                                        <tr>
+                                            <td class="small">@part.PartName <span class="text-muted font-monospace">(@part.PartRef)</span></td>
+                                            <td class="text-center">@part.PartQty</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+</div>

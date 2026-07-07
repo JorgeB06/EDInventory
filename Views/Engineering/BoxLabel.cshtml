@@ -267,6 +267,19 @@
         displayValue: false,
         margin: 0
     });
+
+    // JsBarcode no agrega viewBox por defecto: sin esto, un código más ancho que
+    // el contenedor quedaría cortado al imprimir en vez de escalarse.
+    (function () {
+        var svgEl = document.getElementById('barcode');
+        var w = svgEl.getAttribute('width');
+        var h = svgEl.getAttribute('height');
+        if (w && h) {
+            svgEl.setAttribute('viewBox', '0 0 ' + w + ' ' + h);
+            svgEl.removeAttribute('width');
+            svgEl.removeAttribute('height');
+        }
+    })();
 </script>
 
 </body>

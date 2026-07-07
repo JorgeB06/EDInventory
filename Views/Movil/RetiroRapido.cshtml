@@ -1,0 +1,44 @@
+@model EDInventory.Models.Entities.EngBox
+@{
+    ViewData["Title"] = $"Caja {Model.BoxNumber}";
+}
+
+<div class="mb-3">
+    <h5 class="mb-1"><i class="bi bi-box-seam me-2"></i>Caja @Model.BoxNumber</h5>
+    <div class="text-muted small">@Model.Line?.LineName</div>
+</div>
+
+@if (!Model.Parts.Any())
+{
+    <div class="text-center text-muted py-5">
+        <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+        Esta caja no tiene repuestos registrados.
+    </div>
+}
+else
+{
+    @foreach (var part in Model.Parts.OrderBy(p => p.PartName))
+    {
+        <div class="card shadow-sm mb-2">
+            <div class="card-body py-2 d-flex justify-content-between align-items-center">
+                <div>
+                    <div class="fw-semibold">@part.PartName</div>
+                    @if (!string.IsNullOrWhiteSpace(part.PartRef))
+                    {
+                        <div class="text-muted small font-monospace">@part.PartRef</div>
+                    }
+                    <span class="badge @(part.PartQty == 0 ? "bg-danger" : part.PartQty <= 2 ? "bg-warning text-dark" : "bg-success") mt-1">
+                        @part.PartQty
+                    </span>
+                </div>
+                <a asp-action="RetiroRapidoPart" asp-route-partCode="@part.PartCode" class="btn btn-outline-warning">
+                    <i class="bi bi-box-arrow-right"></i>
+                </a>
+            </div>
+        </div>
+    }
+}
+
+<div class="d-grid mt-3">
+    <a asp-action="Scan" class="btn btn-outline-secondary"><i class="bi bi-upc-scan me-2"></i>Escanear otra caja</a>
+</div>

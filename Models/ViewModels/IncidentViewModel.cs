@@ -97,6 +97,10 @@ namespace EDInventory.Models.ViewModels
         [StringLength(300)]
         public string? CalibNotes { get; set; }
 
+        [Display(Name = "Técnico Responsable")]
+        public int? TechCode { get; set; }
+
         public IEnumerable<SelectListItem> Assets { get; set; } = [];
+        public IEnumerable<SelectListItem> TechUsers { get; set; } = [];
     }
 }

@@ -1,0 +1,46 @@
+@model IEnumerable<EDInventory.Models.Entities.EngAuditSession>
+@{
+    ViewData["Title"] = "Mis Auditorías";
+
+    string StatusBadge(string st) => st switch
+    {
+        "ASIGNADA"             => "bg-secondary",
+        "EN_PROGRESO"          => "bg-primary",
+        "PENDIENTE_APROBACION" => "bg-warning text-dark",
+        _                      => "bg-secondary"
+    };
+}
+
+<h5 class="mb-3"><i class="bi bi-clipboard2-check me-2"></i>Mis Auditorías</h5>
+
+@if (!Model.Any())
+{
+    <div class="text-center text-muted py-5">
+        <i class="bi bi-check-circle fs-1 d-block mb-2 text-success"></i>
+        No tiene auditorías pendientes.
+    </div>
+}
+else
+{
+    @foreach (var s in Model)
+    {
+        var scope = s.AuditScope == "LINEA"
+            ? $"Línea — {s.Line?.LineName}"
+            : $"Caja {s.Box?.BoxNumber} — {s.Box?.Line?.LineName}";
+        <a asp-action="Auditoria" asp-route-id="@s.AuditCode" class="text-decoration-none">
+            <div class="card shadow-sm mb-2">
+                <div class="card-body py-2 d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="fw-semibold text-dark">#@s.AuditCode — @scope</div>
+                        <div class="text-muted small">@s.CreatedDate.ToString("dd/MM/yyyy")</div>
+                    </div>
+                    <span class="badge @StatusBadge(s.Status)">@s.Status.Replace("_", " ")</span>
+                </div>
+            </div>
+        </a>
+    }
+}
+
+<div class="d-grid mt-3">
+    <a asp-action="Index" class="btn btn-outline-secondary">Volver al inicio</a>
+</div>

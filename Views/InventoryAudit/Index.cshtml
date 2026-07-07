@@ -1,0 +1,95 @@
+@model IEnumerable<EDInventory.Models.Entities.EngAuditSession>
+@{
+    ViewData["Title"] = "Auditoría de Inventario";
+    bool isManage = (bool)(ViewBag.IsManage ?? false);
+    string? status = ViewBag.Status as string;
+
+    string ScopeLabel(EDInventory.Models.Entities.EngAuditSession s) =>
+        s.AuditScope == "LINEA" ? $"Línea — {s.Line?.LineName}" : $"Caja {s.Box?.BoxNumber} — {s.Box?.Line?.LineName}";
+
+    string StatusBadge(string st) => st switch
+    {
+        "ASIGNADA"              => "bg-secondary",
+        "EN_PROGRESO"           => "bg-primary",
+        "PENDIENTE_APROBACION"  => "bg-warning text-dark",
+        "CERRADA"               => "bg-success",
+        "CANCELADA"             => "bg-danger",
+        _                       => "bg-secondary"
+    };
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+    <h4 class="mb-0"><i class="bi bi-clipboard2-check me-2"></i>Auditoría de Inventario</h4>
+    @if (isManage)
+    {
+        <a asp-action="Create" class="btn btn-primary btn-sm">
+            <i class="bi bi-plus-lg me-1"></i>Nueva Auditoría
+        </a>
+    }
+</div>
+
+<div class="mb-3 d-flex gap-2 flex-wrap">
+    <a asp-action="Index" class="btn btn-sm @(string.IsNullOrEmpty(status) ? "btn-dark" : "btn-outline-dark")">Todas</a>
+    <a asp-action="Index" asp-route-status="ASIGNADA" class="btn btn-sm @(status == "ASIGNADA" ? "btn-secondary" : "btn-outline-secondary")">Asignadas</a>
+    <a asp-action="Index" asp-route-status="EN_PROGRESO" class="btn btn-sm @(status == "EN_PROGRESO" ? "btn-primary" : "btn-outline-primary")">En Progreso</a>
+    <a asp-action="Index" asp-route-status="PENDIENTE_APROBACION" class="btn btn-sm @(status == "PENDIENTE_APROBACION" ? "btn-warning" : "btn-outline-warning")">Pendiente Aprobación</a>
+    <a asp-action="Index" asp-route-status="CERRADA" class="btn btn-sm @(status == "CERRADA" ? "btn-success" : "btn-outline-success")">Cerradas</a>
+</div>
+
+@if (!Model.Any())
+{
+    <div class="text-center text-muted py-5">
+        <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+        No hay auditorías registradas.
+    </div>
+}
+else
+{
+    <div class="card shadow-sm">
+        <div class="table-responsive">
+            <table class="table table-sm table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>#</th>
+                        <th>Alcance</th>
+                        <th>Asignado a</th>
+                        <th>Creado por</th>
+                        <th>Fecha creación</th>
+                        <th>Estado</th>
+                        <th style="width:160px"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var s in Model)
+                    {
+                        <tr>
+                            <td class="font-monospace small">#@s.AuditCode</td>
+                            <td class="small">@ScopeLabel(s)</td>
+                            <td class="small">@(s.AssignedUser?.Employee != null ? $"{s.AssignedUser.Employee.EmpName} {s.AssignedUser.Employee.EmpSurname}" : s.AssignedUser?.UserLogin ?? "—")</td>
+                            <td class="small text-muted">@(s.CreatedByUser?.Employee != null ? $"{s.CreatedByUser.Employee.EmpName} {s.CreatedByUser.Employee.EmpSurname}" : s.CreatedByUser?.UserLogin ?? "—")</td>
+                            <td class="small">@s.CreatedDate.ToString("dd/MM/yyyy HH:mm")</td>
+                            <td><span class="badge @StatusBadge(s.Status)">@s.Status.Replace("_", " ")</span></td>
+                            <td class="text-end">
+                                <a asp-action="Detail" asp-route-id="@s.AuditCode" class="btn btn-outline-secondary btn-sm py-0 px-1" title="Ver">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                                @if (isManage && s.Status == "PENDIENTE_APROBACION")
+                                {
+                                    <a asp-action="Review" asp-route-id="@s.AuditCode" class="btn btn-outline-warning btn-sm py-0 px-1 ms-1" title="Revisar discrepancias">
+                                        <i class="bi bi-exclamation-triangle"></i>
+                                    </a>
+                                }
+                                @if (isManage && s.Status is not ("CERRADA" or "CANCELADA"))
+                                {
+                                    <a asp-action="Reassign" asp-route-id="@s.AuditCode" class="btn btn-outline-secondary btn-sm py-0 px-1 ms-1" title="Reasignar">
+                                        <i class="bi bi-person-fill-gear"></i>
+                                    </a>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}

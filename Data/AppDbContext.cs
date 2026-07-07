@@ -141,6 +141,23 @@ namespace EDInventory.Data
         /// <summary>Repuestos compatibles vinculados a activos clinicos (TB_ASSET_PART).</summary>
         public DbSet<AssetPart> AssetParts { get; set; }
 
+        /// <summary>Notas de bitácora para mantenimientos TI y Servicio (TB_MAINT_NOTE).</summary>
+        public DbSet<MaintNote> MaintNotes { get; set; }
+
+        /// <summary>Notas de bitácora para calibraciones (TB_CALIB_NOTE).</summary>
+        public DbSet<CalibNote> CalibNotes { get; set; }
+
+        // ── Auditoría de Inventario (conteo físico de repuestos) ──────────────
+
+        /// <summary>Sesiones de auditoría/conteo físico de repuestos (TB_ENG_AUDIT_SESSION).</summary>
+        public DbSet<EngAuditSession> EngAuditSessions { get; set; }
+
+        /// <summary>Cajas incluidas en el alcance de una sesión de auditoría (TB_ENG_AUDIT_BOX).</summary>
+        public DbSet<EngAuditBox> EngAuditBoxes { get; set; }
+
+        /// <summary>Repuestos contados dentro de una auditoría (TB_ENG_AUDIT_PART).</summary>
+        public DbSet<EngAuditPart> EngAuditParts { get; set; }
+
         /// <summary>
         /// Aplica configuraciones de modelo adicionales:
         /// clave primaria de <see cref="DetailGat"/> y longitud máxima del hash BCrypt en <see cref="User"/>.

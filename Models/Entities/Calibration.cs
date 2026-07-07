@@ -50,11 +50,18 @@ namespace EDInventory.Models.Entities
         [Column("USER_CODE")]
         public int? UserCode { get; set; }
 
+        /// <summary>Técnico responsable asignado por el administrador.</summary>
+        [Column("TECH_CODE")]
+        public int? TechCode { get; set; }
+
         // ── Navegación ─────────────────────────────────────────
         [ForeignKey("AssetCode")]
         public EngAsset? Asset { get; set; }
 
         [ForeignKey("UserCode")]
         public User? User { get; set; }
+
+        [ForeignKey("TechCode")]
+        public User? TechUser { get; set; }
     }
 }

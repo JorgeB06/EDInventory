@@ -37,6 +37,9 @@ namespace EDInventory.Models.ViewModels
 
         /// <summary>Lista de técnicos disponibles para asignación en el selector desplegable.</summary>
         public IEnumerable<SelectListItem> Technicians { get; set; } = [];
+
+        /// <summary>Lista de equipos/activos para seleccionar cuando no viene preseleccionado (AssetCode == 0).</summary>
+        public IEnumerable<SelectListItem> Assets { get; set; } = [];
     }
 
     /// <summary>

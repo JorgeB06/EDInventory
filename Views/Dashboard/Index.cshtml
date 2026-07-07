@@ -3,6 +3,9 @@
     ViewData["Title"] = "Dashboard";
     bool canSeeTI  = (bool)(ViewBag.CanSeeTI  ?? false);
     bool canSeeSvc = (bool)(ViewBag.CanSeeSvc ?? false);
+    int myTiMaints     = (int)(ViewBag.MyTiMaints     ?? 0);
+    int mySvcMaints    = (int)(ViewBag.MySvcMaints    ?? 0);
+    int myCalibrations = (int)(ViewBag.MyCalibrations ?? 0);
     int equiposEnHospital         = canSeeTI  ? (int)(ViewBag.EquiposEnHospital          ?? 0) : 0;
     int activosClinicosEnHospital = canSeeSvc ? (int)(ViewBag.ActivosClinicosEnHospital  ?? 0) : 0;
     int partsSinStock   = canSeeSvc ? (int)ViewBag.PartsSinStock  : 0;
@@ -27,6 +30,40 @@
     int svcEnRed       = canSeeSvc ? (int)(ViewBag.SvcEnRed       ?? 0) : 0;
 }
 
+@* F1: Banner personal de asignaciones pendientes *@
+@if (myTiMaints + mySvcMaints + myCalibrations > 0)
+{
+    <div class="alert alert-warning border-start border-4 border-warning d-flex align-items-start gap-3 mb-3 shadow-sm" role="alert">
+        <i class="bi bi-bell-fill fs-4 mt-1 text-warning"></i>
+        <div>
+            <strong>Tienes asignaciones pendientes:</strong>
+            <div class="mt-1 d-flex flex-wrap gap-2">
+                @if (myTiMaints > 0)
+                {
+                    <a asp-controller="Equipment" asp-action="MaintenanceDue"
+                       class="badge bg-primary text-decoration-none fs-6">
+                        <i class="bi bi-laptop me-1"></i>@myTiMaints MP TI
+                    </a>
+                }
+                @if (mySvcMaints > 0)
+                {
+                    <a asp-controller="Engineering" asp-action="MaintenanceDue"
+                       class="badge bg-success text-decoration-none fs-6">
+                        <i class="bi bi-heart-pulse me-1"></i>@mySvcMaints MP Servicio
+                    </a>
+                }
+                @if (myCalibrations > 0)
+                {
+                    <a asp-controller="Calibration" asp-action="Index"
+                       class="badge bg-info text-dark text-decoration-none fs-6">
+                        <i class="bi bi-rulers me-1"></i>@myCalibrations Calibración(es) próximas
+                    </a>
+                }
+            </div>
+        </div>
+    </div>
+}
+
 <!-- Banner principal -->
 <div class="d-flex align-items-center px-3 py-2 rounded-3 shadow-sm mb-4"
      style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 60%, #0f3460 100%); min-height: 72px;">
@@ -38,6 +75,50 @@
         </div>
     </div>
 </div>
+
+@* ══════════════════════════════════════════════════════════
+   ACCESOS DIRECTOS — Mantenimientos y Auditoría de Inventario
+   ══════════════════════════════════════════════════════════ *@
+@if (canSeeTI || canSeeSvc)
+{
+    <div class="row g-3 mb-4">
+        <div class="col-md-6">
+            <a asp-controller="Maintenance" asp-action="Index" class="text-decoration-none">
+                <div class="card shadow-sm border-0 h-100" style="border-left:4px solid #6f42c1 !important;">
+                    <div class="card-body d-flex align-items-center gap-3">
+                        <div class="bg-purple bg-opacity-10 rounded p-3" style="background:rgba(111,66,193,.1);">
+                            <i class="bi bi-wrench-adjustable-circle fs-3" style="color:#6f42c1;"></i>
+                        </div>
+                        <div>
+                            <div class="fw-bold fs-5 text-dark">Mantenimientos</div>
+                            <div class="text-muted small">TI, Servicio y Calibraciones en un solo lugar</div>
+                        </div>
+                        <i class="bi bi-chevron-right ms-auto text-muted"></i>
+                    </div>
+                </div>
+            </a>
+        </div>
+        @if (canSeeSvc)
+        {
+            <div class="col-md-6">
+                <a asp-controller="InventoryAudit" asp-action="Index" class="text-decoration-none">
+                    <div class="card shadow-sm border-0 h-100" style="border-left:4px solid #20c997 !important;">
+                        <div class="card-body d-flex align-items-center gap-3">
+                            <div class="bg-success bg-opacity-10 rounded p-3">
+                                <i class="bi bi-clipboard2-check text-success fs-3"></i>
+                            </div>
+                            <div>
+                                <div class="fw-bold fs-5 text-dark">Auditoría de Inventario</div>
+                                <div class="text-muted small">Conteo físico de repuestos de Servicio</div>
+                            </div>
+                            <i class="bi bi-chevron-right ms-auto text-muted"></i>
+                        </div>
+                    </div>
+                </a>
+            </div>
+        }
+    </div>
+}
 
 @* ══════════════════════════════════════════════════════════
    SECCIÓN TI

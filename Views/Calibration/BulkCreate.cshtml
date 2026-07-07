@@ -1,0 +1,69 @@
+@model EDInventory.Models.ViewModels.CalibBulkCreateVM
+@{
+    ViewData["Title"] = "Creación Masiva — Calibraciones";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="mb-0"><i class="bi bi-building me-2"></i>Creación Masiva — Calibraciones</h4>
+    <a asp-action="Index" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-arrow-left me-1"></i>Volver
+    </a>
+</div>
+
+<div class="alert alert-info small">
+    Crea una calibración para <strong>todos los activos clínicos activos</strong> del hospital seleccionado.
+</div>
+
+<div class="card shadow-sm" style="max-width:600px;">
+    <div class="card-header fw-bold">Parámetros</div>
+    <div class="card-body">
+        <form asp-action="BulkCreate" method="post">
+            @Html.AntiForgeryToken()
+            <div asp-validation-summary="All" class="text-danger small mb-2"></div>
+            <div class="mb-3">
+                <label asp-for="HospCode" class="form-label fw-semibold">Hospital *</label>
+                <select asp-for="HospCode" asp-items="Model.Hospitals" class="form-select">
+                    <option value="">— Seleccione hospital —</option>
+                </select>
+                <span asp-validation-for="HospCode" class="text-danger small"></span>
+            </div>
+            <div class="mb-3">
+                <label asp-for="TechCode" class="form-label">Técnico Responsable</label>
+                <select asp-for="TechCode" asp-items="Model.TechUsers" class="form-select">
+                    <option value="">— Sin asignar —</option>
+                </select>
+            </div>
+            <div class="mb-3">
+                <label asp-for="CalibDate" class="form-label fw-semibold">Fecha de Calibración *</label>
+                <input asp-for="CalibDate" type="date" class="form-control" />
+            </div>
+            <div class="mb-3">
+                <label asp-for="CalibNextDate" class="form-label">Próxima Calibración</label>
+                <input asp-for="CalibNextDate" type="date" class="form-control" />
+            </div>
+            <div class="mb-3">
+                <label asp-for="CalibResult" class="form-label fw-semibold">Resultado *</label>
+                <select asp-for="CalibResult" class="form-select">
+                    <option value="APROBADO">Aprobado</option>
+                    <option value="CONDICIONAL">Condicional</option>
+                    <option value="RECHAZADO">Rechazado</option>
+                </select>
+            </div>
+            <div class="mb-3">
+                <label asp-for="CalibType" class="form-label">Tipo de Calibración</label>
+                <input asp-for="CalibType" class="form-control" maxlength="60"
+                       placeholder="ej. Electrica, Presion..." />
+            </div>
+            <div class="mb-3">
+                <label asp-for="CalibLab" class="form-label">Laboratorio</label>
+                <input asp-for="CalibLab" class="form-control" maxlength="100" />
+            </div>
+            <div class="d-flex gap-2 justify-content-end">
+                <a asp-action="Index" class="btn btn-outline-secondary">Cancelar</a>
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-check-lg me-1"></i>Crear Calibraciones
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
